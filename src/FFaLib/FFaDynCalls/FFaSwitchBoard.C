@@ -276,3 +276,36 @@ FFaSlotBase::~FFaSlotBase()
     for (const std::pair<const int,int>& ij : swb.second)
       FFaSwitchBoard::removeSlotReference(swb.first,ij.first,this);
 }
+
+
+void FFaSlotBase::addConnection(FFaSwitchBoardConnector* sender, int subject)
+{
+  if (IAmDeletingMe) return;
+
+  IntMap& lookUp = mySwitchBoardLookups[sender];
+  IntMap::iterator it = lookUp.find(subject);
+  if (it == lookUp.end())
+    lookUp[subject] = 1;
+  else
+    it->second++;
+}
+
+
+void FFaSlotBase::removeConnection(FFaSwitchBoardConnector* sender, int subject)
+{
+  if (IAmDeletingMe) return;
+
+  SwitchBoardConnectorMap::iterator cit = mySwitchBoardLookups.find(sender);
+  if (cit != mySwitchBoardLookups.end())
+  {
+    IntMap::iterator it = cit->second.find(subject);
+    if (it != cit->second.end() && --(it->second) < 1)
+      cit->second.erase(it);
+
+    if (cit->second.empty())
+      mySwitchBoardLookups.erase(cit);
+  }
+
+  if (mySwitchBoardLookups.empty())
+    delete this;
+}

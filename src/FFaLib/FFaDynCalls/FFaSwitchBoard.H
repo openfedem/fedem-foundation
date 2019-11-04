@@ -130,32 +130,8 @@ public:
   unsigned int getTypeID() const { return myTypeID; }
 
   // These methods must ONLY be used from FFaSwitchBoard
-
-  void addConnection(FFaSwitchBoardConnector* sender, int aSubject)
-    {
-      if (!IAmDeletingMe)
-	(mySwitchBoardLookups[sender])[aSubject]++;
-    }
-
-  void removeConnection(FFaSwitchBoardConnector* sender, int aSubject)
-    {
-      if (!IAmDeletingMe)
-	{
-	  (mySwitchBoardLookups[sender])[aSubject]--;
-	  if (((mySwitchBoardLookups[sender])[aSubject]) <= 0 )
-	    {
-	      (mySwitchBoardLookups[sender]).erase(aSubject);
-	      if ((mySwitchBoardLookups[sender]).empty())
-		{
-		  mySwitchBoardLookups.erase(sender);
-		  if (mySwitchBoardLookups.empty())
-		    {
-		      delete(this);
-		    }
-		}
-	    }
-	}
-    }
+  void addConnection(FFaSwitchBoardConnector* sender, int subject);
+  void removeConnection(FFaSwitchBoardConnector* sender, int subject);
 
   // Should be protected, used only by operator==
   virtual FFaSwitchBoardConnector* getObject() = 0;
