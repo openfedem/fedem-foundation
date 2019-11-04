@@ -51,11 +51,7 @@ public:
   static void disConnect(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot);
 
   // Used internally in SwitchBoard mechanism classes
-  static TypeIDToSlotBasePtListMap *getSlots(FFaSwitchBoardConnector * aSender, int aSubject)
-    {
-      return &(ourConnections->operator[](aSender)[aSubject]);
-    }
-
+  static FFaSlotList& getSlots(FFaSwitchBoardConnector* sender, int subject, unsigned int typeID);
   static FFaSlotList::iterator nextValidSlot(FFaSlotList::iterator i, FFaSlotList* slots,
 					     bool start,  bool &hasPassedEnd,
 					     FFaSwitchBoardConnector * aSender,  int aSubject,  unsigned int typeID );
@@ -335,7 +331,7 @@ void FFaSwitchBoardCall(FFaSwitchBoardConnector* sender, int subject addedArgume
 {													\
   bool hasPassedEnd = false;										\
   unsigned int typeID = FFaSlotBase##nr typeList::getClassTypeID();					\
-  FFaSlotList& ffaSlots = (*(FFaSwitchBoard::getSlots(sender,subject)))[typeID];			\
+  FFaSlotList& ffaSlots = FFaSwitchBoard::getSlots(sender,subject,typeID);				\
   FFaSlotList::iterator i = FFaSwitchBoard::nextValidSlot(ffaSlots.begin(),&ffaSlots,true,hasPassedEnd,sender,subject,typeID); \
   while (!hasPassedEnd) {										\
     ((FFaSlotBase##nr typeList*)(i->slotPt))->invoke(parameterList);					\
