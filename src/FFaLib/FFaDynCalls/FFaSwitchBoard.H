@@ -65,15 +65,10 @@ public:
   static void removeInstance();
 
 private:
-  static bool isProtected(FFaSlotList::iterator i);
   static void cleanUpAfterSlot(FFaSwitchBoardConnector * aSender, int aSubject, unsigned int typeID);
-  static void eraseSlotFromList(FFaSwitchBoardConnector * aSender, int aSubject, FFaSlotList &slots,
-				FFaSlotList::iterator iteratorToSlotToDelete );
 
   //          map<Sender, map< Subject, SlotTypeId, List of slots  > >
   static std::map<FFaSwitchBoardConnector*, std::map<int,TypeIDToSlotBasePtListMap> >*  ourConnections;
-
-  static std::list<FFaSlotList::iterator>* protectedIterators;
 };
 
 static FFaInitialisation<FFaSwitchBoard> FFaSwitchBoard_Init;
