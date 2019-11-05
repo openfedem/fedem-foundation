@@ -52,9 +52,8 @@ public:
 
   // Used internally in SwitchBoard mechanism classes
   static FFaSlotList& getSlots(FFaSwitchBoardConnector* sender, int subject, unsigned int typeID);
-  static FFaSlotList::iterator nextValidSlot(FFaSlotList::iterator i, FFaSlotList* slots,
-					     bool start,  bool &hasPassedEnd,
-					     FFaSwitchBoardConnector * aSender,  int aSubject,  unsigned int typeID );
+  static FFaSlotList::iterator nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
+                                             FFaSwitchBoardConnector* sender, int subject);
   // Used by FFaSlotBase only
   static void removeSlotReference(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot);
 
@@ -65,7 +64,7 @@ public:
   static void removeInstance();
 
 private:
-  static void cleanUpAfterSlot(FFaSwitchBoardConnector* sender, int subject, unsigned int typeID = 0);
+  static void cleanUpAfterSlot(FFaSwitchBoardConnector* sender, int subject);
 
   //          map<Sender, map< Subject, SlotTypeId, List of slots  > >
   static std::map<FFaSwitchBoardConnector*, std::map<int,TypeIDToSlotBasePtListMap> >*  ourConnections;
@@ -321,17 +320,13 @@ FFASWB_MAKE_STATIC_SLOT_TEMPLATE(4, FFASWB_TEMPLATE4, FFASWB_ARGUMENT_LIST4, FFA
 
 #define FFASWB_MAKE_EMIT_FUNCTION_TEMPLATE(nr, templateDef, addedArgumentList, parameterList, typeList)	\
 													\
-templateDef												\
-void FFaSwitchBoardCall(FFaSwitchBoardConnector* sender, int subject addedArgumentList)			\
+templateDef void FFaSwitchBoardCall(FFaSwitchBoardConnector* sender, int subject addedArgumentList)	\
 {													\
-  bool hasPassedEnd = false;										\
   unsigned int typeID = FFaSlotBase##nr typeList::getClassTypeID();					\
-  FFaSlotList& ffaSlots = FFaSwitchBoard::getSlots(sender,subject,typeID);				\
-  FFaSlotList::iterator i = FFaSwitchBoard::nextValidSlot(ffaSlots.begin(),&ffaSlots,true,hasPassedEnd,sender,subject,typeID); \
-  while (!hasPassedEnd) {										\
-    ((FFaSlotBase##nr typeList*)(i->slotPt))->invoke(parameterList);					\
-    i = FFaSwitchBoard::nextValidSlot(i,&ffaSlots,false,hasPassedEnd,sender,subject,typeID);		\
-  }													\
+  FFaSlotList& ffSlot = FFaSwitchBoard::getSlots(sender,subject,typeID);				\
+  FFaSlotList::iterator it = ffSlot.end();								\
+  while ((it = FFaSwitchBoard::nextValidSlot(it,ffSlot,sender,subject)) != ffSlot.end())		\
+    static_cast<FFaSlotBase##nr typeList*>(it->slotPt)->invoke(parameterList);				\
 }
 
 FFASWB_MAKE_EMIT_FUNCTION_TEMPLATE(0, inline, , , )

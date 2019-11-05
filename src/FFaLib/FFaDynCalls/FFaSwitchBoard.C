@@ -151,82 +151,52 @@ FFaSlotList& FFaSwitchBoard::getSlots(FFaSwitchBoardConnector* sender,
   iterate over the slots that can be deleted as we go.
 */
 
-std::list<FFaSlotBasePt>::iterator
-FFaSwitchBoard::nextValidSlot( std::list<FFaSlotBasePt>::iterator i, std::list<
-    FFaSlotBasePt> *ffaSlots, bool start, bool &hasPassedEnd,
-    FFaSwitchBoardConnector * aSender, int aSubject, unsigned int typeID )
+FFaSlotList::iterator
+FFaSwitchBoard::nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
+                              FFaSwitchBoardConnector* sender, int subject)
 {
-  std::list<FFaSlotBasePt>::iterator result;
-  std::list<FFaSlotBasePt>::iterator toDelete;
+  if (it == slots.end())
+    it = slots.begin();
 
-  if ( start )
-  {
-    i = ffaSlots->begin();
-  }
   else
   {
-    ( *i ).protectedRefCount--; // VS 2008 port FFaSwitchBoard::protectedIterators->pop_front();
-    if  ( (*i).protectedRefCount < 0 )
+    if (--(it->protectedRefCount) < 0)
+      std::cerr <<"Error: FFaSwitchBoard: Negative protectedRefcount"<< std::endl;
+
+    if (!it->isValid)
+      it = slots.erase(it);
+    else
+      ++it;
+  }
+
+  while (it != slots.end())
+    if (it->isValid)
     {
-      std::cout << "Error: FFaSwitchboardcall::protectedRefcount negative"
-            << std::endl;
-    }
-    if( !(*i).isValid )
-    {
-      toDelete = i;
-      ++i;
-      ffaSlots->erase(toDelete);
+      it->protectedRefCount++;
+      return it;
     }
     else
-    {
-      ++i;
-    }
-  }
+      ++it;
 
-  while (i != ffaSlots->end() && !(*i).isValid)
-  {
-    i++;
-  }
+  if (slots.empty())
+    FFaSwitchBoard::cleanUpAfterSlot(sender,subject);
 
-  if (i != ffaSlots->end() && (*i).isValid)
-  {
-  (*i).protectedRefCount++;// VS 2008 port FFaSwitchBoard::protectedIterators->push_front(i);
-    }
-  else
-  {
-    hasPassedEnd = true;
-    FFaSwitchBoard::cleanUpAfterSlot(aSender,aSubject,typeID);
-  }
-
-  return i;
+  return it;
 }
 
 
-void FFaSwitchBoard::cleanUpAfterSlot(FFaSwitchBoardConnector* sender, int subject, unsigned int typeID)
+void FFaSwitchBoard::cleanUpAfterSlot(FFaSwitchBoardConnector* sender, int subject)
 {
   SwitchBoardConnectionT::iterator sbcIter = ourConnections->find(sender);
   if (sbcIter == ourConnections->end())
     return; // Nothing to do
 
   std::map<int,TypeIDToSlotBasePtListMap>::iterator subjIt = sbcIter->second.find(subject);
-  if (subjIt == sbcIter->second.end())
-    return; // Nothing to do
+  if (subjIt != sbcIter->second.end())
+    sbcIter->second.erase(subjIt);
 
-  if (typeID > 0)
-  {
-    TypeIDToSlotBasePtListMap::iterator it = subjIt->second.find(typeID);
-    if (it != subjIt->second.end())
-      subjIt->second.erase(it);
-
-    if (!subjIt->second.empty())
-      return;
-  }
-
-  sbcIter->second.erase(subjIt);
-  if (!sbcIter->second.empty())
-    return;
-
-  ourConnections->erase(sbcIter);
+  if (sbcIter->second.empty())
+    ourConnections->erase(sbcIter);
 }
 
 
