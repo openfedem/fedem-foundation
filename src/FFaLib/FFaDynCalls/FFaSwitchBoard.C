@@ -73,53 +73,41 @@ void FFaSwitchBoard::disConnect(FFaSwitchBoardConnector* sender, int subject, FF
     else
       ++it;
 
-  FFaSwitchBoard::cleanUpAfterSlot(sender,subject,slot->getTypeID());
+  if (ffaSlots.empty())
+    FFaSwitchBoard::cleanUpAfterSlot(sender,subject);
 
   // Decrement to make it disappear if no longer used
   slot->removeConnection(sender,subject);
 }
 
 
-void
-FFaSwitchBoard::removeAllSenderConnections(FFaSwitchBoardConnector* aSender)
+void FFaSwitchBoard::removeAllSenderConnections(FFaSwitchBoardConnector* sender)
 {
-  std::map<int , TypeIDToSlotBasePtListMap>::iterator subjIt;
-  std::map<int , TypeIDToSlotBasePtListMap>::iterator subjToDelete;
+  SwitchBoardConnectionT::iterator sbcIter = ourConnections->find(sender);
+  if (sbcIter == ourConnections->end())
+    return; // Nothing to do
 
-  TypeIDToSlotBasePtListMap::iterator typeIt;
-  TypeIDToSlotBasePtListMap::iterator typeToDelete;
-
-  std::list<FFaSlotBasePt>::iterator slotIt;
-  std::list<FFaSlotBasePt>::iterator slotToDelete;
-
-  subjIt = ourConnections->operator[](aSender).begin();
-  while (subjIt != ourConnections->operator[](aSender).end())
+  std::map<int,TypeIDToSlotBasePtListMap>::iterator subjIt, subjToDelete;
+  for (subjIt = sbcIter->second.begin(); subjIt != sbcIter->second.end();)
+  {
+    TypeIDToSlotBasePtListMap::iterator typeIt, typeToDelete;
+    for (typeIt = subjIt->second.begin(); typeIt != subjIt->second.end();)
     {
-      typeIt = (*subjIt).second.begin();
-      while (  typeIt != (*subjIt).second.end())
-	{
-          for (FFaSlotList::iterator it = typeIt->second.begin(); it != typeIt->second.end();)
-            it = eraseSlot(aSender,subjIt->first,typeIt->second,it);
+      for (FFaSlotList::iterator it = typeIt->second.begin(); it != typeIt->second.end();)
+        it = eraseSlot(sender,subjIt->first,typeIt->second,it);
 
-	  typeToDelete = typeIt;
-	  typeIt ++; 
-	  if ( (*typeToDelete).second.empty() )
-	    {
-	      (*subjIt).second.erase(typeToDelete);
-	    }
-	}
-      subjToDelete = subjIt;
-      subjIt ++;
-      if ( (*subjToDelete).second.empty() )
-	{
-	  ourConnections->operator[](aSender).erase(subjToDelete);
-	}
-     }
-
-  if(ourConnections->operator[](aSender).empty()) 
-    {
-      ourConnections->erase(aSender);
+      typeToDelete = typeIt++;
+      if (typeToDelete->second.empty())
+        subjIt->second.erase(typeToDelete);
     }
+
+    subjToDelete = subjIt++;
+    if (subjToDelete->second.empty())
+      sbcIter->second.erase(subjToDelete);
+  }
+
+  if (sbcIter->second.empty())
+    ourConnections->erase(sender);
 }
 
 
@@ -132,7 +120,8 @@ void FFaSwitchBoard::removeSlotReference(FFaSwitchBoardConnector* sender, int su
     else
       ++it;
 
-  FFaSwitchBoard::cleanUpAfterSlot(sender,subject,slot->getTypeID());
+  if (ffaSlots.empty())
+    FFaSwitchBoard::cleanUpAfterSlot(sender,subject);
 }
 
 
@@ -147,7 +136,7 @@ FFaSlotList& FFaSwitchBoard::getSlots(FFaSwitchBoardConnector* sender,
     {
       TypeIDToSlotBasePtListMap::iterator it3 = it2->second.find(typeID);
       if (it3 != it2->second.end())
-	return it3->second;
+        return it3->second;
     }
   }
 
@@ -213,22 +202,31 @@ FFaSwitchBoard::nextValidSlot( std::list<FFaSlotBasePt>::iterator i, std::list<
 }
 
 
-void FFaSwitchBoard::cleanUpAfterSlot(FFaSwitchBoardConnector * aSender, int aSubject, unsigned int typeID)
+void FFaSwitchBoard::cleanUpAfterSlot(FFaSwitchBoardConnector* sender, int subject, unsigned int typeID)
 {
-  if ( (((ourConnections->operator[](aSender))[aSubject])[typeID]).empty() )
-    {
-      ((ourConnections->operator[](aSender))[aSubject]).erase(typeID);
+  SwitchBoardConnectionT::iterator sbcIter = ourConnections->find(sender);
+  if (sbcIter == ourConnections->end())
+    return; // Nothing to do
 
-      if ( ((ourConnections->operator[](aSender))[aSubject]).empty() )
-	{
-	  (ourConnections->operator[](aSender)).erase(aSubject);
+  std::map<int,TypeIDToSlotBasePtListMap>::iterator subjIt = sbcIter->second.find(subject);
+  if (subjIt == sbcIter->second.end())
+    return; // Nothing to do
 
-	  if( (ourConnections->operator[](aSender)).empty())
-	    {
-	      ourConnections->erase(aSender);
-	    }
-	}
-    }	
+  if (typeID > 0)
+  {
+    TypeIDToSlotBasePtListMap::iterator it = subjIt->second.find(typeID);
+    if (it != subjIt->second.end())
+      subjIt->second.erase(it);
+
+    if (!subjIt->second.empty())
+      return;
+  }
+
+  sbcIter->second.erase(subjIt);
+  if (!sbcIter->second.empty())
+    return;
+
+  ourConnections->erase(sbcIter);
 }
 
 
