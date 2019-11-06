@@ -24,11 +24,8 @@ class FFaSwitchBoardConnector;
 
 struct FFaSlotBasePt
 {
-  FFaSlotBasePt(FFaSlotBase* slot) { slotPt = slot; isValid = true; protectedRefCount = 0; }
-
-  FFaSlotBase* slotPt;
-  bool isValid;
-  int protectedRefCount;
+  FFaSlotBase* slotPt = NULL;
+  short int refCount = 0;
 };
 
 typedef std::list<FFaSlotBasePt> FFaSlotList;
