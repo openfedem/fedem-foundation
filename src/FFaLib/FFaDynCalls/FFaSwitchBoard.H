@@ -44,6 +44,7 @@ public:
   // External interface
   static void connect(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot);
   static void disConnect(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot);
+  static void removeAllOwnerConnections(FFaSwitchBoardConnector* owner);
 
   // Used internally in SwitchBoard mechanism classes
   static FFaSlotList& getSlots(FFaSwitchBoardConnector* sender, int subject, unsigned int typeID);

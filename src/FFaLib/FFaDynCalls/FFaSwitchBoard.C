@@ -101,6 +101,40 @@ void FFaSwitchBoard::removeAllSenderConnections(FFaSwitchBoardConnector* sender)
 }
 
 
+void FFaSwitchBoard::removeAllOwnerConnections(FFaSwitchBoardConnector* owner)
+{
+  SwitchBoardConnection::iterator sbcIter = ourConnections->begin();
+  while (sbcIter != ourConnections->end())
+  {
+    SlotMap::iterator subjIt = sbcIter->second.begin();
+    while (subjIt != sbcIter->second.end())
+    {
+      SlotContainer::iterator tit = subjIt->second.begin();
+      while (tit != subjIt->second.end())
+      {
+        for (FFaSlotList::iterator it = tit->second.begin(); it != tit->second.end();)
+          if (it->slotPt->getObject() == owner)
+            it = eraseSlot(sbcIter->first,subjIt->first,tit->second,it);
+          else
+            ++it;
+
+        SlotContainer::iterator typeToDelete = tit++;
+        if (typeToDelete->second.empty())
+          subjIt->second.erase(typeToDelete);
+      }
+
+      SlotMap::iterator subjToDelete = subjIt++;
+      if (subjToDelete->second.empty())
+        sbcIter->second.erase(subjToDelete);
+    }
+
+    SwitchBoardConnection::iterator sbcToDelete = sbcIter++;
+    if (sbcToDelete->second.empty())
+      ourConnections->erase(sbcToDelete);
+  }
+}
+
+
 void FFaSwitchBoard::removeSlotReference(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot)
 {
   FFaSlotList& ffaSlots = FFaSwitchBoard::getSlots(sender,subject,slot->getTypeID());
