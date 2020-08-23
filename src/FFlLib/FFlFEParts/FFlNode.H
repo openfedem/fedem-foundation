@@ -15,15 +15,18 @@
 #include "FFaLib/FFaPatterns/FFaMemPool.H"
 #endif
 #include "FFaLib/FFaPatterns/FFaSingelton.H"
-
+#ifndef FT_USE_VERTEX
+#include "FFaLib/FFaAlgebra/FFaVec3.H"
+#else
+class FaVec3;
 class FFlVertex;
+#endif
 class FFlPCOORDSYS;
 class FFlAttributeBase;
 class FFlFEResultBase;
 class FFlFENodeResult;
 class FFaUnitCalculator;
 class FFaCheckSum;
-class FaVec3;
 
 
 class FFlNode : public FFlPartBase
@@ -48,12 +51,17 @@ public:
 
   // Vertex management:
 
+#ifdef FT_USE_VERTEX
   int getVertexID() const;
 
   void setVertex(FFlVertex* aVertex);
   FFlVertex* getVertex() const { return myVertex; }
   const FaVec3& getPos() const;
   FaVec3& position() { return const_cast<FaVec3&>(this->getPos()); }
+#else
+  const FaVec3& getPos() const { return myPos; }
+  FaVec3& position() { return myPos; }
+#endif
 
   // Node status management:
 
@@ -98,7 +106,11 @@ public:
 protected:
   char             status; // 0=internal, 1=external, 2=slavenode(internal)
   char             myDOFCount;
+#ifdef FT_USE_VERTEX
   FFlVertex*       myVertex;
+#else
+  FaVec3           myPos;
+#endif
   FFlFEResultBase* myResults;
 
   FFlReference<FFlAttributeBase> myLocalSystem; // solution coordinate system

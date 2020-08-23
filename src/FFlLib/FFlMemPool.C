@@ -6,7 +6,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "FFlLib/FFlMemPool.H"
+#ifdef FT_USE_MEMPOOL
+#ifdef FT_USE_VERTEX
 #include "FFlLib/FFlVertex.H"
+#endif
 #include "FFlLib/FFlFEParts/FFlNode.H"
 #include "FFlLib/FFlFEParts/FFlCMASS.H"
 #include "FFlLib/FFlFEParts/FFlSPRING.H"
@@ -28,11 +31,12 @@
 #include "FFlLib/FFlFEParts/FFlWAVGM.H"
 #include "FFlLib/FFlFEParts/FFlSTRCoat.H"
 
-#ifdef FT_USE_MEMPOOL
 typedef FFaSingelton<FFaMemPoolMgr,FFlElementBase> FFlMemPoolMgr;
 
 FFaMemPool FFlNode   ::ourMemPool(sizeof(FFlNode));
+#ifdef FT_USE_VERTEX
 FFaMemPool FFlVertex ::ourMemPool(sizeof(FFlVertex));
+#endif
 FFaMemPool FFlCMASS  ::ourMemPool(sizeof(FFlCMASS)  ,FFlMemPoolMgr::instance());
 FFaMemPool FFlSPRING ::ourMemPool(sizeof(FFlSPRING) ,FFlMemPoolMgr::instance());
 FFaMemPool FFlRSPRING::ourMemPool(sizeof(FFlRSPRING),FFlMemPoolMgr::instance());
@@ -63,7 +67,9 @@ void FFlMemPool::deleteAllLinkMemPools()
 {
 #ifdef FT_USE_MEMPOOL
   FFlNode::freePool();
+#ifdef FT_USE_VERTEX
   FFlVertex::freePool();
+#endif
   FFlMemPoolMgr::removeInstance();
 #endif
 }
@@ -76,8 +82,9 @@ void FFlMemPool::setAsMemPoolPart(FFlLinkHandler*
                                   ){
 #ifdef FT_USE_MEMPOOL
   FFlNode   ::usePartOfPool(link);
+#ifdef FT_USE_VERTEX
   FFlVertex ::usePartOfPool(link);
-
+#endif
   FFlCMASS  ::usePartOfPool(link);
   FFlSPRING ::usePartOfPool(link);
   FFlRSPRING::usePartOfPool(link);
@@ -112,8 +119,9 @@ void FFlMemPool::freeMemPoolPart(FFlLinkHandler*
                                  ){
 #ifdef FT_USE_MEMPOOL
   FFlNode   ::freePartOfPool(link);
+#ifdef FT_USE_VERTEX
   FFlVertex ::freePartOfPool(link);
-
+#endif
   FFlCMASS  ::freePartOfPool(link);
   FFlSPRING ::freePartOfPool(link);
   FFlRSPRING::freePartOfPool(link);
@@ -145,8 +153,9 @@ void FFlMemPool::resetMemPoolPart()
 {
 #ifdef FT_USE_MEMPOOL
   FFlNode   ::useDefaultPartOfPool();
+#ifdef FT_USE_VERTEX
   FFlVertex ::useDefaultPartOfPool();
-
+#endif
   FFlCMASS  ::useDefaultPartOfPool();
   FFlSPRING ::useDefaultPartOfPool();
   FFlRSPRING::useDefaultPartOfPool();

@@ -11,7 +11,9 @@
 #include "FFlLib/FFlLinkHandler.H"
 #include "FFlLib/FFlElementBase.H"
 #include "FFlLib/FFlPartBase.H"
+#ifdef FT_USE_VERTEX
 #include "FFlLib/FFlVertex.H"
+#endif
 #include "FFlLib/FFlFEParts/FFlNode.H"
 #include "FFlLib/FFlGroup.H"
 #include "FFlLib/FFlLoadBase.H"
@@ -80,7 +82,9 @@ FFlLinkHandler::FFlLinkHandler(const FFlLinkHandler& otherLink)
   for (FFlNode* node : otherLink.myNodes)
   {
     myNodes.push_back(node->clone());
+#ifdef FT_USE_VERTEX
     this->addVertex(myNodes.back()->getVertex());
+#endif
   }
 
   for (const GroupMap::value_type& g : otherLink.myGroupMap)
@@ -134,7 +138,9 @@ FFlLinkHandler::FFlLinkHandler(const FFlGroup& fromGroup)
   for (FFlNode* node : tmpNodes)
   {
     myNodes.push_back(node->clone());
+#ifdef FT_USE_VERTEX
     this->addVertex(myNodes.back()->getVertex());
+#endif
   }
 
   for (const AttributeTypeMap::value_type& am : tmpMap)
@@ -161,8 +167,10 @@ void FFlLinkHandler::deleteGeometry()
 {
   FFlMemPool::setAsMemPoolPart(this);
 
+#ifdef FT_USE_VERTEX
   for (FaVec3* vtx : myVertices)
     static_cast<FFlVertex*>(vtx)->unRef();
+#endif
 
   for (FFlElementBase* e : myElements) delete e;
   for (FFlNode*        n : myNodes   ) delete n;
@@ -180,7 +188,9 @@ void FFlLinkHandler::deleteGeometry()
   myBushElements.clear();
   myNodes.clear();
   myFEnodes.clear();
+#ifdef FT_USE_VERTEX
   myVertices.clear();
+#endif
   myGroupMap.clear();
   myLoads.clear();
   myAttributes.clear();
@@ -595,7 +605,9 @@ bool FFlLinkHandler::addNode(FFlNode* aNode, bool sortOnInsert)
       areNodesSorted = false;
 
   myNodes.push_back(aNode);
+#ifdef FT_USE_VERTEX
   this->addVertex(aNode->getVertex());
+#endif
   if (sortOnInsert && !areNodesSorted)
     this->sortNodes();
 
@@ -1619,6 +1631,7 @@ FFlElementBase* FFlLinkHandler::findPoint(const FaVec3& point, double* xi,
 }
 
 
+#ifdef FT_USE_VERTEX
 FFlVertex* FFlLinkHandler::getVertex(size_t i) const
 {
   return i < myVertices.size() ? static_cast<FFlVertex*>(myVertices[i]) : NULL;
@@ -1641,6 +1654,7 @@ const FFlrVxToElmMap& FFlLinkHandler::getVxToElementMapping()
 
   return myVxMapping;
 }
+#endif
 
 
 void FFlLinkHandler::deleteResults()
@@ -1845,21 +1859,34 @@ bool FFlLinkHandler::verify(bool fixNegElms)
 
 bool FFlLinkHandler::getExtents(FaVec3& max, FaVec3& min) const
 {
-  if (myVertices.empty())
-    return false;
+  bool ok = false;
 
-  min = max = *myVertices.front();
-  for (size_t j = 1; j < myVertices.size(); j++)
+  // Lambda function for updating the bounding box values
+  auto&& updateExt = [&max,&min,&ok](const FaVec3& v)
   {
-    FaVec3& vx = *myVertices[j];
-    for (int i = 0; i < 3; i++)
-      if (vx[i] < min[i])
-        min[i] = vx[i];
-      else if (vx[i] > max[i])
-        max[i] = vx[i];
-  }
+    if (!ok)
+    {
+      min = max = v;
+      ok = true;
+      return;
+    }
 
-  return true;
+    for (int i = 0; i < 3; i++)
+      if (v[i] < min[i])
+        min[i] = v[i];
+      else if (v[i] > max[i])
+        max[i] = v[i];
+  };
+
+#ifdef FT_USE_VERTEX
+  for (FaVec3* vtx : myVertices)
+    updateExt(*vtx);
+#else
+  for (FFlNode* node : myNodes)
+    updateExt(node->getPos());
+#endif
+
+  return ok;
 }
 
 
@@ -1912,6 +1939,7 @@ void FFlLinkHandler::getMassProperties(double& M, FaVec3& Xcg,
 }
 
 
+#ifdef FT_USE_VERTEX
 /*!
   Adds a vertex to the vertex container.
   The running ID of the vertex is also set.
@@ -1926,6 +1954,7 @@ void FFlLinkHandler::addVertex(FFlVertex* aVertex)
 
   myVertices.push_back(aVertex);
 }
+#endif
 
 
 /*!
@@ -1956,7 +1985,9 @@ void FFlLinkHandler::dump() const
   int nFEnod = this->getNodeCount(FFL_FEM);
   std::cout <<"\n   Nodes (free):    "<< myNodes.size()
             <<" ("<< myNodes.size() - nFEnod <<")";
+#ifdef FT_USE_VERTEX
   std::cout <<"\n   Vertices:        "<< myVertices.size();
+#endif
   std::cout <<"\n   Loads:           "<< myLoads.size();
   std::cout <<"\n   Groups:          "<< myGroupMap.size();
   std::cout <<"\n   Attribute types: "<< myAttributes.size();
@@ -1965,7 +1996,9 @@ void FFlLinkHandler::dump() const
 
   std::cout <<"\n----"
             <<"\nFFlNode:          "<< sizeof(FFlNode)
+#ifdef FT_USE_VERTEX
             <<"\nFFlVertex:        "<< sizeof(FFlVertex)
+#endif
             <<"\nFFlElement(Base): "<< sizeof(FFlElementBase)
             <<"\nFFlLinkHander:    "<< sizeof(FFlLinkHandler)
             <<"\n----"<< std::endl;

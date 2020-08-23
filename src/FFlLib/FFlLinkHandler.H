@@ -47,8 +47,10 @@ typedef std::map<std::string,size_t>     ElmTypeCount;
 typedef std::vector<FFlNode*>            NodesVec;
 typedef NodesVec::const_iterator         NodesCIter;
 
+#ifdef FT_USE_VERTEX
 typedef std::vector<FaVec3*>             VertexVec;
 typedef VertexVec::const_iterator        VertexCIter;
+#endif
 
 typedef std::map<int,FFlGroup*>          GroupMap;
 typedef GroupMap::const_iterator         GroupCIter;
@@ -134,7 +136,9 @@ public:
   ElementsCIter elementsBegin()  const { return myElements.begin(); }
   ElementsCIter fElementsBegin() const { return myFElements.begin(); }
   NodesCIter    nodesBegin()     const { return myNodes.begin(); }
+#ifdef FT_USE_VERTEX
   VertexCIter   verticesBegin()  const { return myVertices.begin(); }
+#endif
   GroupCIter    groupsBegin()    const { return myGroupMap.begin(); }
   LoadsCIter    loadsBegin()     const { return myLoads.begin(); }
   VisualsCIter  visualsBegin()   const { return myVisuals.begin(); }
@@ -146,7 +150,9 @@ public:
   ElementsCIter elementsEnd()  const { return myElements.end(); }
   ElementsCIter fElementsEnd() const { return myFElements.end(); }
   NodesCIter    nodesEnd()     const { return myNodes.end(); }
+#ifdef FT_USE_VERTEX
   VertexCIter   verticesEnd()  const { return myVertices.end(); }
+#endif
   GroupCIter    groupsEnd()    const { return myGroupMap.end(); }
   LoadsCIter    loadsEnd()     const { return myLoads.end(); }
   VisualsCIter  visualsEnd()   const { return myVisuals.end(); }
@@ -157,6 +163,7 @@ public:
 
   // Special vertex management access :
 
+#ifdef FT_USE_VERTEX
   size_t getVertexCount() const { return myVertices.size(); }
   const VertexVec& getVertexes() const { return myVertices; }
   const FaVec3& getVertexPos(size_t idx) const { return *myVertices[idx]; }
@@ -165,6 +172,7 @@ public:
 
   // For each vertex, a vector of elements with the local index of the vertex
   const FFlrVxToElmMap& getVxToElementMapping();
+#endif
 
   void getAllInternalCoordSys(std::vector<FaMat34>& mxes) const;
 
@@ -297,8 +305,10 @@ protected:
 
   GroupMap              myGroupMap;
   AttributeTypeMap      myAttributes;
+#ifdef FT_USE_VERTEX
   VertexVec             myVertices;
   FFlrVxToElmMap        myVxMapping;
+#endif
 
   bool                  isResolved;    // Flag to avoid resolving more than once
   bool                  hasLooseNodes; // true if unconnected nodes are present

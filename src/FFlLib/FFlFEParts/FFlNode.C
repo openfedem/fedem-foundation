@@ -6,10 +6,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "FFlLib/FFlFEParts/FFlNode.H"
-#include "FFlLib/FFlVertex.H"
 #include "FFlLib/FFlFEParts/FFlPCOORDSYS.H"
 #include "FFlLib/FFlFEResultBase.H"
-
+#ifdef FT_USE_VERTEX
+#include "FFlLib/FFlVertex.H"
+#endif
 #include "FFaLib/FFaAlgebra/FFaUnitCalculator.H"
 #include "FFaLib/FFaAlgebra/FFaCheckSum.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
@@ -25,7 +26,9 @@ FFlNode::FFlNode(int id) : FFlPartBase(id)
   status = 0; // Default is internal node
   myDOFCount = 0;
 
+#ifdef FT_USE_VERTEX
   myVertex = NULL;
+#endif
   myResults = NULL;
 }
 
@@ -35,9 +38,13 @@ FFlNode::FFlNode(int id, double x, double y, double z, int s) : FFlPartBase(id)
   status = s;
   myDOFCount = 0;
 
+#ifdef FT_USE_VERTEX
   myVertex = new FFlVertex(x,y,z);
   myVertex->ref();
   myVertex->setNode(this);
+#else
+  myPos = FaVec3(x,y,z);
+#endif
 
   myResults = NULL;
 }
@@ -48,9 +55,13 @@ FFlNode::FFlNode(int id, const FaVec3& pos, int s) : FFlPartBase(id)
   status = s;
   myDOFCount = 0;
 
+#ifdef FT_USE_VERTEX
   myVertex = new FFlVertex(pos);
   myVertex->ref();
   myVertex->setNode(this);
+#else
+  myPos = pos;
+#endif
 
   myResults = NULL;
 }
@@ -61,6 +72,7 @@ FFlNode::FFlNode(const FFlNode& otherNode) : FFlPartBase(otherNode)
   status = otherNode.status;
   myDOFCount = otherNode.myDOFCount;
 
+#ifdef FT_USE_VERTEX
   if (otherNode.myVertex)
   {
     myVertex = new FFlVertex(*otherNode.myVertex);
@@ -69,6 +81,9 @@ FFlNode::FFlNode(const FFlNode& otherNode) : FFlPartBase(otherNode)
   }
   else
     myVertex = NULL;
+#else
+  myPos = otherNode.myPos;
+#endif
 
   myResults = NULL;
 }
@@ -76,11 +91,13 @@ FFlNode::FFlNode(const FFlNode& otherNode) : FFlPartBase(otherNode)
 
 FFlNode::~FFlNode()
 {
+#ifdef FT_USE_VERTEX
   if (myVertex)
   {
     myVertex->setNode(NULL);
     myVertex->unRef();
   }
+#endif
   this->deleteResults();
 }
 
@@ -97,8 +114,12 @@ void FFlNode::calculateChecksum(FFaCheckSum* cs, int precision,
 {
   FFlPartBase::checksum(cs);
 
+#ifdef FT_USE_VERTEX
   if (myVertex)
     cs->add(*myVertex,precision);
+#else
+  cs->add(myPos,precision);
+#endif
 
   cs->add(includeExtNodeInfo && status == 1);
   if (status < 0) cs->add((int)status);
@@ -110,10 +131,15 @@ void FFlNode::calculateChecksum(FFaCheckSum* cs, int precision,
 
 void FFlNode::convertUnits(const FFaUnitCalculator* convCal)
 {
+#ifdef FT_USE_VERTEX
   if (myVertex) convCal->convert(*myVertex, "LENGTH");
+#else
+  convCal->convert(myPos, "LENGTH");
+#endif
 }
 
 
+#ifdef FT_USE_VERTEX
 int FFlNode::getVertexID() const
 {
   if (myVertex) return myVertex->getRunningID();
@@ -148,6 +174,7 @@ void FFlNode::setVertex(FFlVertex* aVertex)
   myVertex->ref();
   myVertex->setNode(this);
 }
+#endif
 
 
 bool FFlNode::setStatus(int newStat)
