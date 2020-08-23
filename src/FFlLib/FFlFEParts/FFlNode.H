@@ -53,6 +53,7 @@ public:
   void setVertex(FFlVertex* aVertex);
   FFlVertex* getVertex() const { return myVertex; }
   const FaVec3& getPos() const;
+  FaVec3& position() { return const_cast<FaVec3&>(this->getPos()); }
 
   // Node status management:
 

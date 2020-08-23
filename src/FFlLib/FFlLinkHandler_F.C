@@ -14,7 +14,6 @@
 #include "FFlLib/FFlIOAdaptors/FFlFedemWriter.H"
 #include "FFlLib/FFlIOAdaptors/FFlVTFWriter.H"
 #include "FFlLib/FFlIOAdaptors/FFlReaders.H"
-#include "FFlLib/FFlVertex.H"
 #include "FFlLib/FFlUtils.H"
 #include "FFaLib/FFaAlgebra/FFaTensor3.H"
 #include "FFaLib/FFaAlgebra/FFaMat34.H"
@@ -459,7 +458,6 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
   }
 
   NodesCIter nit;
-  FFlVertex* curVertex;
   int        inod, maxDOFs;
 
   ierr = inod = ndof = 0;
@@ -470,11 +468,11 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
     maxDOFs = (*nit)->getMaxDOFs();
     if (maxDOFs == 3 || maxDOFs == 6)
     {
-      curVertex = (*nit)->getVertex();
+      const FaVec3& pos = (*nit)->getPos();
       minex[inod] = (*nit)->getID();
-      X[inod] = curVertex->x();
-      Y[inod] = curVertex->y();
-      Z[inod] = curVertex->z();
+      X[inod] = pos.x();
+      Y[inod] = pos.y();
+      Z[inod] = pos.z();
 
       mnode[inod] = (*nit)->isExternal() ? 2 : 1;
       for (int i = 0; i < maxDOFs; i++)
@@ -511,11 +509,11 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
         maxDOFs = resolvePinFlag(myPin->PA.getValue(),msc+ndof);
         if (maxDOFs > 0)
         {
-          curVertex = (*nit)->getVertex();
+          const FaVec3& pos = (*nit)->getPos();
           minex[inod] = -inod-1;
-          X[inod] = curVertex->x();
-          Y[inod] = curVertex->y();
-          Z[inod] = curVertex->z();
+          X[inod] = pos.x();
+          Y[inod] = pos.y();
+          Z[inod] = pos.z();
           mnode[inod] = 1;
           madof[inod+1] = madof[inod] + maxDOFs;
           ndof += maxDOFs;
@@ -525,11 +523,11 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
         maxDOFs = resolvePinFlag(myPin->PB.getValue(),msc+ndof);
         if (maxDOFs > 0)
         {
-          curVertex = (*nit)->getVertex();
+          const FaVec3& pos = (*nit)->getPos();
           minex[inod] = -inod-1;
-          X[inod] = curVertex->x();
-          Y[inod] = curVertex->y();
-          Z[inod] = curVertex->z();
+          X[inod] = pos.x();
+          Y[inod] = pos.y();
+          Z[inod] = pos.z();
           mnode[inod] = 1;
           madof[inod+1] = madof[inod] + maxDOFs;
           ndof += maxDOFs;
@@ -745,16 +743,10 @@ SUBROUTINE(ffl_getcoor,FFL_GETCOOR) (double* X, double* Y, double* Z,
   for (NodeCIter nit = curElm->nodesBegin(); nit != curElm->nodesEnd(); ++nit)
     if (nit->isResolved())
     {
-      FFlVertex* curVertex = (*nit)->getVertex();
-      if (!curVertex)
-      {
-        ListUI <<" *** Error: No vertex, element ID "<< curElm->getID() <<"\n";
-        ierr = -2;
-        return;
-      }
-      X[inod] = curVertex->x();
-      Y[inod] = curVertex->y();
-      Z[inod] = curVertex->z();
+      const FaVec3& pos = (*nit)->getPos();
+      X[inod] = pos.x();
+      Y[inod] = pos.y();
+      Z[inod] = pos.z();
       inod++;
     }
     else
@@ -1210,17 +1202,10 @@ SUBROUTINE(ffl_getnodalcoor,FFL_GETNODALCOOR) (double& X, double& Y, double& Z,
     return;
   }
 
-  FFlVertex* curVertex = curNode->getVertex();
-  if (!curVertex)
-  {
-    ListUI <<" *** Error: No vertex attached to node "<< curNode->getID()<<"\n";
-    ierr = -3;
-    return;
-  }
-
-  X = curVertex->x();
-  Y = curVertex->y();
-  Z = curVertex->z();
+  const FaVec3& pos = curNode->getPos();
+  X = pos.x();
+  Y = pos.y();
+  Z = pos.z();
   ierr = 0;
 }
 
@@ -1340,19 +1325,11 @@ SUBROUTINE(ffl_getelcoorsys,FFL_GETELCOORSYS) (double* T, const int& iel,
 
     if (po && !po->directionVector.getValue().isZero())
     {
-      FaVec3* X[2];
+      std::array<FaVec3,2> X;
       NodeCIter nit = curElm->nodesBegin();
       for (int i = 0; i < 2 && nit != curElm->nodesEnd(); ++nit)
 	if (nit->isResolved())
-	{
-	  X[i] = (*nit)->getVertex();
-	  if (!X[i++])
-	  {
-	    ListUI <<" *** Error: No vertex "<< i+1 <<", element ID "
-		   << curElm->getID() <<"\n";
-	    ierr -= 2;
-	  }
-	}
+	  X[i++] = (*nit)->getPos();
 	else
 	{
 	  ListUI <<" *** Error: Element node "<< nit->getID()
@@ -1361,7 +1338,7 @@ SUBROUTINE(ffl_getelcoorsys,FFL_GETELCOORSYS) (double* T, const int& iel,
 	}
 
       if (ierr == 0)
-	Tmat.makeCS_X_XZ(*X[0],*X[1],(*X[0])+po->directionVector.getValue());
+	Tmat.makeCS_X_XZ(X[0],X[1],X[0]+po->directionVector.getValue());
     }
   }
 

@@ -8,7 +8,6 @@
 #include "FFlLib/FFlIOAdaptors/FFlNastranReader.H"
 #include "FFlLib/FFlLinkHandler.H"
 #include "FFlLib/FFlElementBase.H"
-#include "FFlLib/FFlVertex.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
 #include "FFlLib/FFlFEParts/FFlPORIENT.H"
 #include "FFlLib/FFlFEParts/FFlPBEAMSECTION.H"
@@ -135,7 +134,7 @@ bool FFlNastranReader::resolveCoordinates ()
   // digits to avoid checksum issues when saving and reopening the model
 
   for (NodesCIter n = myLink->nodesBegin(); n != myLink->nodesEnd(); ++n)
-    (*n)->getVertex()->round(10);
+    (*n)->position().round(10);
 
   // Add all local coordinate systems which are not referred by any elements
   // to the link object. They may be used to aid the mechanism modeling later.
@@ -168,7 +167,7 @@ bool FFlNastranReader::transformNode (IntMap::iterator& nit)
   std::cout <<" Transforming node "<< nit->first <<", CP = "<< CP;
 #endif
 
-  bool ok = this->transformPoint(*myLink->getNode(nit->first)->getVertex(),CP);
+  bool ok = this->transformPoint(myLink->getNode(nit->first)->position(),CP);
   nodeCPID.erase(nit);
   return ok;
 }
@@ -828,11 +827,11 @@ bool FFlNastranReader::resolveWeldElement (FFlElementBase* curElm,
           }
 
           // Get the global position of all patch vertices
-          std::vector<FaVec3*> vx;
+          std::vector<FaVec3> vx;
           FFlNode* pchNode;
           for (size_t k = 1; k < G.size(); k++)
             if ((pchNode = myLink->getNode(G[k])))
-              vx.push_back(pchNode->getVertex());
+              vx.push_back(pchNode->getPos());
             else
             {
               ok = false;
@@ -843,9 +842,9 @@ bool FFlNastranReader::resolveWeldElement (FFlElementBase* curElm,
           // where the surface normal defines the local Z-axis
           FaMat34 Tpch;
           if (vx.size() == 3)
-            Tpch.makeGlobalizedCS(*vx[0],*vx[1],*vx[2]);
+            Tpch.makeGlobalizedCS(vx[0],vx[1],vx[2]);
           else if (vx.size() == 4)
-            Tpch.makeGlobalizedCS(*vx[0],*vx[1],*vx[2],*vx[3]);
+            Tpch.makeGlobalizedCS(vx[0],vx[1],vx[2],vx[3]);
           else
             ok = false;
 

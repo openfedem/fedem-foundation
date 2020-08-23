@@ -9,8 +9,7 @@
 #include "FFlLib/FFlLinkHandler.H"
 #include "FFlLib/FFlElementBase.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
-#include "FFlLib/FFlVertex.H"
-
+#include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #ifdef FFL_TIMER
 #include "FFaLib/FFaProfiler/FFaProfiler.H"
@@ -99,13 +98,13 @@ bool FFlVTFWriter::writeNodes(int, bool)
     if ((*nit)->hasDOFs() &&
         (myNodes.empty() || myNodes.find((*nit)->getID()) != myNodes.end()))
     {
-      const FFlVertex* v = (*nit)->getVertex();
+      const FaVec3& v = (*nit)->getPos();
       int nID = (*nit)->getID();
       if (withID)
-        ok = VTFA_SUCCESS(nodeBlock.AddNode(v->x(),v->y(),v->z(),nID));
+        ok = VTFA_SUCCESS(nodeBlock.AddNode(v.x(),v.y(),v.z(),nID));
       else
       {
-        ok = VTFA_SUCCESS(nodeBlock.AddNode(v->x(),v->y(),v->z()));
+        ok = VTFA_SUCCESS(nodeBlock.AddNode(v.x(),v.y(),v.z()));
         myNodMap[nID] = inod++;
       }
     }
