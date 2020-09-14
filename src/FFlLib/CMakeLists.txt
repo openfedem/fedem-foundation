@@ -24,6 +24,10 @@ if ( USE_VERTEXOBJ OR USE_VTFX )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VERTEX" )
 endif ( USE_VERTEXOBJ OR USE_VTFX )
 
+if ( USE_VISUALS )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VISUALS" )
+endif ( USE_VISUALS )
+
 if ( USE_MEMPOOL )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_MEMPOOL" )
 endif ( USE_MEMPOOL )
@@ -44,11 +48,13 @@ set ( COMPONENT_FILE_LIST FFlAttributeBase FFlConnectorItems FFlElementBase
                           FFlFEElementTopSpec FFlFENodeRefs FFlFieldBase
                           FFlGroup FFlLinkHandler FFlLoadBase FFlMemPool
                           FFlNamedPartBase FFlPartBase FFlUtils
-                          FFlVisualBase FFlVisualRefs
 )
 if ( USE_VERTEXOBJ OR USE_VTFX )
   list ( APPEND COMPONENT_FILE_LIST FFlVertex )
 endif ( USE_VERTEXOBJ OR USE_VTFX )
+if ( USE_VISUALS )
+  list ( APPEND COMPONENT_FILE_LIST FFlVisualBase FFlVisualRefs )
+endif ( USE_VISUALS )
 
 ## Pure header files, i.e., header files without a corresponding source file
 set ( HEADER_FILE_LIST FFlFEResultBase FFlField

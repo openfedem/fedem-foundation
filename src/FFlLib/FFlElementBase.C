@@ -8,6 +8,9 @@
 #include "FFlLib/FFlElementBase.H"
 #include "FFlLib/FFlFEElementTopSpec.H"
 #include "FFlLib/FFlFEAttributeSpec.H"
+#if !defined(FT_USE_VISUALS) && defined(FFL_DEBUG)
+#include "FFlLib/FFlLinkCSMask.H"
+#endif
 #include "FFlLib/FFlFEResultBase.H"
 #include "FFlLib/FFlFEParts/FFlPMAT.H"
 #include "FFaLib/FFaAlgebra/FFaCheckSum.H"
@@ -23,8 +26,12 @@ FFlElementBase::FFlElementBase(int id) : FFlPartBase(id)
 
 
 FFlElementBase::FFlElementBase(const FFlElementBase& obj)
-  : FFlPartBase(obj), FFlFEAttributeRefs(obj), FFlFENodeRefs(obj),
-    FFlVisualRefs(obj)
+  : FFlPartBase(obj), FFlFEAttributeRefs(obj),
+#ifdef FT_USE_VISUALS
+    FFlFENodeRefs(obj), FFlVisualRefs(obj)
+#else
+    FFlFENodeRefs(obj)
+#endif
 {
   calculateResults = true;
   myResults = NULL;
@@ -37,12 +44,22 @@ FFlElementBase::~FFlElementBase()
 }
 
 
+#if defined(FT_USE_VISUALS) || defined(FFL_DEBUG)
 void FFlElementBase::calculateChecksum(FFaCheckSum* cs, int cstype) const
+#else
+void FFlElementBase::calculateChecksum(FFaCheckSum* cs, int) const
+#endif
 {
   FFlPartBase::checksum(cs);
   FFlFEAttributeRefs::checksum(cs);
   FFlFENodeRefs::checksum(cs);
+#if defined(FT_USE_VISUALS)
   FFlVisualRefs::checksum(cs,cstype);
+#elif defined(FFL_DEBUG)
+  if ((cstype & FFl::CS_VISUALMASK) != FFl::CS_NOVISUALINFO)
+    std::cout <<"FFlElementBase::calculateChecksum: Visuals ignored"
+              << std::endl;
+#endif
 }
 
 

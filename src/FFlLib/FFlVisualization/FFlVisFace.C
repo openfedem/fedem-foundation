@@ -225,6 +225,7 @@ void FFlVisFace::getElmFaceNormal(FaVec3& normal)
 
 bool FFlVisFace::isVisible() const
 {
+#ifdef FT_USE_VISUALS
   for (const FFlFaceElemRef& ref : myElementRefs)
     if (!ref.myElement->getDetail())
       return true;
@@ -232,6 +233,9 @@ bool FFlVisFace::isVisible() const
       return true;
 
   return false;
+#else
+  return true;
+#endif
 }
 
 

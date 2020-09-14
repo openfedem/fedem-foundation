@@ -62,8 +62,10 @@ typedef std::map<int,FFlAttributeBase*>    AttributeMap;
 typedef std::map<std::string,AttributeMap> AttributeTypeMap;
 typedef AttributeTypeMap::const_iterator   AttributeTypeCIter;
 
+#ifdef FT_USE_VISUALS
 typedef std::vector<FFlVisualBase*>        VisualsVec;
 typedef VisualsVec::const_iterator         VisualsCIter;
+#endif
 
 typedef std::pair<FFlElementBase*,int> FFlrElement;
 typedef std::vector<FFlrElement>       FFlrElementVec;
@@ -89,9 +91,11 @@ public:
   bool addAttribute(FFlAttributeBase* attr, bool silence, const std::string& name);
   int  addUniqueAttribute(FFlAttributeBase* newAtt, bool silence = false);
   bool removeAttribute(const std::string& typeName, int ID, bool silence = false);
+#ifdef FT_USE_VISUALS
   void addVisual(FFlVisualBase* visual, bool sortOnInsert = false);
-
   void setRunningIdxOnAppearances();
+#endif
+
   int  sortElementsAndNodes(bool deleteDuplicates = false) const;
 
   // Getting count of entities
@@ -129,7 +133,9 @@ public:
   int getNewNodeID() const;
   int getNewGroupID() const;
   int getNewAttribID(const std::string& type) const;
+#ifdef FT_USE_VISUALS
   int getNewVisualID() const;
+#endif
 
   // Begin iterators to the containers
 
@@ -141,8 +147,9 @@ public:
 #endif
   GroupCIter    groupsBegin()    const { return myGroupMap.begin(); }
   LoadsCIter    loadsBegin()     const { return myLoads.begin(); }
+#ifdef FT_USE_VISUALS
   VisualsCIter  visualsBegin()   const { return myVisuals.begin(); }
-
+#endif
   AttributeTypeCIter attributeTypesBegin() const { return myAttributes.begin(); }
 
   // End iterators to the containers
@@ -155,8 +162,9 @@ public:
 #endif
   GroupCIter    groupsEnd()    const { return myGroupMap.end(); }
   LoadsCIter    loadsEnd()     const { return myLoads.end(); }
+#ifdef FT_USE_VISUALS
   VisualsCIter  visualsEnd()   const { return myVisuals.end(); }
-
+#endif
   AttributeTypeCIter attributeTypesEnd() const { return myAttributes.end(); }
 
   const AttributeMap& getAttributes(const std::string& name) const;
@@ -233,6 +241,7 @@ public:
   bool updateCalculationFlag(FFlPartBase* part, bool status = true);
   bool updateCalculationFlag(const std::string& attType, int id, bool status = true);
 
+#ifdef FT_USE_VISUALS
   // Visual settings
   bool setVisDetail(const FFlVDetail* det); // on all elements
   bool setVisDetail(FFlPartBase* part, const FFlVDetail* det);
@@ -244,6 +253,7 @@ public:
   FFlVDetail* getPredefDetail(int detailType);
   FFlVDetail* getOnDetail();
   FFlVDetail* getOffDetail();
+#endif
 
   // For external Nastran files
   void addComponentModes(int nGen) { nGenDofs += nGen; }
@@ -284,7 +294,9 @@ protected:
   int  sortElements(bool deleteDuplicates = false) const;
   int  sortNodes(bool deleteDuplicates = false) const;
   void sortLoads() const;
+#ifdef FT_USE_VISUALS
   void sortVisuals() const;
+#endif
 
   // Model size limits :
 
@@ -300,8 +312,10 @@ protected:
   mutable bool          areNodesSorted;
   mutable LoadsVec      myLoads;
   mutable bool          areLoadsSorted;
+#ifdef FT_USE_VISUALS
   mutable VisualsVec    myVisuals;
   mutable bool          areVisualsSorted;
+#endif
 
   GroupMap              myGroupMap;
   AttributeTypeMap      myAttributes;

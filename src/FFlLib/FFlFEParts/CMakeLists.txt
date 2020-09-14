@@ -24,9 +24,11 @@ set ( COMPONENT_FILE_LIST FFlAllFEParts FFlBEAM2 FFlBEAM3 FFlBUSH
                           FFlPSTRC FFlPTHICK FFlPTHICKREF FFlPWAVGM
                           FFlQUAD4 FFlQUAD8 FFlRBAR FFlRGD FFlShellElementBase
                           FFlSPRING FFlSTRCoat FFlTET10 FFlTET4
-                          FFlTRI3 FFlTRI6 FFlVAppearance FFlVDetail
-                          FFlWAVGM FFlWEDG15 FFlWEDG6
+                          FFlTRI3 FFlTRI6 FFlWAVGM FFlWEDG15 FFlWEDG6
 )
+if ( USE_VISUALS )
+  list ( APPEND COMPONENT_FILE_LIST FFlVAppearance FFlVDetail )
+endif ( USE_VISUALS )
 
 
 foreach ( FILE ${COMPONENT_FILE_LIST} )

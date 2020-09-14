@@ -11,7 +11,9 @@
 #include "FFlLib/FFlPartBase.H"
 #include "FFlLib/FFlFEAttributeRefs.H"
 #include "FFlLib/FFlFENodeRefs.H"
+#ifdef FT_USE_VISUALS
 #include "FFlLib/FFlVisualRefs.H"
+#endif
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFaLib/FFaPatterns/FFaGenericFactory.H"
 
@@ -26,8 +28,12 @@ class FaVec3;
 
 class FFlElementBase : public FFlPartBase,
 		       public FFlFEAttributeRefs,
+#ifdef FT_USE_VISUALS
 		       public FFlFENodeRefs,
 		       public FFlVisualRefs
+#else
+		       public FFlFENodeRefs
+#endif
 {
 protected:
   typedef std::vector<FFlElementBase*> Elements;
@@ -80,6 +86,10 @@ public:
   bool hasResults() const { return myResults != NULL; }
   FFlFEElmResult* getResults();
   void deleteResults();
+
+#ifndef FT_USE_VISUALS
+  bool isVisible() const { return true; }
+#endif
 
 private:
   FFlFEResultBase* myResults;
