@@ -1030,6 +1030,13 @@ bool FFlSesamReader::readBeamSections (const Records& recs,
     newAttribute->Sy = fields[12];
     newAttribute->Sz = fields[13];
 
+    if (fields[6] != 0.0)
+      ListUI <<"\n  ** Warning: GBEAMG "<< geono <<" has nonzero Iyz inertia "
+             << fields[6] <<" (unsupported)."
+             <<"\n              This may lead to incorrect results."
+             <<"\n              Consider calculating new local axis systems "
+             <<"\n              corresponding to Iyz=0 and update Iy and Iz.\n";
+
     if (!myLink->addAttribute(newAttribute))
       return false;
   }
