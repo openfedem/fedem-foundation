@@ -17,7 +17,8 @@ Date ( "build_date" "${CMAKE_CURRENT_BINARY_DIR}" ) # Generate new build date
 
 # Extract new build number as the patch number from the file "cfg/VERSION"
 # and write it out to "build_no.h" in the build directory
-find_file ( VERSION "VERSION" PATHS ${PROJECT_SOURCE_DIR}/cfg NO_DEFAULT_PATH )
+find_file ( VERSION "VERSION" PATHS ${PROJECT_SOURCE_DIR}/cfg
+                                    ${CONFIG_DIR} NO_DEFAULT_PATH )
 if ( VERSION )
   message ( STATUS "INFORMATION : Extracting build number from ${VERSION}" )
   file ( READ ${VERSION} BUILD_NO )
