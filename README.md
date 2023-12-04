@@ -10,6 +10,8 @@
 
 # FEDEM Foundation libraries
 
+![Fedem Logo](cfg/FedemLogo.png)
+
 ## About this project
 
 This project contains the source code of some application-independent libraries
