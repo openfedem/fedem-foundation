@@ -1,0 +1,46 @@
+Fedem Technology Simplified CAD model
+
+Part {
+  Body {
+    Coordinates {
+      0.0 0.0 0.0
+      1.0 0.0 0.0
+      1.0 2.0 0.0
+      0.0 2.0 0.0
+      0.0 0.0 3.0
+      1.0 0.0 3.0
+      1.0 2.0 3.0
+      0.0 2.0 3.0
+    }
+    Face {
+      FaceIndices {
+        3 2 1 0 -1
+      }
+    }
+    Face {
+      FaceIndices {
+        0 1 5 4 -1
+      }
+    }
+    Face {
+      FaceIndices {
+        1 2 6 5 -1
+      }
+    }
+    Face {
+      FaceIndices {
+        2 3 7 6 -1
+      }
+    }
+    Face {
+      FaceIndices {
+        3 0 4 7 -1
+      }
+    }
+    Face {
+      FaceIndices {
+        4 5 6 7 -1
+      }
+    }
+  }
+}

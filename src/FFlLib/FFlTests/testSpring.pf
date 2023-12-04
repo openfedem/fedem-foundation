@@ -1,0 +1,235 @@
+!! SPDX-FileCopyrightText: 2023 SAP SE
+!!
+!! SPDX-License-Identifier: Apache-2.0
+!!
+!! This file is part of FEDEM - https://openfedem.org
+!!==============================================================================
+
+!> @brief Unit tests for spring elements.
+!>
+!> @author Knut Morten Okstad, SAP SE
+!>
+!> @date 28 Jan 2020
+
+@test
+subroutine testSpring
+
+  use FFlLinkHandlerInterface, only : ffl_test_init, ffl_getspring, ffl_done
+#if FT_PFUNIT > 3
+  use funit     , only : assertEqual, sourceLocation, anyExceptions
+#else
+  use pfunit_mod, only : assertEqual, sourceLocation, anyExceptions
+#endif
+
+  implicit none
+
+  integer, parameter :: dp = kind(1.0D0)
+
+  integer  :: ierr, nedof
+  real(dp) :: ek(12*12)
+
+  character(len=512), parameter :: ftlData = 'FTLVERSION{7 ASCII}'// &
+	& ' NODE{1 0 0 0 0}'// &
+	& ' NODE{2 1 1 0 0}'// &
+	& ' NODE{3 0 0 1 0}'// &
+	& ' NODE{4 1 1 1 0}'// &
+	& ' SPRING{1 1 {PSPRING 1}}'// &
+	& ' SPRING{2 1 2 {PSPRING 1}}'// &
+	& ' RSPRING{3 3 {PSPRING 2}}'// &
+	& ' RSPRING{4 3 4 {PSPRING 2}}'// &
+	& ' PSPRING{1 1 11 21 22 31 32 33 41 42 43 44 51 52 53 54 55 61 62 63 64 65 66}'// &
+	& ' PSPRING{2 2 11 21 22 31 32 33 41 42 43 44 51 52 53 54 55 61 62 63 64 65 66}'
+
+  call ffl_test_init (trim(ftlData),ierr)
+  @assertEqual(1,ierr)
+
+  call ffl_getSpring (ek,nedof,1,ierr)
+  @assertEqual(3,nedof)
+  @assertEqual(0,ierr)
+  call writeMatrix(nedof,ek,'EK1')
+  ! Column 1
+  @assertEqual(11.0_dp,ek(1))
+  @assertEqual(21.0_dp,ek(2))
+  @assertEqual(31.0_dp,ek(3))
+  ! Column 2
+  @assertEqual(21.0_dp,ek(4))
+  @assertEqual(22.0_dp,ek(5))
+  @assertEqual(32.0_dp,ek(6))
+  ! Column 3
+  @assertEqual(31.0_dp,ek(7))
+  @assertEqual(32.0_dp,ek(8))
+  @assertEqual(33.0_dp,ek(9))
+
+  call ffl_getSpring (ek,nedof,2,ierr)
+  @assertEqual(6,nedof)
+  @assertEqual(0,ierr)
+  call writeMatrix(nedof,ek,'EK2')
+  ! Column 1
+  @assertEqual(11.0_dp,ek(1))
+  @assertEqual(21.0_dp,ek(2))
+  @assertEqual(31.0_dp,ek(3))
+  @assertEqual(41.0_dp,ek(4))
+  @assertEqual(51.0_dp,ek(5))
+  @assertEqual(61.0_dp,ek(6))
+  ! Column 2
+  @assertEqual(21.0_dp,ek(7))
+  @assertEqual(22.0_dp,ek(8))
+  @assertEqual(32.0_dp,ek(9))
+  @assertEqual(42.0_dp,ek(10))
+  @assertEqual(52.0_dp,ek(11))
+  @assertEqual(62.0_dp,ek(12))
+  ! Column 3
+  @assertEqual(31.0_dp,ek(13))
+  @assertEqual(32.0_dp,ek(14))
+  @assertEqual(33.0_dp,ek(15))
+  @assertEqual(43.0_dp,ek(16))
+  @assertEqual(53.0_dp,ek(17))
+  @assertEqual(63.0_dp,ek(18))
+  ! Column 4
+  @assertEqual(41.0_dp,ek(19))
+  @assertEqual(42.0_dp,ek(20))
+  @assertEqual(43.0_dp,ek(21))
+  @assertEqual(44.0_dp,ek(22))
+  @assertEqual(54.0_dp,ek(23))
+  @assertEqual(64.0_dp,ek(24))
+  ! Column 5
+  @assertEqual(51.0_dp,ek(25))
+  @assertEqual(52.0_dp,ek(26))
+  @assertEqual(53.0_dp,ek(27))
+  @assertEqual(54.0_dp,ek(28))
+  @assertEqual(55.0_dp,ek(29))
+  @assertEqual(65.0_dp,ek(30))
+  ! Column 6
+  @assertEqual(61.0_dp,ek(31))
+  @assertEqual(62.0_dp,ek(32))
+  @assertEqual(63.0_dp,ek(33))
+  @assertEqual(64.0_dp,ek(34))
+  @assertEqual(65.0_dp,ek(35))
+  @assertEqual(66.0_dp,ek(36))
+
+  call ffl_getSpring (ek,nedof,3,ierr)
+  @assertEqual(6,nedof)
+  @assertEqual(0,ierr)
+  call writeMatrix(nedof,ek,'EK3')
+  ! Column 1
+  @assertEqual(11.0_dp,ek(1))
+  @assertEqual(21.0_dp,ek(2))
+  @assertEqual(31.0_dp,ek(3))
+  @assertEqual(41.0_dp,ek(4))
+  @assertEqual(51.0_dp,ek(5))
+  @assertEqual(61.0_dp,ek(6))
+  ! Column 2
+  @assertEqual(21.0_dp,ek(7))
+  @assertEqual(22.0_dp,ek(8))
+  @assertEqual(32.0_dp,ek(9))
+  @assertEqual(42.0_dp,ek(10))
+  @assertEqual(52.0_dp,ek(11))
+  @assertEqual(62.0_dp,ek(12))
+  ! Column 3
+  @assertEqual(31.0_dp,ek(13))
+  @assertEqual(32.0_dp,ek(14))
+  @assertEqual(33.0_dp,ek(15))
+  @assertEqual(43.0_dp,ek(16))
+  @assertEqual(53.0_dp,ek(17))
+  @assertEqual(63.0_dp,ek(18))
+  ! Column 4
+  @assertEqual(41.0_dp,ek(19))
+  @assertEqual(42.0_dp,ek(20))
+  @assertEqual(43.0_dp,ek(21))
+  @assertEqual(44.0_dp,ek(22))
+  @assertEqual(54.0_dp,ek(23))
+  @assertEqual(64.0_dp,ek(24))
+  ! Column 5
+  @assertEqual(51.0_dp,ek(25))
+  @assertEqual(52.0_dp,ek(26))
+  @assertEqual(53.0_dp,ek(27))
+  @assertEqual(54.0_dp,ek(28))
+  @assertEqual(55.0_dp,ek(29))
+  @assertEqual(65.0_dp,ek(30))
+  ! Column 6
+  @assertEqual(61.0_dp,ek(31))
+  @assertEqual(62.0_dp,ek(32))
+  @assertEqual(63.0_dp,ek(33))
+  @assertEqual(64.0_dp,ek(34))
+  @assertEqual(65.0_dp,ek(35))
+  @assertEqual(66.0_dp,ek(36))
+
+  call ffl_getSpring (ek,nedof,4,ierr)
+  @assertEqual(12,nedof)
+  @assertEqual(0,ierr)
+  call writeMatrix(nedof,ek,'EK4')
+  ! Column 4
+  @assertEqual(11.0_dp,ek(40))
+  @assertEqual(21.0_dp,ek(41))
+  @assertEqual(31.0_dp,ek(42))
+  @assertEqual(41.0_dp,ek(46))
+  @assertEqual(51.0_dp,ek(47))
+  @assertEqual(61.0_dp,ek(48))
+  ! Column 5
+  @assertEqual(21.0_dp,ek(52))
+  @assertEqual(22.0_dp,ek(53))
+  @assertEqual(32.0_dp,ek(54))
+  @assertEqual(42.0_dp,ek(58))
+  @assertEqual(52.0_dp,ek(59))
+  @assertEqual(62.0_dp,ek(60))
+  ! Column 6
+  @assertEqual(31.0_dp,ek(64))
+  @assertEqual(32.0_dp,ek(65))
+  @assertEqual(33.0_dp,ek(66))
+  @assertEqual(43.0_dp,ek(70))
+  @assertEqual(53.0_dp,ek(71))
+  @assertEqual(63.0_dp,ek(72))
+  ! Column 10
+  @assertEqual(41.0_dp,ek(112))
+  @assertEqual(42.0_dp,ek(113))
+  @assertEqual(43.0_dp,ek(114))
+  @assertEqual(44.0_dp,ek(118))
+  @assertEqual(54.0_dp,ek(119))
+  @assertEqual(64.0_dp,ek(120))
+  ! Column 11
+  @assertEqual(51.0_dp,ek(124))
+  @assertEqual(52.0_dp,ek(125))
+  @assertEqual(53.0_dp,ek(126))
+  @assertEqual(54.0_dp,ek(130))
+  @assertEqual(55.0_dp,ek(131))
+  @assertEqual(65.0_dp,ek(132))
+  ! Column 12
+  @assertEqual(61.0_dp,ek(136))
+  @assertEqual(62.0_dp,ek(137))
+  @assertEqual(63.0_dp,ek(138))
+  @assertEqual(64.0_dp,ek(142))
+  @assertEqual(65.0_dp,ek(143))
+  @assertEqual(66.0_dp,ek(144))
+
+  call ffl_done (.true.)
+
+contains
+
+  subroutine WriteMatrix (n,array,text)
+
+    integer , parameter :: lpu = 6
+    integer , parameter :: dp  = kind(1.0D0)
+    real(dp), parameter :: eps = epsilon(1.0_dp)
+
+    integer     , intent(in) :: n
+    real(dp)    , intent(in) :: array(n,n)
+    character(*), intent(in) :: text
+
+    integer :: i, j
+
+    write(lpu,'(A/1X,20I13)') trim(text),(i,i=1,n)
+    do i = 1, n
+       write(lpu,'(i6)',ADVANCE='no') i
+       do j = 1, n
+           if (abs(array(i,j)) > eps) then
+              write(lpu,'(1PE13.5)',ADVANCE='no') array(i,j)
+           else
+              write(lpu,'(F10.1,3X)',ADVANCE='no') 0.0
+           end if
+        end do
+        write(lpu,*)
+     end do
+
+  end subroutine WriteMatrix
+
+end subroutine testSpring
