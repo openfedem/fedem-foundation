@@ -16,4 +16,7 @@ message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 add_library ( ${LIB_ID} SHARED FFaFunction.C FFaFunction.h )
 target_link_libraries ( ${LIB_ID} LINK_PRIVATE FFaFunctionLib Admin )
-do_install ( ${LIB_ID} "${CMAKE_INSTALL_PREFIX}" )
+
+install ( TARGETS ${LIB_ID}
+          RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
+          LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" )
