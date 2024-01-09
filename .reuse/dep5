@@ -6,3 +6,7 @@ Source: https://github.com/SAP/fedem-foundation
 Files: cfg/* src/*
 Copyright: 2023 SAP SE or an SAP affiliate company and fedem-foundation contributors
 License: Apache-2.0
+
+Files: pFUnit/pFUnit-3.3.3/*
+Copyright: 2005 United States Government as represented by the Administrator of the National Aeronautics and Space Administration
+License: NASA-1.3
