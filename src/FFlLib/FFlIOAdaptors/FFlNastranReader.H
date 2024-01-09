@@ -204,8 +204,8 @@ protected:
   bool transformVec3 (FaVec3& v, const FaVec3& X, const int CID);
 
   bool resolveLoads ();
-  bool resolveLoadFace (FFlLoadBase* load, const IntPair& nodes) const;
-  bool resolveLoadDirection (FFlLoadBase* load, const int CID);
+  bool resolveLoadFace (const FFlLoadBase* load, const IntPair& nodes) const;
+  bool resolveLoadDirection (const FFlLoadBase* load, int CID);
 
   // The remaining methods are defined in FFlNastranProcessor.C
 

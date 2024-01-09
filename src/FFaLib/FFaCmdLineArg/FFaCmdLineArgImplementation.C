@@ -304,7 +304,7 @@ void FFaCmdLineArg::listOptions(bool noDefaults) const
 
   ListUI <<"\n  ** "<< (noDefaults ? "Specified" : "All")
          <<" command-line options **";
-  for (const std::pair<std::string,std::string>& opt : givenOptions)
+  for (const std::pair<const std::string,std::string>& opt : givenOptions)
     ListUI <<"\n     -"<< opt.first
            << std::string(longest+2-opt.first.size(),' ') << opt.second;
   ListUI <<"\n\n";

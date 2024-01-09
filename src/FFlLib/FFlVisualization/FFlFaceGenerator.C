@@ -310,7 +310,7 @@ void FFlFaceGenerator::dump() const
 
   std::cout <<"\n\tFFlFaceElemRef\tNumber of faces w/that number of FFlFaceElemRefs";
   int numElmRefs = 0;
-  for (const std::pair<int,int>& count : refCountMap)
+  for (const std::pair<const int,int>& count : refCountMap)
   {
     std::cout <<"\n\t"<< count.first <<"\t\t"<< count.second;
     numElmRefs += count.first * count.second;
@@ -318,7 +318,7 @@ void FFlFaceGenerator::dump() const
 
   std::cout <<"\n\tFFlVisEdgeRef\tNumber of faces w/that number of FFlVisEdgeRefs";
   int numVisEdgeRefs = 0;
-  for (const std::pair<int,int>& count : faceEdgeRefMap)
+  for (const std::pair<const int,int>& count : faceEdgeRefMap)
   {
     std::cout <<"\n\t"<< count.first <<"\t\t"<< count.second;
     numVisEdgeRefs += count.first * count.second;
@@ -332,7 +332,7 @@ void FFlFaceGenerator::dump() const
   // Print number of faces referring to elements
 
   std::cout <<"\n\tNFaces\tNEdges w/that num Faces";
-  for (const std::pair<int,int>& count : edgeRefCountMap)
+  for (const std::pair<const int,int>& count : edgeRefCountMap)
     std::cout <<"\n\t"<< count.first <<"\t"<< count.second;
 
   std::cout <<"\nNumber of objects :"

@@ -268,7 +268,7 @@ void FFrVariableReference::getValidKeys(std::set<double>& validValues) const
   for (const FFrResultContainerRef& cref : containers)
   {
     std::set<double>::iterator lastInserted = validValues.begin();
-    for (const std::pair<double,int>& time : cref.first->getPhysicalTime())
+    for (const std::pair<const double,int>& time : cref.first->getPhysicalTime())
       lastInserted = validValues.insert(lastInserted,time.first);
   }
 }

@@ -191,7 +191,7 @@ DLPROC FFaDynamicLibraryBase::getProcAddr(const std::string& cName,
                                           bool silence) const
 {
   DLPROC p = NULL;
-  for (const std::pair<std::string,LibHandle>& lib : myLibHandles)
+  for (const std::pair<const std::string,LibHandle>& lib : myLibHandles)
   {
     switch (lib.second.first) {
     case C:
