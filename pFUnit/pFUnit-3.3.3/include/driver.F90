@@ -38,9 +38,11 @@ program main
    class (ListenerPointer), allocatable :: listeners(:)
    type (DebugListener) :: debugger
    character(len=128) :: suiteName
+#ifdef BUILD_ROBUST
    character(len=128) :: maxTimeoutDuration_
    character(len=128) :: maxLaunchDuration_
    character(len=128) :: fullExecutable
+#endif
 
 ! Support for the runs
    class (ParallelContext), allocatable :: context
@@ -127,6 +129,9 @@ program main
          read(argument,*) numSkip
 
       case default
+#ifdef PFUNIT_EXTRA_ARGS
+         if (PFUNIT_EXTRA_ARGS(argument)) cycle
+#endif
          call commandLineArgumentError()
 
       case ('-xml')
@@ -248,12 +253,14 @@ contains
       class (ParallelContext), allocatable :: context
       logical, intent(in) :: useMpi
 
-#ifdef USE_MPI
       if (useMpi) then
+#ifdef USE_MPI
          allocate(context, source=newMpiContext())
          return
-      end if
+#else
+         write (*,*) 'Built without MPI-support.'
 #endif
+      end if
 
       allocate(context, source=newSerialContext())
 

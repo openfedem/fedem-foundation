@@ -204,9 +204,9 @@ set(CMAKE_SHARED_LIBRARY_LINK_Fortran_FLAGS "")
 set(CMAKE_SKIP_RPATH ON)
 
 add_subdirectory (source)
-add_subdirectory (tests)
-add_subdirectory (include)
-add_subdirectory (bin)
+
+install(FILES include/driver.F90 include/TestUtil.F90 DESTINATION include)
+install(PROGRAMS bin/pFUnitParser.py bin/parseDirectiveArgs.py DESTINATION bin)
 
 # Packaging
 include (cmake/packaging.cmake)
