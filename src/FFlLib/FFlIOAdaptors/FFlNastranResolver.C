@@ -1318,7 +1318,7 @@ bool FFlNastranReader::resolveLoads ()
   bool ok = true;
   for (const LoadFaceMap::value_type& load : loadFace)
     ok &= this->resolveLoadFace(load.first,load.second);
-  for (const std::pair<FFlLoadBase*,int>& load : loadCID)
+  for (const std::pair<FFlLoadBase* const,int>& load : loadCID)
     ok &= this->resolveLoadDirection(load.first,load.second);
 
   loadFace.clear();
@@ -1328,8 +1328,8 @@ bool FFlNastranReader::resolveLoads ()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool FFlNastranReader::resolveLoadFace (FFlLoadBase* load,
-					const std::pair<int,int>& nodes) const
+bool FFlNastranReader::resolveLoadFace (const FFlLoadBase* load,
+                                        const std::pair<int,int>& nodes) const
 {
   int EID, faceNum = 0;
   if (!load->getTarget(EID,faceNum))
@@ -1352,31 +1352,36 @@ bool FFlNastranReader::resolveLoadFace (FFlLoadBase* load,
     return false;
   }
 
-  load->setTarget(EID,faceNum);
+  const_cast<FFlLoadBase*>(load)->setTarget(EID,faceNum);
 
   return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool FFlNastranReader::resolveLoadDirection (FFlLoadBase* load, const int CID)
+bool FFlNastranReader::resolveLoadDirection (const FFlLoadBase* load, int CID)
 {
   int EID, faceNum = 0;
   if (!load->getTarget(EID,faceNum))
     return false;
 
-  FFlCLOAD* cload = dynamic_cast<FFlCLOAD*>(load);
+  const FFlCLOAD* cload = dynamic_cast<const FFlCLOAD*>(load);
   if (cload)
   {
     FFlNode* node = myLink->getNode(EID);
     if (!node)
-      ListUI <<"\n *** Error: Non-existing node "<< EID
-	     <<" referred by concentrated load.\n";
-    else if (this->transformVec3(cload->P.data(),node->getPos(),CID))
     {
-      cload->P.data().round(10);
-      return true;
+      ListUI <<"\n *** Error: Non-existing node "<< EID
+             <<" referred by concentrated load.\n";
+      return false;
     }
+
+    FaVec3& Pval = const_cast<FFlCLOAD*>(cload)->P.data();
+    if (!this->transformVec3(Pval,node->getPos(),CID))
+      return false;
+
+    Pval.round(10);
+    return true;
   }
 
   return false; // Surface loads not yet implemented

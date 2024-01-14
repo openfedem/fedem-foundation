@@ -50,7 +50,7 @@ FFrExtractor::~FFrExtractor()
   for (const ContainerMap::value_type& c : myContainers)
     delete c.second;
 
-  for (const std::pair<std::string,FFrSuperObjectGroup*>& sog : myTopLevelSOGs)
+  for (const std::pair<const std::string,FFrSuperObjectGroup*>& sog : myTopLevelSOGs)
     delete sog.second;
 
 #if FFR_DEBUG > 2
@@ -62,7 +62,7 @@ FFrExtractor::~FFrExtractor()
 #if FFR_DEBUG > 2
   std::cout <<"\nDestroying top-level variable references"<< std::endl;
 #endif
-  for (const std::pair<std::string,FFrEntryBase*>& tlv : myTopLevelVars)
+  for (const std::pair<const std::string,FFrEntryBase*>& tlv : myTopLevelVars)
     delete tlv.second;
 
 #if FFR_DEBUG > 2
@@ -654,7 +654,7 @@ void FFrExtractor::printHierarchy() const
 #endif
 
   std::cout <<"\n   * TopLevel variables ("<< myTopLevelVars.size() <<")\n";
-  for (const std::pair<std::string,FFrEntryBase*>& tlv : myTopLevelVars)
+  for (const std::pair<const std::string,FFrEntryBase*>& tlv : myTopLevelVars)
   {
     std::cout <<"\n"<< tlv.second->getDescription();
     FFrItemGroup* igRef = dynamic_cast<FFrItemGroup*>(tlv.second);
@@ -665,7 +665,7 @@ void FFrExtractor::printHierarchy() const
   }
 
   std::cout <<"\n\n   * TopLevel Hierarchy ("<< myTopLevelSOGs.size() <<")";
-  for (const std::pair<std::string,FFrSuperObjectGroup*>& sog : myTopLevelSOGs)
+  for (const std::pair<const std::string,FFrSuperObjectGroup*>& sog : myTopLevelSOGs)
   {
     std::cout <<"\n\n"<< sog.second->getDescription() <<" ("<< sog.second->dataFields.size() <<")";
     for (FFrEntryBase* entry : sog.second->dataFields)
@@ -853,7 +853,7 @@ void FFrExtractor::getValidKeys(std::set<double>& validValues,
     if ((cont = this->getResultContainer(fileName)))
     {
       std::set<double>::iterator lastInserted = validValues.begin();
-      for (const std::pair<double,int>& timeStep : cont->getPhysicalTime())
+      for (const std::pair<const double,int>& timeStep : cont->getPhysicalTime())
         lastInserted = validValues.insert(lastInserted,timeStep.first);
     }
 }

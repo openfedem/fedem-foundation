@@ -654,10 +654,10 @@ bool FFlSesamReader::readElements (const Records& recs)
     }
   }
 
-  for (const std::pair<int,int>& elt : unsup)
+  for (const std::pair<const int,int>& elt : unsup)
     ListUI <<"\n  ** Warning: Ignoring "<< elt.second
            <<" elements of unsupported type "<< elt.first;
-  for (const std::pair<int,int>& elt : toLine)
+  for (const std::pair<const int,int>& elt : toLine)
     ListUI <<"\n  ** Warning: Converting "<< elt.second
            <<" parabolic elements of type "<< elt.first
            <<" to linear elements.";
