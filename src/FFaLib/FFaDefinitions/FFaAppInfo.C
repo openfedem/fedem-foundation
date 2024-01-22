@@ -133,18 +133,20 @@ void FFaAppInfo::init(const char* program)
   }
 
   if (slashPos < fullPath.size())
+  {
+    // Check if the program is in current working directory
     programPath = fullPath.substr(0, slashPos > 0 ? slashPos : 1);
+    iAmInCwd = programPath == getCWD();
+  }
   else if (fileExists(program))
   {
     // The program is in current working directory
+    programPath = getCWD();
     iAmInCwd = true;
-    char* cwd = getcwd(NULL,1024);
-    programPath = cwd ? cwd : ".";
-    free(cwd);
   }
   else
   {
-    programPath = "";
+    programPath.clear();
     char* ppath = strdup(getenv("PATH"));
     if (ppath)
     {
