@@ -409,7 +409,8 @@ bool FFpCurve::loadTemporalData (double currentTime)
     else
     {
       double value = 0.0;
-      reader[axis].front().readOp->evaluate(value);
+      reader[axis].front().readOp->invoke(value);
+      reader[axis].front().readOp->invalidate();
       values.push_back(value == HUGE_VAL ? 0.0 : value);
     }
   }
@@ -454,36 +455,38 @@ bool FFpCurve::loadSpatialData (double currentTime, const double epsT)
       if (!reader[axis][i].readOp) return false;
       if (!reader[axis][i].varRef) return false;
 
-      double scale = axis == Y && (short int)(i%2) == beamEndFlag ? -1.0 : 1.0;
-
-      if (reader[axis][i].varRef->hasDataForCurrentKey() &&
-          reader[axis][i].readOp->evaluate(value))
-	switch (timeOper) {
-	case Min:
-	  if (scale*value < points[axis][i])
-	    points[axis][i] = scale*value;
-	  break;
-	case Max:
-	  if (scale*value > points[axis][i] && scale*value < HUGE_VAL)
-	    points[axis][i] = scale*value;
-	  break;
-	case AMax:
-	  if (fabs(value) > fabs(points[axis][i]) && value < HUGE_VAL)
-	    points[axis][i] = scale*value;
-	  break;
-	case Mean:
-	  if (value != HUGE_VAL)
-	    points[axis][i] += scale*value;
-	  break;
-	case RMS:
-	  if (value != HUGE_VAL)
-	    points[axis][i] += value*value;
-	  break;
-	default:
-	  points[axis][i] = value == HUGE_VAL ? 0.0 : scale*value;
-	}
+      if (reader[axis][i].varRef->hasDataForCurrentKey())
+      {
+        double scale = axis == Y && (short int)(i%2) == beamEndFlag ? -1.0 : 1.0;
+        if (reader[axis][i].readOp->invoke(value))
+          switch (timeOper) {
+          case Min:
+            if (scale*value < points[axis][i])
+              points[axis][i] = scale*value;
+            break;
+          case Max:
+            if (scale*value > points[axis][i] && scale*value < HUGE_VAL)
+              points[axis][i] = scale*value;
+            break;
+          case AMax:
+            if (fabs(value) > fabs(points[axis][i]) && value < HUGE_VAL)
+              points[axis][i] = scale*value;
+            break;
+          case Mean:
+            if (value != HUGE_VAL)
+              points[axis][i] += scale*value;
+            break;
+          case RMS:
+            if (value != HUGE_VAL)
+              points[axis][i] += value*value;
+            break;
+          default:
+            points[axis][i] = value == HUGE_VAL ? 0.0 : scale*value;
+          }
+        reader[axis][i].readOp->invalidate();
+      }
       else if (axis == X)
-	break;
+        break;
     }
 
   timeSamples++;
@@ -503,7 +506,9 @@ bool FFpCurve::loadCurrentSpatialX ()
     if (!reader[X][i].readOp) return false;
     if (!reader[X][i].varRef) return false;
     if (!reader[X][i].varRef->hasDataForCurrentKey()) return false;
-    if (!reader[X][i].readOp->evaluate(points[X][i])) return false;
+
+    reader[X][i].readOp->invoke(points[X][i]);
+    reader[X][i].readOp->invalidate();
   }
 
   this->setDataChanged();
