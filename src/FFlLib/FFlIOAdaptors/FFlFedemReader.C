@@ -17,7 +17,9 @@
 #include "FFlLib/FFlLoadBase.H"
 #include "FFlLib/FFlAttributeBase.H"
 #include "FFlLib/FFlFEAttributeSpec.H"
+#ifdef FT_USE_VISUALS
 #include "FFlLib/FFlVisualBase.H"
+#endif
 #include "FFlLib/FFlFieldBase.H"
 #include "FFlLib/FFlGroup.H"
 
@@ -79,11 +81,13 @@ FFlFedemReader::FFlFedemReader(FFlLinkHandler* aLink) : FFlReaderBase(aLink)
     myFieldResolvers[key] = FFaDynCB1M(FFlFedemReader, this,
 				       resolveAttributeField, const ftlField&);
 
+#ifdef FT_USE_VISUALS
   // get visual keys:
   VisualFactory::instance()->getKeys(keys);
   for (const std::string& key : keys)
     myFieldResolvers[key] = FFaDynCB1M(FFlFedemReader, this,
 				       resolveVisualField, const ftlField&);
+#endif
 
 #ifdef FFL_DEBUG
   std::cout <<"Registered field resolvers"<< std::endl;
@@ -273,7 +277,11 @@ void FFlFedemReader::resolveElementField(const ftlField& field)
     for (const RefFieldMap::value_type& ref : field.refs)
       if (!ref.second.id.empty())
       {
+#ifdef FT_USE_VISUALS
         if (newElem->setVisual(ref.first,ref.second.id.front()))
+#else
+        if (ref.first[0] == 'V')
+#endif
           continue;
         else if (ref.first == "FE") // reference to other finite element
           newElem->setFElement(ref.second.id.front());
@@ -375,6 +383,7 @@ void FFlFedemReader::resolveAttributeField(const ftlField& field)
 }
 
 
+#ifdef FT_USE_VISUALS
 void FFlFedemReader::resolveVisualField(const ftlField& field)
 {
   START_TIMER("resolveVisualField");
@@ -400,6 +409,9 @@ void FFlFedemReader::resolveVisualField(const ftlField& field)
   if (nErr > lErr) parseError(nErr-lErr,field.label,field.entries[0]);
   STOPP_TIMER("resolveVisualField");
 }
+#else
+void FFlFedemReader::resolveVisualField(const ftlField&) {}
+#endif
 
 
 void FFlFedemReader::resolveGroupField(const ftlField& field)

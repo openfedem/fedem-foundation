@@ -13,7 +13,9 @@
 #include "FFlLib/FFlElementBase.H"
 #include "FFlLib/FFlLoadBase.H"
 #include "FFlLib/FFlAttributeBase.H"
+#ifdef FT_USE_VISUALS
 #include "FFlLib/FFlVisualBase.H"
+#endif
 #include "FFlLib/FFlGroup.H"
 #include "FFlLib/FFlFieldBase.H"
 
@@ -139,11 +141,13 @@ bool FFlFedemWriter::writeElementData(std::ostream& os) const
       if (aIt->second.isResolved())
         os <<" {"<< aIt->second->getTypeName() <<" "<< aIt->second->getID() <<"}";
 
+#ifdef FT_USE_VISUALS
     FFlVisualBase* vapp = curElm->getVisualAppearance();
     if (vapp) os <<" {"<< vapp->getTypeName() <<" "<< vapp->getID() <<"}";
 
     FFlVisualBase* vdet = curElm->getVisualDetail();
     if (vdet) os <<" {"<< vdet->getTypeName() <<" "<< vdet->getID() <<"}";
+#endif
 
     FFlElementBase* refElm = curElm->getFElement();
     if (refElm) os <<" {FE "<< refElm->getID() <<"}";
@@ -246,6 +250,7 @@ bool FFlFedemWriter::writeAttributeData(std::ostream& os) const
 }
 
 
+#ifdef FT_USE_VISUALS
 bool FFlFedemWriter::writeVisualData(std::ostream& os) const
 {
   if (myLink->visualsBegin() != myLink->visualsEnd())
@@ -260,3 +265,6 @@ bool FFlFedemWriter::writeVisualData(std::ostream& os) const
 
   return os ? true : false;
 }
+#else
+bool FFlFedemWriter::writeVisualData(std::ostream&) const { return true; }
+#endif

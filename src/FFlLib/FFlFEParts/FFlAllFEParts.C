@@ -75,8 +75,10 @@ void FFl::initAllElements()
   FFlPTHICKREF::init();
   FFlPFATIGUE::init();
 
+#ifdef FT_USE_VISUALS
   FFlVAppearance::init();
   FFlVDetail::init();
+#endif
 
   FFlGroup::init();
 
@@ -162,9 +164,11 @@ void FFl::releaseAllElements()
   releaseAttribute<FFlPFATIGUE>();
   AttributeFactory::removeInstance();
 
+#ifdef FT_USE_VISUALS
   FFlVAppearanceTypeInfoSpec::removeInstance();
   FFlVDetailTypeInfoSpec::removeInstance();
   VisualFactory::removeInstance();
+#endif
 
   FFlGroupTypeInfoSpec::removeInstance();
 

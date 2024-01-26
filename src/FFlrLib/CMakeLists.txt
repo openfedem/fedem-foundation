@@ -24,6 +24,11 @@ if ( USE_MEMPOOL )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_MEMPOOL" )
 endif ( USE_MEMPOOL )
 
+if ( USE_VERTEXOBJ OR USE_VTFX )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VERTEX" )
+endif ( USE_VERTEXOBJ OR USE_VTFX )
+
+
 ## Files with header and source with same name
 set ( COMPONENT_FILE_LIST FFlrFEResultBuilder FFlrFEResult
                           FFlrFringeCreator FFlrResultResolver

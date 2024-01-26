@@ -11,7 +11,9 @@
 #include "FFlLib/FFlLinkHandler.H"
 #include "FFlLib/FFlElementBase.H"
 #include "FFlLib/FFlPartBase.H"
+#ifdef FT_USE_VERTEX
 #include "FFlLib/FFlVertex.H"
+#endif
 #include "FFlLib/FFlFEParts/FFlNode.H"
 #include "FFlLib/FFlGroup.H"
 #include "FFlLib/FFlLoadBase.H"
@@ -48,7 +50,10 @@ FFlLinkHandler::FFlLinkHandler(size_t maxNodes, size_t maxElms)
   nodeLimit = maxNodes;
   elmLimit  = maxElms;
 
-  areElementsSorted = areNodesSorted = areLoadsSorted = areVisualsSorted = true;
+  areElementsSorted = areNodesSorted = areLoadsSorted = true;
+#ifdef FT_USE_VISUALS
+  areVisualsSorted = true;
+#endif
   tooLarge = hasLooseNodes = isResolved = false;
 }
 
@@ -80,7 +85,9 @@ FFlLinkHandler::FFlLinkHandler(const FFlLinkHandler& otherLink)
   for (FFlNode* node : otherLink.myNodes)
   {
     myNodes.push_back(node->clone());
+#ifdef FT_USE_VERTEX
     this->addVertex(myNodes.back()->getVertex());
+#endif
   }
 
   for (const GroupMap::value_type& g : otherLink.myGroupMap)
@@ -95,10 +102,12 @@ FFlLinkHandler::FFlLinkHandler(const FFlLinkHandler& otherLink)
     for (const AttributeMap::value_type& attr : am.second)
       this->addAttribute(attr.second->clone());
 
+#ifdef FT_USE_VISUALS
   areVisualsSorted = otherLink.areVisualsSorted;
   myVisuals.reserve(otherLink.myVisuals.size());
   for (FFlVisualBase* vis : otherLink.myVisuals)
     myVisuals.push_back(vis->clone());
+#endif
 
   hasLooseNodes = isResolved = false;
   this->resolve();
@@ -115,7 +124,10 @@ FFlLinkHandler::FFlLinkHandler(const FFlGroup& fromGroup)
   myResults = NULL;
   nodeLimit = elmLimit = nGenDofs = 0;
   tooLarge  = hasLooseNodes = isResolved = false;
-  areElementsSorted = areNodesSorted = areLoadsSorted = areVisualsSorted = true;
+  areElementsSorted = areNodesSorted = areLoadsSorted = true;
+#ifdef FT_USE_VISUALS
+  areVisualsSorted = true;
+#endif
 
   std::set<FFlNode*,FFlFEPartBaseLess> tmpNodes;
   AttributeTypeMap                     tmpMap;
@@ -134,7 +146,9 @@ FFlLinkHandler::FFlLinkHandler(const FFlGroup& fromGroup)
   for (FFlNode* node : tmpNodes)
   {
     myNodes.push_back(node->clone());
+#ifdef FT_USE_VERTEX
     this->addVertex(myNodes.back()->getVertex());
+#endif
   }
 
   for (const AttributeTypeMap::value_type& am : tmpMap)
@@ -161,15 +175,18 @@ void FFlLinkHandler::deleteGeometry()
 {
   FFlMemPool::setAsMemPoolPart(this);
 
+#ifdef FT_USE_VERTEX
   for (FaVec3* vtx : myVertices)
     static_cast<FFlVertex*>(vtx)->unRef();
+#endif
 
   for (FFlElementBase* e : myElements) delete e;
   for (FFlNode*        n : myNodes   ) delete n;
   for (const GroupMap::value_type& g : myGroupMap) delete g.second;
   for (FFlLoadBase*    l : myLoads   ) delete l;
+#ifdef FT_USE_VISUALS
   for (FFlVisualBase*  d : myVisuals ) delete d;
-
+#endif
   for (const AttributeTypeMap::value_type& am : myAttributes)
     for (const AttributeMap::value_type& attr : am.second)
       delete attr.second;
@@ -180,11 +197,15 @@ void FFlLinkHandler::deleteGeometry()
   myBushElements.clear();
   myNodes.clear();
   myFEnodes.clear();
+#ifdef FT_USE_VERTEX
   myVertices.clear();
+#endif
   myGroupMap.clear();
   myLoads.clear();
   myAttributes.clear();
+#ifdef FT_USE_VISUALS
   myVisuals.clear();
+#endif
   ext2intNode.clear();
 
   FFlMemPool::resetMemPoolPart();
@@ -192,10 +213,10 @@ void FFlLinkHandler::deleteGeometry()
 
   tooLarge = hasLooseNodes = false;
 
-  areElementsSorted = true;
-  areNodesSorted    = true;
-  areLoadsSorted    = true;
-  areVisualsSorted  = true;
+  areElementsSorted = areNodesSorted = areLoadsSorted = true;
+#ifdef FT_USE_VISUALS
+  areVisualsSorted = true;
+#endif
 
   isResolved = true;
 }
@@ -316,6 +337,7 @@ void FFlLinkHandler::calculateChecksum(FFaCheckSum* cs,
   std::cout <<"Link checksum after groups: "<< cs->getCurrent() << std::endl;
 #endif
 
+#ifdef FT_USE_VISUALS
   if ((csType & FFl::CS_VISUALMASK) != FFl::CS_NOVISUALINFO)
     for (FFlVisualBase* vis : myVisuals)
     {
@@ -325,6 +347,7 @@ void FFlLinkHandler::calculateChecksum(FFaCheckSum* cs,
                 <<" : "<< cs->getCurrent() << std::endl;
 #endif
     }
+#endif
 
 #ifdef FFL_DEBUG
   std::cout <<"Link checksum : "<< cs->getCurrent() << std::endl;
@@ -414,6 +437,7 @@ bool FFlLinkHandler::updateCalculationFlag(const std::string& type, int id, bool
 }
 
 
+#ifdef FT_USE_VISUALS
 void FFlLinkHandler::updateGroupVisibilityStatus()
 {
   // first reset all:
@@ -548,6 +572,7 @@ bool FFlLinkHandler::setVisAppearance(FFlPartBase* part,
 
   return false;
 }
+#endif
 
 
 bool FFlLinkHandler::addElement(FFlElementBase* anElement, bool sortOnInsert)
@@ -595,7 +620,9 @@ bool FFlLinkHandler::addNode(FFlNode* aNode, bool sortOnInsert)
       areNodesSorted = false;
 
   myNodes.push_back(aNode);
+#ifdef FT_USE_VERTEX
   this->addVertex(aNode->getVertex());
+#endif
   if (sortOnInsert && !areNodesSorted)
     this->sortNodes();
 
@@ -620,6 +647,7 @@ void FFlLinkHandler::addLoad(FFlLoadBase* load, bool sortOnInsert)
 }
 
 
+#ifdef FT_USE_VISUALS
 void FFlLinkHandler::addVisual(FFlVisualBase* visual, bool sortOnInsert)
 {
   if (!visual) return;
@@ -643,6 +671,7 @@ void FFlLinkHandler::setRunningIdxOnAppearances()
     if ((vapp = dynamic_cast<FFlVAppearance*>(vis)))
       vapp->runningIdx = idx++;
 }
+#endif
 
 
 /*!
@@ -698,6 +727,7 @@ FFlNode* FFlLinkHandler::getFENode(int inod) const
 }
 
 
+#ifdef FT_USE_VISUALS
 FFlVAppearance* FFlLinkHandler::getAppearance(int ID) const
 {
   if (!areVisualsSorted) this->sortVisuals();
@@ -734,6 +764,7 @@ FFlVDetail* FFlLinkHandler::getDetail(int ID) const
 
   return vdet;
 }
+#endif
 
 
 /*!
@@ -1125,12 +1156,14 @@ int FFlLinkHandler::getNewAttribID(const std::string& type) const
 }
 
 
+#ifdef FT_USE_VISUALS
 int FFlLinkHandler::getNewVisualID() const
 {
   if (myVisuals.empty()) return 1;
   if (!areVisualsSorted) this->sortVisuals();
   return (*(myVisuals.rbegin()))->getID() + 1;
 }
+#endif
 
 
 bool FFlLinkHandler::addGroup(FFlGroup* group, bool silence)
@@ -1230,6 +1263,8 @@ bool FFlLinkHandler::removeAttribute(const std::string& typeName, int ID, bool s
 }
 
 
+#ifdef FT_USE_VISUALS
+
 /*!
   Returns a visual detail object with detail type ON or OFF. If no such
   detail exists, a new one will be created and added to the model.
@@ -1259,8 +1294,9 @@ FFlVDetail* FFlLinkHandler::getOnDetail()
 
 FFlVDetail* FFlLinkHandler::getOffDetail()
 {
-  return this -> getPredefDetail(FFlVDetail::OFF);
+  return this->getPredefDetail(FFlVDetail::OFF);
 }
+#endif
 
 
 /*!
@@ -1619,6 +1655,7 @@ FFlElementBase* FFlLinkHandler::findPoint(const FaVec3& point, double* xi,
 }
 
 
+#ifdef FT_USE_VERTEX
 FFlVertex* FFlLinkHandler::getVertex(size_t i) const
 {
   return i < myVertices.size() ? static_cast<FFlVertex*>(myVertices[i]) : NULL;
@@ -1641,6 +1678,7 @@ const FFlrVxToElmMap& FFlLinkHandler::getVxToElementMapping()
 
   return myVxMapping;
 }
+#endif
 
 
 void FFlLinkHandler::deleteResults()
@@ -1666,7 +1704,9 @@ bool FFlLinkHandler::resolve(bool subdivParabolic, bool fromSESAM)
   if (!areElementsSorted) this->sortElements(true);
   if (!areNodesSorted)    this->sortNodes(true);
   if (!areLoadsSorted)    this->sortLoads();
+#ifdef FT_USE_VISUALS
   if (!areVisualsSorted)  this->sortVisuals();
+#endif
 
   ElementsVec oldElements;
   if (subdivParabolic)
@@ -1704,7 +1744,11 @@ bool FFlLinkHandler::resolve(bool subdivParabolic, bool fromSESAM)
     if (!elm->resolveNodeRefs(myNodes, nError >= maxErr) ||
         !elm->resolveElmRef(myElements, nError >= maxErr) ||
         !elm->resolve(myAttributes, nError >= maxErr) ||
+#ifdef FT_USE_VISUALS
         !elm->resolveVisuals(myVisuals, nError < maxErr))
+#else
+        false)
+#endif
       if (nError++ < maxErr)
         ListUI <<"\n *** Error: Resolving "<< elm->getTypeName() <<" element "
                << elm->getID() <<" failed\n";
@@ -1845,21 +1889,34 @@ bool FFlLinkHandler::verify(bool fixNegElms)
 
 bool FFlLinkHandler::getExtents(FaVec3& max, FaVec3& min) const
 {
-  if (myVertices.empty())
-    return false;
+  bool ok = false;
 
-  min = max = *myVertices.front();
-  for (size_t j = 1; j < myVertices.size(); j++)
+  // Lambda function for updating the bounding box values
+  auto&& updateExt = [&max,&min,&ok](const FaVec3& v)
   {
-    FaVec3& vx = *myVertices[j];
-    for (int i = 0; i < 3; i++)
-      if (vx[i] < min[i])
-        min[i] = vx[i];
-      else if (vx[i] > max[i])
-        max[i] = vx[i];
-  }
+    if (!ok)
+    {
+      min = max = v;
+      ok = true;
+      return;
+    }
 
-  return true;
+    for (int i = 0; i < 3; i++)
+      if (v[i] < min[i])
+        min[i] = v[i];
+      else if (v[i] > max[i])
+        max[i] = v[i];
+  };
+
+#ifdef FT_USE_VERTEX
+  for (FaVec3* vtx : myVertices)
+    updateExt(*vtx);
+#else
+  for (FFlNode* node : myNodes)
+    updateExt(node->getPos());
+#endif
+
+  return ok;
 }
 
 
@@ -1912,6 +1969,7 @@ void FFlLinkHandler::getMassProperties(double& M, FaVec3& Xcg,
 }
 
 
+#ifdef FT_USE_VERTEX
 /*!
   Adds a vertex to the vertex container.
   The running ID of the vertex is also set.
@@ -1926,6 +1984,7 @@ void FFlLinkHandler::addVertex(FFlVertex* aVertex)
 
   myVertices.push_back(aVertex);
 }
+#endif
 
 
 /*!
@@ -1956,7 +2015,9 @@ void FFlLinkHandler::dump() const
   int nFEnod = this->getNodeCount(FFL_FEM);
   std::cout <<"\n   Nodes (free):    "<< myNodes.size()
             <<" ("<< myNodes.size() - nFEnod <<")";
+#ifdef FT_USE_VERTEX
   std::cout <<"\n   Vertices:        "<< myVertices.size();
+#endif
   std::cout <<"\n   Loads:           "<< myLoads.size();
   std::cout <<"\n   Groups:          "<< myGroupMap.size();
   std::cout <<"\n   Attribute types: "<< myAttributes.size();
@@ -1965,7 +2026,9 @@ void FFlLinkHandler::dump() const
 
   std::cout <<"\n----"
             <<"\nFFlNode:          "<< sizeof(FFlNode)
+#ifdef FT_USE_VERTEX
             <<"\nFFlVertex:        "<< sizeof(FFlVertex)
+#endif
             <<"\nFFlElement(Base): "<< sizeof(FFlElementBase)
             <<"\nFFlLinkHander:    "<< sizeof(FFlLinkHandler)
             <<"\n----"<< std::endl;
@@ -2070,12 +2133,13 @@ void FFlLinkHandler::sortLoads() const
 }
 
 
+#ifdef FT_USE_VISUALS
 void FFlLinkHandler::sortVisuals() const
 {
   std::sort(myVisuals.begin(),myVisuals.end(),FFlFEPartBaseLess());
   areVisualsSorted = true;
 }
-
+#endif
 
 /*!
   Creates a node based on the given position with the given number of \a DOFs.
@@ -2249,7 +2313,9 @@ int FFlLinkHandler::splitElement(FFlElementBase* elm)
   {
     newElmID[i] = newElems[i]->getID();
     newElems[i]->useAttributesFrom(elm);
+#ifdef FT_USE_VISUALS
     newElems[i]->useVisualsFrom(elm);
+#endif
     if (!this->addElement(newElems[i]))
       return -1-i;
   }

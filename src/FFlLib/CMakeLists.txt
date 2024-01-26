@@ -20,6 +20,14 @@ if ( USE_PROFILER )
   string ( APPEND CMAKE_CXX_FLAGS " -DFFL_TIMER" )
 endif ( USE_PROFILER )
 
+if ( USE_VERTEXOBJ OR USE_VTFX )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VERTEX" )
+endif ( USE_VERTEXOBJ OR USE_VTFX )
+
+if ( USE_VISUALS )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VISUALS" )
+endif ( USE_VISUALS )
+
 if ( USE_MEMPOOL )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_MEMPOOL" )
 endif ( USE_MEMPOOL )
@@ -40,8 +48,13 @@ set ( COMPONENT_FILE_LIST FFlAttributeBase FFlConnectorItems FFlElementBase
                           FFlFEElementTopSpec FFlFENodeRefs FFlFieldBase
                           FFlGroup FFlLinkHandler FFlLoadBase FFlMemPool
                           FFlNamedPartBase FFlPartBase FFlUtils
-                          FFlVertex FFlVisualBase FFlVisualRefs
 )
+if ( USE_VERTEXOBJ OR USE_VTFX )
+  list ( APPEND COMPONENT_FILE_LIST FFlVertex )
+endif ( USE_VERTEXOBJ OR USE_VTFX )
+if ( USE_VISUALS )
+  list ( APPEND COMPONENT_FILE_LIST FFlVisualBase FFlVisualRefs )
+endif ( USE_VISUALS )
 
 ## Pure header files, i.e., header files without a corresponding source file
 set ( HEADER_FILE_LIST FFlFEResultBase FFlField
@@ -76,7 +89,11 @@ foreach ( FILE ${F90_FILE_LIST} )
 endforeach ( FILE ${F90_FILE_LIST} )
 
 
-set ( DEPENDENCY_LIST FFlFEParts FFlIOAdaptors FFaAlgebra FFaDefinitions )
+set ( DEPENDENCY_LIST FFlFEParts FFaAlgebra FFaDefinitions )
+
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+  list ( INSERT DEPENDENCY_LIST 0 FFlIOAdaptors )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
 
 if ( USE_MEMPOOL )
   list ( APPEND DEPENDENCY_LIST FFaPatterns )
