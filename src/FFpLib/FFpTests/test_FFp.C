@@ -18,6 +18,7 @@
 #include "FFrLib/FFrReadOpInit.H"
 #include "FFaLib/FFaOperation/FFaBasicOperations.H"
 #include "FFaLib/FFaDefinitions/FFaResultDescription.H"
+#include "FFaLib/FFaOS/FFaFilePath.H"
 #include <cstring>
 #include <iostream>
 #include "gtest.h"
@@ -89,9 +90,10 @@ TEST_P(TestFFp, Load)
   ASSERT_FALSE(srcdir.empty());
 
   // Create a results extractor and load the specified file
+  std::string fName = FFaFilePath::appendFileNameToPath(srcdir,GetParam().file);
+  std::cout <<"   * Opening file "<< fName << std::endl;
   FFrExtractor* extr = new FFrExtractor("RDB reader");
-  std::cout <<"   * Opening file "<< srcdir << GetParam().file << std::endl;
-  ASSERT_TRUE(extr->addFile(srcdir+GetParam().file,true));
+  ASSERT_TRUE(extr->addFile(fName,true));
 
   // Define result quantity to plot
   FFaTimeDescription   timeItem;
@@ -137,4 +139,5 @@ TEST_P(TestFFp, Load)
 
 //! Instantiate the test over a list of cases
 INSTANTIATE_TEST_CASE_P(TestFFp, TestFFp,
-                        testing::Values(FFpCase{"th_p_1.frs", "Triad", 14, "TMAT34", "Position matrix", "Position Z", 90, 0.9, 1.13884975 }));
+                        testing::Values(FFpCase{"../../FFrLib/FFrTests/response_0001/timehist_prim_0001/th_p_1.frs",
+                                                "Triad", 14, "TMAT34", "Position matrix", "Position Z", 90, 0.9, 1.13900986 }));
