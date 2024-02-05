@@ -27,10 +27,10 @@ set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 if ( USE_PROFILER )
   string ( APPEND CMAKE_Fortran_FLAGS " -DFT_USE_PROFILER" )
 elseif ( FTENV_WARNINGS AND LINUX AND NOT USE_INTEL_FORTRAN )
-  if ( CMAKE_C_COMPILER_VERSION VERSION_GREATER 6.0 ) # Seems there is a bug in gcc 5.4
+  if ( CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0 ) # Seems there is a bug in gcc 5.4
     # causing the compiler to crash with this option, so add only for newer compilers
     string ( APPEND CMAKE_Fortran_FLAGS " -Wno-unused-dummy-argument" )
-  endif ( CMAKE_C_COMPILER_VERSION VERSION_GREATER 6.0 )
+  endif ( CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0 )
 endif ( USE_PROFILER )
 
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
