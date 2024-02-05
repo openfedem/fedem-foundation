@@ -7,7 +7,7 @@
 # Library setup
 
 set ( LIB_ID FFlLib )
-set ( LIB_ID_LIST FFlFEParts FFlIOAdaptors FFlVisualization )
+set ( LIB_ID_LIST FFlFEParts FFlIOAdaptors )
 if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
   list ( APPEND LIB_ID_LIST FFlTests )
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
@@ -20,9 +20,10 @@ if ( USE_PROFILER )
   string ( APPEND CMAKE_CXX_FLAGS " -DFFL_TIMER" )
 endif ( USE_PROFILER )
 
-if ( USE_VERTEXOBJ OR USE_VTFX )
+if ( USE_VERTEXOBJ )
+  list ( INSERT LIB_ID_LIST 2 FFlVisualization )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VERTEX" )
-endif ( USE_VERTEXOBJ OR USE_VTFX )
+endif ( USE_VERTEXOBJ )
 
 if ( USE_VISUALS )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VISUALS" )
@@ -49,9 +50,9 @@ set ( COMPONENT_FILE_LIST FFlAttributeBase FFlConnectorItems FFlElementBase
                           FFlGroup FFlLinkHandler FFlLoadBase FFlMemPool
                           FFlNamedPartBase FFlPartBase FFlUtils
 )
-if ( USE_VERTEXOBJ OR USE_VTFX )
+if ( USE_VERTEXOBJ )
   list ( APPEND COMPONENT_FILE_LIST FFlVertex )
-endif ( USE_VERTEXOBJ OR USE_VTFX )
+endif ( USE_VERTEXOBJ )
 if ( USE_VISUALS )
   list ( APPEND COMPONENT_FILE_LIST FFlVisualBase FFlVisualRefs )
 endif ( USE_VISUALS )
