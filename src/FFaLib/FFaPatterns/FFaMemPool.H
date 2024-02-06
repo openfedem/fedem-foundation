@@ -8,6 +8,8 @@
 #ifndef FFA_MEM_POOL_H
 #define FFA_MEM_POOL_H
 
+#include <stddef.h> // Needed for size_t definition on some platforms
+
 #include <vector>
 #include <list>
 #include <map>
