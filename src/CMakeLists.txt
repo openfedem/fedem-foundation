@@ -6,9 +6,12 @@
 
 # Build setup
 
-set ( LIB_ID_LIST Admin FFaLib FFlLib FFrLib FFlrLib FFpLib
+set ( LIB_ID_LIST Admin FFaLib FFlLib FFrLib FFpLib
                   FFaMathExpr FFaFunctionLib
                   FiDeviceFunctions FiUserElmPlugin )
+if ( USE_VERTEXOBJ )
+  list ( INSERT LIB_ID_LIST 3 FFlrLib )
+endif ( USE_VERTEXOBJ )
 
 set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID} )
 
