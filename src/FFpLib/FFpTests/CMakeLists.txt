@@ -13,5 +13,5 @@ message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 if ( GTest_FOUND )
   add_executable ( test_FFp test_FFp.C )
-  add_cpp_test ( test_FFp FFpCurveData FFrLib FFaOperation )
+  add_cpp_test ( test_FFp FFpCurveData FFrLib )
 endif ( GTest_FOUND )

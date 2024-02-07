@@ -34,7 +34,8 @@ foreach ( FILE ${HEADER_FILE_LIST} )
 endforeach ( FILE ${HEADER_FILE_LIST} )
 
 
-set ( DEPENDENCY_LIST FFaMathExpr FFpFatigue FiDeviceFunctions FFaDefinitions )
+set ( DEPENDENCY_LIST FFaMathExpr FFpFatigue FiDeviceFunctions
+                      FFaDefinitions FFaOperation )
 
 add_library ( ${LIB_ID} ${CPP_SOURCE_FILES} ${CPP_HEADER_FILES} )
 target_link_libraries ( ${LIB_ID} ${DEPENDENCY_LIST} )
