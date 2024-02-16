@@ -170,8 +170,8 @@ void FFlVisEdge::deleteRenderData()
 
 bool FFlVisEdge::FFlVisEdgeLess::operator()(const FFlVisEdge* first, const FFlVisEdge* sec) const
 {
-  register int firstID = first->getFirstVertex()->getRunningID();
-  register int secID   = sec->getFirstVertex()->getRunningID();
+  int firstID = first->getFirstVertex()->getRunningID();
+  int secID   = sec->getFirstVertex()->getRunningID();
 
   if (firstID == secID)
     return (first->getSecondVertex()->getRunningID() < sec->getSecondVertex()->getRunningID());

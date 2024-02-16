@@ -79,10 +79,10 @@ FaVec3& FaVec3::operator/= (double d)
 
 int FaVec3::isParallell (const FaVec3& otherVec, double tolerance) const
 {
-  register double len = sqrt(this->sqrLength()*otherVec.sqrLength());
+  double len = sqrt(this->sqrLength() * otherVec.sqrLength());
   if (fabs(len) < EPS_ZERO) return 0;
 
-  register double res = (*this*otherVec)/len;
+  double res = (*this * otherVec) / len;
   if (fabs(res+1.0) <= tolerance) return -1;
   if (fabs(res-1.0) <= tolerance) return 1;
 
@@ -96,7 +96,7 @@ int FaVec3::isParallell (const FaVec3& otherVec, double tolerance) const
 
 double FaVec3::angle (const FaVec3& otherVec) const
 {
-  register double len = sqrt(this->sqrLength()*otherVec.sqrLength());
+  double len = sqrt(this->sqrLength() * otherVec.sqrLength());
   if (fabs(len) < EPS_ZERO)
   {
 #ifdef FFA_DEBUG
@@ -106,7 +106,7 @@ double FaVec3::angle (const FaVec3& otherVec) const
     return 0.0;
   }
 
-  register double res = (*this*otherVec)/len;
+  double res = (*this * otherVec) / len;
   if (res >  1.0) return 0.0;
   if (res < -1.0) return acos(-1.0);
 
@@ -120,13 +120,13 @@ double FaVec3::angle (const FaVec3& otherVec) const
 
 bool FaVec3::equals (const FaVec3& otherVec, double tolerance) const
 {
-  register double xd = n[VX] - otherVec.n[VX];
+  double xd = n[VX] - otherVec.n[VX];
   if (fabs(xd) > tolerance) return false;
 
-  register double yd = n[VY] - otherVec.n[VY];
+  double yd = n[VY] - otherVec.n[VY];
   if (fabs(yd) > tolerance) return false;
 
-  register double zd = n[VZ] - otherVec.n[VZ];
+   double zd = n[VZ] - otherVec.n[VZ];
   if (fabs(zd) > tolerance) return false;
 
   return xd*xd+yd*yd+zd*zd > tolerance*tolerance ? false : true;
@@ -152,7 +152,7 @@ bool FaVec3::isZero (double tolerance) const
 
 FaVec3& FaVec3::truncate (double tolerance)
 {
-  register double len = this->length();
+  double len = this->length();
   if (len > EPS_ZERO && tolerance > 0.0)
   {
     if (len < 1.0) tolerance *= len;
@@ -172,7 +172,7 @@ FaVec3& FaVec3::truncate (double tolerance)
 
 FaVec3& FaVec3::normalize (double truncTol)
 {
-  register double len = this->length();
+  double len = this->length();
   if (len < EPS_ZERO)
   {
     // Default direction if zero length
@@ -226,8 +226,8 @@ FaVec3& FaVec3::setByCylCoords (const FaVec3& cylCoords, FFaVec3IdxEnum axis)
 
   // Cyclic permutation:  indX -> indY -> axis
   //                         \____________/
-  register short int indX = (axis+1) % 3;
-  register short int indY = (axis+2) % 3;
+  short int indX = (axis+1) % 3;
+  short int indY = (axis+2) % 3;
 
   n[indX] = cylCoords[VX] * cos(cylCoords[VY]);
   n[indY] = cylCoords[VX] * sin(cylCoords[VY]);
@@ -248,11 +248,11 @@ FaVec3 FaVec3::getAsCylCoords (FFaVec3IdxEnum axis) const
 
   // Cyclic permutation:  indX -> indY -> axis
   //                         \____________/
-  register short int indX = (axis+1) % 3;
-  register short int indY = (axis+2) % 3;
+  short int indX = (axis+1) % 3;
+  short int indY = (axis+2) % 3;
 
-  register double r     = hypot(n[indX],n[indY]);
-  register double theta = atan3(n[indY],n[indX]);
+  double r     = hypot(n[indX],n[indY]);
+  double theta = atan3(n[indY],n[indX]);
 
   return FaVec3(r,theta,n[axis]);
 }
@@ -269,8 +269,8 @@ FaVec3& FaVec3::setBySphCoords (const FaVec3& sphCoords, FFaVec3IdxEnum axis)
 
   // Cyclic permutation:  indX -> indY -> axis
   //                         \____________/
-  register short int indX = (axis+1) % 3;
-  register short int indY = (axis+2) % 3;
+  short int indX = (axis+1) % 3;
+  short int indY = (axis+2) % 3;
 
   n[indX] = sphCoords[VX] * cos(sphCoords[VY]) * sin(sphCoords[VZ]);
   n[indY] = sphCoords[VX] * sin(sphCoords[VY]) * sin(sphCoords[VZ]);
@@ -287,18 +287,18 @@ FaVec3& FaVec3::setBySphCoords (const FaVec3& sphCoords, FFaVec3IdxEnum axis)
 
 FaVec3 FaVec3::getAsSphCoords (FFaVec3IdxEnum axis) const
 {
-  register double r = this->length();
+  double r = this->length();
   if (r < EPS_ZERO) return FaVec3();
 
   if (axis < 0 || axis > 2) axis = VZ;
 
   // Cyclic permutation:  indX -> indY -> axis
   //                         \____________/
-  register short int indX = (axis+1) % 3;
-  register short int indY = (axis+2) % 3;
+  short int indX = (axis+1) % 3;
+  short int indY = (axis+2) % 3;
 
-  register double theta = atan3(n[indY],n[indX]);
-  register double phi   = acos(n[axis]/r);
+  double theta = atan3(n[indY],n[indX]);
+  double phi   = acos(n[axis]/r);
 
   return FaVec3(r,theta,phi);
 }

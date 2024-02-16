@@ -150,7 +150,7 @@ int FFrVariableReference::recursiveReadPosData(const double* vals, int nvals, in
 										 containers.front().second, variableDescr->dataSize,
 										 variableDescr->getRepeats());
   default:{
-    register int closestContainer = this->getNearestContainer();
+    int closestContainer = this->getNearestContainer();
     if (closestContainer < 0) return arrayPos;
     return arrayPos + containers[closestContainer].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
 										     containers[closestContainer].second,
@@ -170,7 +170,7 @@ int FFrVariableReference::recursiveReadPosData(const float* vals, int nvals, int
 										 containers.front().second, variableDescr->dataSize,
 										 variableDescr->getRepeats());
   default:{
-    register int closestContainer = this->getNearestContainer();
+    int closestContainer = this->getNearestContainer();
     if (closestContainer < 0) return arrayPos;
     return arrayPos + containers[closestContainer].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
 										     containers[closestContainer].second,
@@ -190,7 +190,7 @@ int FFrVariableReference::recursiveReadPosData(const int* vals, int nvals, int a
 										 containers.front().second, variableDescr->dataSize,
 										 variableDescr->getRepeats());
   default:{
-    register int closestContainer = this->getNearestContainer();
+    int closestContainer = this->getNearestContainer();
     if (closestContainer < 0) return arrayPos;
     return arrayPos + containers[closestContainer].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
 										     containers[closestContainer].second,
@@ -244,10 +244,10 @@ double FFrVariableReference::getDistanceFromResultPoint(const bool usePositioned
     default:
     {
       // Not trivially found. Check the closest container
-      register double closestDist = containers.front().first->getDistanceFromPosKey(usePositionedKey);
+      double closestDist = containers.front().first->getDistanceFromPosKey(usePositionedKey);
       for (size_t i = 1; i < containers.size(); i++)
       {
-	register double dist = containers[i].first->getDistanceFromPosKey(usePositionedKey);
+	double dist = containers[i].first->getDistanceFromPosKey(usePositionedKey);
 	if (fabs(dist) < fabs(closestDist)) closestDist = dist;
       }
       return closestDist;
@@ -258,7 +258,7 @@ double FFrVariableReference::getDistanceFromResultPoint(const bool usePositioned
 
 bool FFrVariableReference::hasDataForCurrentKey(const bool usePositionedKey) const
 {
-  register double dist = this->getDistanceFromResultPoint(usePositionedKey);
+  double dist = this->getDistanceFromResultPoint(usePositionedKey);
   return (dist < FLT_EPSILON && dist > -FLT_EPSILON);
 }
 

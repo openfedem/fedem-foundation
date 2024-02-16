@@ -248,8 +248,8 @@ bool FFlVisFace::isVisible() const
 bool FFlVisFace::FFlVisFaceLess::operator()(const FFlVisFace* a,
                                             const FFlVisFace* b) const
 {
-  register size_t sizeA = a->myEdges.size();
-  register size_t sizeB = b->myEdges.size();
+  size_t sizeA = a->myEdges.size();
+  size_t sizeB = b->myEdges.size();
   if (sizeA < sizeB)
     return true;
   else if (sizeA > sizeB)
