@@ -547,7 +547,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
       for (i = k+j; s[i] == ' '; i++);
       if(s[i]=='('){
 	j = FFaMathString::SearchCorOpenbracket(s, i);
-	if(j != -1) {
+	if(j >= 0) {
 	  s = FFaMathString::InsStr(s, i, ';');
 	  k = j + 1;
 	}
@@ -563,7 +563,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
 #endif
 
   i = FFaMathString::SearchOperator(s, Juxt); // finner eventuelle ','
-  if (i != -1) {               // hvis ',' finnes deler opp strengen i to
+  if (i >= 0) {                // hvis ',' finnes deler opp strengen i to
     char* s1 = FFaMathString::CopyStr(s, 0, i - 1);
     char* s2 = FFaMathString::CopyStr(s, i + 1, strlen(s) - 1);
     op = Juxt;
@@ -579,7 +579,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
   }
 
   i = FFaMathString::SearchOperator(s, Add);  // finner eventuelle '+'
-  if (i != -1) {               // hvis '+' finnes deler opp strengen i to
+  if (i >= 0) {                // hvis '+' finnes deler opp strengen i to
     char* s1 = FFaMathString::CopyStr(s, 0, i - 1);
     char* s2 = FFaMathString::CopyStr(s, i + 1, strlen(s) - 1);
     op = Add;
@@ -595,7 +595,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
   }
 
   i = FFaMathString::SearchOperator(s, Sub);  // finner eventuelle '-'
-  if (i != -1) {               // hvis '-' finnes deler opp strengen i to
+  if (i >= 0) {                // hvis '-' finnes deler opp strengen i to
     char* s1 = FFaMathString::CopyStr(s, 0, i - 1);
     char* s2 = FFaMathString::CopyStr(s, i + 1, strlen(s) - 1);
     op = Sub;
@@ -635,7 +635,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
       if(s[k] == ';') {
 	for (j = k; s[j] != '('; j++);
 	j = FFaMathString::SearchCorOpenbracket(s, j);
-	if(j != -1) {
+	if(j >= 0) {
 	  s = FFaMathString::InsStr(s, j, ')');
 	  s = FFaMathString::InsStr(s, i, '(');
 	  i = j + 2;
@@ -647,13 +647,13 @@ FFaMathExpr::FFaMathExpr(const char* sp,
 	    break;
 	  }
 
-	if(j == -1)
+	if(j < 0)
 	  break;
 
 	for(j++; j < (int)strlen(s); j++) {
 	  if(s[j] == '(') {
 	    j = FFaMathString::SearchCorOpenbracket(s, j);
-	    if(j == -1) {
+	    if(j < 0) {
 	      flag = 0;
 	      break;
 	    }
@@ -722,7 +722,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
   }
  
   // hvis '*' finnes deler opp strengen i to
-  else if ((i = FFaMathString::SearchOperator(s,Mult)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,Mult)) >= 0) {
     char* s1 = FFaMathString::CopyStr(s, 0, i-1);
     char* s2 = FFaMathString::CopyStr(s, i+1, nchar);
 
@@ -735,7 +735,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
   }
 
   // hvis '/' finnes deler opp strengen i to
-  else if ((i = FFaMathString::SearchOperator(s,Div)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,Div)) >= 0) {
     char* s1 = FFaMathString::CopyStr(s, 0, i-1);
     char* s2 = FFaMathString::CopyStr(s, i+1, nchar);
 
@@ -748,7 +748,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
   }
 
   // hvis '%' finnes deler opp strengen i to
-  else if ((i = FFaMathString::SearchOperator(s,Mod)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,Mod)) >= 0) {
     char* s1 = FFaMathString::CopyStr(s, 0, i-1);
     char* s2 = FFaMathString::CopyStr(s, i+1, nchar);
 
@@ -761,7 +761,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
   }
 
   // hvis '^' finnes deler opp strengen i to
-  else if ((i = FFaMathString::SearchOperator(s,Pow)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,Pow)) >= 0) {
     char* s1 = FFaMathString::CopyStr(s, 0, i-1);
     char* s2 = FFaMathString::CopyStr(s, i+1, nchar);
 
@@ -774,7 +774,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
   }
 
   // hvis '#' finnes deler opp strengen i to
-  else if ((i = FFaMathString::SearchOperator(s,NthRoot)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,NthRoot)) >= 0) {
     char* s1 = FFaMathString::CopyStr(s, 0, i-1);
     char* s2 = FFaMathString::CopyStr(s, i+1, nchar);
 
@@ -792,7 +792,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
   }
 
   // hvis 'E' finnes deler opp strengen i to
-  else if ((i = FFaMathString::SearchOperator(s,E10)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,E10)) >= 0) {
     char* s1 = FFaMathString::CopyStr(s, 0, i-1);
     char* s2 = FFaMathString::CopyStr(s, i+1, nchar);
 
@@ -804,7 +804,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
     delete[] s2;
   }
 
-  else if ((i = FFaMathString::SearchOperator(s,LogicalLessOrEqual)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,LogicalLessOrEqual)) >= 0) {
     char *s1, *s2;
     if(s[i+1] == '=') {
       s1 = FFaMathString::CopyStr(s, 0, i-1);
@@ -823,7 +823,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
     delete[] s2;
   }
 
-  else if ((i = FFaMathString::SearchOperator(s,LogicalGreaterOrEqual)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,LogicalGreaterOrEqual)) >= 0) {
     char *s1, *s2;
     if(s[i+1] == '=') {
       s1 = FFaMathString::CopyStr(s, 0, i-1);
@@ -842,7 +842,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
     delete[] s2;
   }
 
-  else if ((i = FFaMathString::SearchOperator(s,LogicalAnd)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,LogicalAnd)) >= 0) {
     char* s1 = FFaMathString::CopyStr(s, 0, i-2);
     char* s2 = FFaMathString::CopyStr(s, i+1, nchar);
 
@@ -854,7 +854,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
     delete[] s2;
   }
 
-  else if ((i = FFaMathString::SearchOperator(s,LogicalOr)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,LogicalOr)) >= 0) {
     char* s1 = FFaMathString::CopyStr(s, 0, i-2);
     char* s2 = FFaMathString::CopyStr(s, i+1, nchar);
 
@@ -866,7 +866,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
     delete[] s2;
   }
 
-  else if ((i = FFaMathString::SearchOperator(s,LogicalEqual)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,LogicalEqual)) >= 0) {
     char* s1 = FFaMathString::CopyStr(s, 0, i-2);
     char* s2 = FFaMathString::CopyStr(s, i+1, nchar);
 
@@ -878,7 +878,7 @@ FFaMathExpr::FFaMathExpr(const char* sp,
     delete[] s2;
   }
 
-  else if ((i = FFaMathString::SearchOperator(s,LogicalNotEqual)) != -1) {
+  else if ((i = FFaMathString::SearchOperator(s,LogicalNotEqual)) >= 0) {
     char* s1 = FFaMathString::CopyStr(s, 0, i-2);
     char* s2 = FFaMathString::CopyStr(s, i+1, nchar);
 
