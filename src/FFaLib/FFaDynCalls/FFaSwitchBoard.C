@@ -266,6 +266,6 @@ FFaSlotBase::~FFaSlotBase()
 {
   IAmDeletingMe = true;
   for (const SwitchBoardConnectorMap::value_type& swb : mySwitchBoardLookups)
-    for (const std::pair<int,int>& ij : swb.second)
+    for (const std::pair<const int,int>& ij : swb.second)
       FFaSwitchBoard::removeSlotReference(swb.first,ij.first,this);
 }

@@ -1732,7 +1732,7 @@ INTEGER_FUNCTION(ffl_getnostrcmat,FFL_GETNOSTRCMAT) ()
 #ifdef FFL_DEBUG
   std::cout <<"ffl_getnostrcmat: Number of strain coat materials = "<< nMat
 	    << std::endl;
-  for (const std::pair<int,int>& imat : usedMat)
+  for (const std::pair<const int,int>& imat : usedMat)
     std::cout <<"                  Id = "<< imat.first
               <<" : # = "<< imat.second << std::endl;
 #endif
