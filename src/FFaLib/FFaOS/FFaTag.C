@@ -224,22 +224,25 @@ static int FFaTag_read (FFa_stream& fs, std::string& tag,
   int endianStat = FFaTag_checkEndian(myEndian);
 
   // Read checksum field
-  int readStat = 1;
-  unsigned int checksum[2];
-  for (int j = 0; j < 2 && readStat > 0; j++)
-    if (endianStat == FFaTag::endian() || j != 1)
-      // same endian on file as on machine
-      readStat = fs.read(&checksum[j],sizeof(unsigned int),1);
-    else
-    {
-      // swap bytes
-      register char* p = (char*)(&checksum[j]);
-      char b[4];
-      readStat = fs.read(b,sizeof(unsigned int),1);
-      *p++ = b[3]; *p++ = b[2]; *p++ = b[1]; *p = b[0];
-    }
+  int readStat = fs.read(&cs,sizeof(unsigned int),1);
+  if (readStat < 1)
+    return FFaTag_error("Error reading checksum field",-4);
 
-  cs = checksum[1];
+  if (endianStat == FFaTag::endian())
+    // same endian on file as on machine
+    readStat = fs.read(&cs,sizeof(unsigned int),1);
+  else
+  {
+    // swap bytes
+    char b[4];
+    readStat = fs.read(b,sizeof(unsigned int),1);
+    char* p = (char*)(&cs);
+    p[0] = b[3];
+    p[1] = b[2];
+    p[2] = b[1];
+    p[3] = b[0];
+  }
+
   if (readStat > 0)
     return endianStat;
   else

@@ -27,10 +27,14 @@ int eval_expression (const char* mathExpr, const std::vector<double>& args, doub
     f = 0.0;
 
   FFaMathExprFactory::removeInstance();
-  if (args.empty() || ierr) return ierr;
-
-  std::cout <<"f("<< args.front();
-  for (size_t j = 1; j < args.size(); j++) std::cout <<","<< args[j];
-  std::cout <<") = "<< f << std::endl;
+  if (ierr)
+    std::cerr <<" *** Failed to evaluate \""<< mathExpr
+              <<"\" ierr = "<< ierr << std::endl;
+  else if (!args.empty())
+  {
+    std::cout <<"f("<< args.front();
+    for (size_t j = 1; j < args.size(); j++) std::cout <<","<< args[j];
+    std::cout <<") = "<< f << std::endl;
+  }
   return ierr;
 }
