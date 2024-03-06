@@ -18,8 +18,10 @@
 #include "FFlLib/FFlGroup.H"
 #include "FFlLib/FFlLoadBase.H"
 #include "FFlLib/FFlAttributeBase.H"
+#ifdef FT_USE_VISUALS
 #include "FFlLib/FFlFEParts/FFlVDetail.H"
 #include "FFlLib/FFlFEParts/FFlVAppearance.H"
+#endif
 #include "FFlLib/FFlFEParts/FFlPCOORDSYS.H"
 #include "FFlLib/FFlFEParts/FFlPWAVGM.H"
 #include "FFlLib/FFlFEParts/FFlWAVGM.H"
@@ -1046,7 +1048,7 @@ int FFlLinkHandler::getElementCount(int types, bool checkCF) const
         nfem++;
       else if (isStrainCoat(elm))
         nstrc++;
-      else
+      else if (types == FFL_FEM || types == elm->getCathegory())
         nfem++;
     }
 

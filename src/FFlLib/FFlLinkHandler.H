@@ -100,7 +100,9 @@ public:
 
   // Getting count of entities
 
-  enum { FFL_ALL = 0, FFL_FEM = 1, FFL_STRC = 2 };
+  enum { FFL_ALL = FFlTypeInfoSpec::OTHER_ELM+1,
+         FFL_FEM = FFlTypeInfoSpec::OTHER_ELM+2,
+         FFL_STRC = FFlTypeInfoSpec::STRC_ELM };
 
   const ElmTypeCount& getElmTypeCount() const;
   int getElementCount(const std::string& type) const;
@@ -118,8 +120,10 @@ public:
   FFlNode*          getFENode(int inod) const;
   FFlGroup*         getGroup(int ID) const;
   FFlAttributeBase* getAttribute(const std::string& type, int ID) const;
+#ifdef FT_USE_VISUALS
   FFlVDetail*       getDetail(int ID) const;
   FFlVAppearance*   getAppearance(int ID) const;
+#endif
 
   bool getRefNodes(std::vector<FFlNode*>& refNodes) const;
   bool getLoads(int ID, LoadsVec& loads) const;
