@@ -609,7 +609,7 @@ void FFrExtractor::printHierarchy() const
       roI->evaluate(val);
       std::cout <<"\t" << val <<" (int)";
     }
-    rop->unref();
+    if (rop) rop->unref();
 
     ++varrefCounter;
   };
