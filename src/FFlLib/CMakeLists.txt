@@ -58,7 +58,7 @@ if ( USE_VISUALS )
 endif ( USE_VISUALS )
 
 ## Pure header files, i.e., header files without a corresponding source file
-set ( HEADER_FILE_LIST FFlFEResultBase FFlField
+set ( HEADER_FILE_LIST FFlFEResultBase FFlField FFlInit
                        FFlLinkCSMask FFlReference FFlTypeInfoSpec
 )
 

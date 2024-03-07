@@ -12,10 +12,11 @@
 
 #include "gtest/gtest.h"
 
+#include "FFlLib/FFlInit.H"
 #include "FFlLib/FFlLinkHandler.H"
+#include "FFlLib/FFlElementBase.H"
+#include "FFlLib/FFlGroup.H"
 #include "FFlLib/FFlIOAdaptors/FFlReaders.H"
-#include "FFlLib/FFlIOAdaptors/FFlAllIOAdaptors.H"
-#include "FFlLib/FFlFEParts/FFlAllFEParts.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 
