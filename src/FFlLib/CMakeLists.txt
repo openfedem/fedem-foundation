@@ -16,6 +16,10 @@ set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 
+if ( USE_VTFAPI )
+  find_package ( VTFAPI )
+endif ( USE_VTFAPI )
+
 if ( USE_PROFILER )
   string ( APPEND CMAKE_CXX_FLAGS " -DFFL_TIMER" )
 endif ( USE_PROFILER )
@@ -104,6 +108,9 @@ if ( USE_PROFILER )
   list ( APPEND DEPENDENCY_LIST FFaProfiler )
 endif ( USE_PROFILER )
 
+if ( VTFAPI_FOUND )
+  list ( APPEND DEPENDENCY_LIST ${VTF_LIBRARY} )
+endif ( VTFAPI_FOUND )
 
 add_library ( ${LIB_ID} ${CPP_SOURCE_FILES} ${CPP_HEADER_FILES} )
 target_link_libraries ( ${LIB_ID} ${DEPENDENCY_LIST} )

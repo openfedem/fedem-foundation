@@ -94,7 +94,7 @@ bool FFlVTFWriter::writeNodes(int, bool)
 
   int inod = 0;
   NodesCIter nit;
-  for (nit = myLink->nodesBegin(); nit != myLink->nodesEnd() && ok; nit++)
+  for (nit = myLink->nodesBegin(); nit != myLink->nodesEnd() && ok; ++nit)
     if ((*nit)->hasDOFs() &&
         (myNodes.empty() || myNodes.find((*nit)->getID()) != myNodes.end()))
     {
@@ -159,10 +159,9 @@ bool FFlVTFWriter::writeElements(
 
   size_t numEls = 0;
   std::map<std::string,ElementsVec> myElements;
-  std::map<std::string,int>::const_iterator et;
-  for (et = elmTypes.begin(); et != elmTypes.end(); et++)
-    if (numEls = myLink->getElementCount(et->first))
-      myElements[et->first].reserve(numEls);
+  for (const std::pair<const std::string,int>& et : elmTypes)
+    if ((numEls = myLink->getElementCount(et.first)))
+      myElements[et.first].reserve(numEls);
 
   // WAVGM and RGD elements are the same on the VTF
   numEls = myLink->getElementCount("WAVGM");
@@ -172,7 +171,7 @@ bool FFlVTFWriter::writeElements(
   size_t iel = 0;
   ElementsCIter eit;
   std::map<FFlElementBase*,int> elmIndex;
-  for (eit = myLink->fElementsBegin(); eit != myLink->fElementsEnd(); eit++)
+  for (eit = myLink->fElementsBegin(); eit != myLink->fElementsEnd(); ++eit)
   {
     elmIndex[*eit] = ++iel;
     std::string curTyp = (*eit)->getTypeName();
@@ -192,7 +191,7 @@ bool FFlVTFWriter::writeElements(
   ok = true;
   iel = 0;
   std::map<std::string,ElementsVec>::const_iterator etit;
-  for (etit = myElements.begin(); etit != myElements.end() && ok; etit++)
+  for (etit = myElements.begin(); etit != myElements.end() && ok; ++etit)
     if (etit->first != "RGD")
     {
       numEls = etit->second.size();
@@ -240,7 +239,7 @@ bool FFlVTFWriter::writeElements(
       int* mnpc = mmnpc;
       for (eit = etit->second.begin(); eit != etit->second.end() && ok; ++eit)
       {
-	for (i = 0, n = (*eit)->nodesBegin(); n != (*eit)->nodesEnd(); i++, n++)
+	for (i = 0, n = (*eit)->nodesBegin(); n != (*eit)->nodesEnd(); i++, ++n)
 	  switch (ielTyp)
 	    {
 	    case VTFA_TRIANGLES_6:
@@ -309,7 +308,7 @@ bool FFlVTFWriter::writeElements(
     // be assigned any element results.
     int ielTyp = VTFA_BEAMS;
     int mnpc[2];
-    for (eit = etit->second.begin(); eit != etit->second.end() && ok; eit++)
+    for (eit = etit->second.begin(); eit != etit->second.end() && ok; ++eit)
     {
       NodeCIter n = (*eit)->nodesBegin(); // the reference node
       if (!(*n)->hasDOFs()) continue; // ommit this element if node is DOF-less
