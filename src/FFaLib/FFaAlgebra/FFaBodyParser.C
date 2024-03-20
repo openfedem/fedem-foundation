@@ -5,9 +5,10 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <limits>
+#include <functional>
 #include <fstream>
 #include <sstream>
+#include <limits>
 #include <cctype>
 
 #include "FFaLib/FFaAlgebra/FFaBody.H"
@@ -17,7 +18,7 @@ std::string FFaBody::prefix;
 
 
 /*!
-  Static helper functions for CAD file parsing.
+  Static helper for reading next keyword from a CAD file.
 */
 
 static bool getIdentifier(std::istream& in, std::string& identifier,
@@ -57,6 +58,11 @@ static bool getIdentifier(std::istream& in, std::string& identifier,
   return true;
 }
 
+
+/*!
+  Static helper for reading next keyword and label from a CAD file.
+*/
+
 static bool getIdentifier(std::istream& in, std::string& identifier,
                           std::string& label, char& type)
 {
@@ -94,10 +100,19 @@ static bool getIdentifier(std::istream& in, std::string& identifier,
 }
 
 
+/*!
+  Static helper moving file pointer to next \a beginChar.
+*/
+
 static void skipToData(std::istream& in, char beginChar = '{')
 {
   in.ignore(std::numeric_limits<int>::max(), beginChar);
 }
+
+
+/*!
+  Static helper moving file pointer to next \a endChar.
+*/
 
 static void skipToDataEnd(std::istream& in, char endChar = '}',
                           bool skipAllData = false)
@@ -120,7 +135,7 @@ static void skipToDataEnd(std::istream& in, char endChar = '}',
   or on the external VRML or STL formats.
 */
 
-FFaBody* FFaBody::readFromCAD(std::istream& in)
+FFaBody* FFaBody::readFromCAD(std::istream& in, double duplTol)
 {
   std::string firstLine;
   std::getline(in,firstLine);
@@ -131,7 +146,7 @@ FFaBody* FFaBody::readFromCAD(std::istream& in)
   else if (firstLine == "#VRML V2.0 utf8")
     return readWRL(in,2);
   else if (firstLine.substr(0,5) == "solid")
-    return readSTL(in);
+    return readSTL(in,duplTol);
 
   std::cerr <<"FFaBody::readFromCAD: Not a valid geometry file, header = "
             << firstLine << std::endl;
@@ -140,31 +155,35 @@ FFaBody* FFaBody::readFromCAD(std::istream& in)
 }
 
 
-static std::istream& readLine(std::istream& is, std::string& cline)
+FFaBody* FFaBody::readSTL(std::istream& in, double duplTol)
 {
-  int c = ' ';
-  while (is && isspace(c)) c = is.get();
-  if (is)
+  // Lamda function reading next line while ignoring leading whitespaces
+  std::function<bool(std::string&)> readLine = [&in](std::string& cline) -> bool
   {
-    is.putback(c);
-    std::getline(is,cline);
-  }
-  return is;
-}
+    int c = ' ';
+    while (in.good() && isspace(c))
+      c = in.get();
 
+    cline.clear();
+    if (in.good())
+    {
+      in.putback(c);
+      std::getline(in,cline);
+    }
 
-FFaBody* FFaBody::readSTL(std::istream& in)
-{
+    return !in.fail();
+  };
+
   std::cout <<"\nFFaBody: Parsing STL data."<< std::endl;
 
   FFaBody* newBody = NULL;
   std::string cline("solid");
-  if (!readLine(in,cline))
+  if (!readLine(cline))
     return newBody;
 
   while (cline.substr(0,5) == "facet")
   {
-    if (!readLine(in,cline))
+    if (!readLine(cline))
       return newBody;
     else while (cline.substr(0,10) == "outer loop")
     {
@@ -173,11 +192,11 @@ FFaBody* FFaBody::readSTL(std::istream& in)
       FaVec3 XYZ;
       std::vector<size_t> facet;
       facet.reserve(3);
-      while (readLine(in,cline) && cline.substr(0,6) == "vertex")
+      while (readLine(cline) && cline.substr(0,6) == "vertex")
       {
         std::stringstream strline(cline.substr(6));
         strline >> XYZ;
-        facet.push_back(newBody->addVertex(XYZ));
+        facet.push_back(newBody->addVertex(XYZ,duplTol));
       }
       if (cline.substr(0,7) == "endloop")
       {
@@ -195,7 +214,7 @@ FFaBody* FFaBody::readSTL(std::istream& in)
                   <<"\n     Bailing... "<< std::endl;
         return newBody;
       }
-      if (!readLine(in,cline))
+      if (!readLine(cline))
         return newBody;
     }
     if (cline.substr(0,8) != "endfacet")
@@ -204,7 +223,7 @@ FFaBody* FFaBody::readSTL(std::istream& in)
                 <<"\n     Bailing... "<< std::endl;
       return newBody;
     }
-    if (!readLine(in,cline))
+    if (!readLine(cline))
       return newBody;
   }
 

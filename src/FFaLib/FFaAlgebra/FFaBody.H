@@ -39,15 +39,15 @@ public:
 		      const FaVec3& normal, const FaMat34& cs);
 
   size_t addFace(int v1, int v2, int v3, int v4 = -1);
-  size_t addVertex(const FaVec3& pos);
+  size_t addVertex(const FaVec3& pos, double tol = -1.0);
   const FaVec3& getVertex(size_t idx) const { return myVertices[idx]; }
   int getFaceVtx(size_t idx, int i) const;
 
-  static FFaBody* readFromCAD(std::istream& in);
+  static FFaBody* readFromCAD(std::istream& in, double duplTol = -1.0);
   bool writeCAD(const std::string& fileName, const FaMat34& partCS) const;
 
 protected:
-  static FFaBody* readSTL(std::istream& in);
+  static FFaBody* readSTL(std::istream& in, double duplTol);
   static FFaBody* readCAD(std::istream& in);
   static FFaBody* readWRL(std::istream& in, int version);
 

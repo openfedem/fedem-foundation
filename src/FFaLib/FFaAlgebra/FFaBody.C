@@ -5,6 +5,7 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <algorithm>
 #include <set>
 #include <map>
 #include <cfloat>
@@ -98,7 +99,7 @@ int FaFace::intersect(const FaVec3& normal, double z0, double zeroTol)
 
   // Check if each vertex is either above, below or on the plane
   int i, sum = 0;
-  char status[4];
+  char status[4] = { 0, 0, 0, 0 };
   double dist[4];
   for (i = 0; i < nVert; i++)
   {
@@ -107,8 +108,6 @@ int FaFace::intersect(const FaVec3& normal, double z0, double zeroTol)
       status[i] = 1;
     else if (dist[i] < -zeroTol)
       status[i] = -1;
-    else
-      status[i] = 0;
     sum += status[i];
   }
 #if FFA_DEBUG > 1
@@ -433,8 +432,24 @@ size_t FFaBody::addFace(int i1, int i2, int i3, int i4)
   Adds a vertex to the body definition.
 */
 
-size_t FFaBody::addVertex(const FaVec3& pos)
+size_t FFaBody::addVertex(const FaVec3& pos, double tol)
 {
+  if (tol >= 0.0)
+  {
+    // Eliminate duplicated vertices
+    std::vector<FaVec3>::const_iterator it;
+    it = std::find_if(myVertices.begin(),myVertices.end(),
+                      [&pos,tol](const FaVec3& x){ return pos.equals(x,tol); });
+    if (it != myVertices.end())
+    {
+      size_t idx = it - myVertices.begin();
+#if FFA_DEBUG > 2
+      std::cout <<"Existing vertex: "<< idx <<" "<< pos << std::endl;
+#endif
+      return idx;
+    }
+  }
+
 #if FFA_DEBUG > 2
   std::cout <<"New vertex: "<< myVertices.size() <<" "<< pos << std::endl;
 #endif
