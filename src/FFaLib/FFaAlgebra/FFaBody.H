@@ -14,10 +14,9 @@
 #include "FFaLib/FFaAlgebra/FFaTensor3.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 
+using FaEdge = std::pair<size_t,size_t>; //!< Vertex indices of an edge
 class FaFace;
 class FaMat34;
-
-typedef std::pair<size_t,size_t> FaEdge;
 
 
 class FFaBody
@@ -92,7 +91,7 @@ public:
   FaFace(FFaBody* body, size_t i1, size_t i2, size_t i3, int i4 = -1);
 
   int intersect(const FaVec3& normal, double z0, double zeroTol = 1.0e-16);
-  bool isIntersected() const { return iEdge[0] != iEdge[1]; }
+  bool isIntersected() const { return iEdge.first != iEdge.second; }
   bool isBelow() const { return IAmBelow; }
 
   size_t size() const { return myVertices.size(); }
@@ -103,8 +102,8 @@ public:
   double accumulateVolume(const FaVec3& v0, FaVec3& X, FFaTensor3* I) const;
 
   const std::vector<FaFace>& getSubFaces() const { return mySubFaces; }
-  const FaVec3& getIntVertex(int i) const { return owner->getVertex(iEdge[i]); }
-  size_t getIntVertInd(int i) const { return iEdge[i]; }
+  FaEdge getIntEdge() const { return iEdge; }
+  FaVec3 getIntEdgeCoord() const;
   FFaBody* getBody() const { return owner; }
 
 protected:
@@ -114,12 +113,12 @@ protected:
   friend std::ostream& operator<<(std::ostream& s, const FaFace& f);
 
 private:
-  std::vector<size_t> myVertices; // indices to the vertices defining the face
-  size_t              iEdge[2];   // vertices of the intersection edge, if any
-  std::vector<FaFace> mySubFaces; // 2 or 3 sub-triangles of an intersected face
-  bool                IAmBelow;   // is face below current intersection plane?
+  std::vector<size_t> myVertices; //!< Indices to the vertices defining the face
+  FaEdge              iEdge;      //!< Vertices of the intersection edge, if any
+  std::vector<FaFace> mySubFaces; //!< 2 or 3 sub-triangles of intersected face
+  bool                IAmBelow;   //!< Is face below current intersection plane?
 
-  FFaBody* owner;
+  FFaBody* owner; //!< Pointer to the body object containing this face
 };
 
 

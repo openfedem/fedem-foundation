@@ -38,7 +38,7 @@ FaFace::FaFace()
 {
   owner = NULL;
   myVertices.resize(3,0);
-  iEdge[0] = iEdge[1] = 0;
+  iEdge = { 0, 0 };
   IAmBelow = false;
 }
 
@@ -50,12 +50,11 @@ FaFace::FaFace()
 FaFace::FaFace(FFaBody* body, size_t i1, size_t i2, size_t i3, int i4)
 {
   owner = body;
-  myVertices.resize(i4 < 0 ? 3 : 4);
-  myVertices[0] = i1;
-  myVertices[1] = i2;
-  myVertices[2] = i3;
-  if (i4 >= 0) myVertices[3] = i4;
-  iEdge[0] = iEdge[1] = 0;
+  if (i4 < 0)
+    myVertices = { i1, i2, i3 };
+  else
+    myVertices = { i1, i2, i3, (size_t)i4 };
+  iEdge = { 0, 0 };
   IAmBelow = false;
 #if FFA_DEBUG > 2
   std::cout <<"New face: "<< *this << std::endl;
@@ -95,7 +94,7 @@ int FaFace::intersect(const FaVec3& normal, double z0, double zeroTol)
 
   IAmBelow = false;
   mySubFaces.clear();
-  iEdge[0] = iEdge[1] = 0;
+  iEdge = { 0, 0 };
 
   // Check if each vertex is either above, below or on the plane
   int i, sum = 0;
@@ -164,8 +163,7 @@ int FaFace::intersect(const FaVec3& normal, double z0, double zeroTol)
       // by the two in-plane vertices for the section area calculation
       int i1 = status[0] == 1 ? 1 : (status[1] == 1 ? 2 : 0);
       int i2 = (i1+1)%3;
-      iEdge[0] = myVertices[i1];
-      iEdge[1] = myVertices[i2];
+      iEdge = { myVertices[i1], myVertices[i2] };
       return 1;
     }
     else if (sum == -1)
@@ -196,14 +194,12 @@ int FaFace::intersect(const FaVec3& normal, double z0, double zeroTol)
     if (status[i1] == 1)
     {
       mySubFaces[1].IAmBelow = true;
-      iEdge[0] = newVertex;
-      iEdge[1] = myVertices[i0];
+      iEdge = { newVertex, myVertices[i0] };
     }
     else // status[i2] == 1
     {
       mySubFaces[0].IAmBelow = true;
-      iEdge[0] = myVertices[i0];
-      iEdge[1] = newVertex;
+      iEdge = { myVertices[i0], newVertex };
     }
   }
   else // abs(sum) == 1
@@ -238,14 +234,12 @@ int FaFace::intersect(const FaVec3& normal, double z0, double zeroTol)
     if (status[i0] == 1)
     {
       mySubFaces[1].IAmBelow = mySubFaces[2].IAmBelow = true;
-      iEdge[0] = newVertex0;
-      iEdge[1] = newVertex1;
+      iEdge = { newVertex0, newVertex1 };
     }
     else // status[i0] == -1
     {
       mySubFaces[0].IAmBelow = true;
-      iEdge[0] = newVertex1;
-      iEdge[1] = newVertex0;
+      iEdge = { newVertex1, newVertex0 };
     }
   }
 
@@ -289,8 +283,7 @@ int FaFace::quad2Quads(const char* status, const double* dist)
     mySubFaces.push_back(FaFace(this->getBody(),
                                 iV0,iV1,myVertices[q2],myVertices[q2]));
     mySubFaces[0].IAmBelow = true;
-    iEdge[0] = iV0;
-    iEdge[1] = iV1;
+    iEdge = { iV0, iV1 };
   }
   else if (t0 >= 0)
   {
@@ -304,8 +297,7 @@ int FaFace::quad2Quads(const char* status, const double* dist)
     mySubFaces.push_back(FaFace(this->getBody(),
                                 myVertices[t0],myVertices[t2],myVertices[t3]));
     mySubFaces[status[t1] < 0 ? 0 : 1].IAmBelow = true;
-    iEdge[0] = myVertices[t0];
-    iEdge[1] = myVertices[t2];
+    iEdge = { myVertices[t0], myVertices[t2] };
   }
 
   return mySubFaces.size();
@@ -340,8 +332,7 @@ int FaFace::quad2QuadTria(const char* status, const double* dist, bool oneAbove)
   mySubFaces.push_back(FaFace(this->getBody(),iV0,iV2,iV3,myVertices[q0]));
   mySubFaces.push_back(FaFace(this->getBody(),
                               iV2,myVertices[q2],myVertices[q3],iV3));
-  iEdge[0] = iV0;
-  iEdge[1] = iV2;
+  iEdge = { iV0, iV2 };
   if (oneAbove)
     mySubFaces[1].IAmBelow = mySubFaces[2].IAmBelow = true;
   else
@@ -360,9 +351,17 @@ int FaFace::quad2QuadTria(const char* status, const double* dist, bool oneAbove)
 double FaFace::accumulateArea(const FaVec3& vn, const FaVec3& v0,
                               FaVec3& Xac) const
 {
-  double A = getArea(vn,v0,this->getIntVertex(0),this->getIntVertex(1));
-  Xac += (v0 + this->getIntVertex(0) + this->getIntVertex(1))*A/3.0;
+  FaVec3 v1 = owner->getVertex(iEdge.first);
+  FaVec3 v2 = owner->getVertex(iEdge.second);
+  double A  = getArea(vn,v0,v1,v2);
+  Xac += (v0 + v1 + v2)*A/3.0;
   return A;
+}
+
+
+FaVec3 FaFace::getIntEdgeCoord() const
+{
+  return owner->getVertex(iEdge.first) + owner->getVertex(iEdge.second);
 }
 
 
@@ -553,7 +552,7 @@ bool FFaBody::computeVolumeBelow(double& Vb, double& As,
       {
       case 2: // The face is divided in 2 sub-faces
       case 3: // The face is divided in 3 sub-faces
-	X0s += myFaces[i].getIntVertex(0) + myFaces[i].getIntVertex(1);
+	X0s += myFaces[i].getIntEdgeCoord();
 	nVs += 2.0;
 	break;
 
@@ -622,11 +621,9 @@ bool FFaBody::saveIntersection(const FaMat34& cs)
   for (i = 0; i < myFaces.size(); i++)
     if (myFaces[i].isIntersected())
     {
-      size_t i1 = myFaces[i].getIntVertInd(0);
-      size_t i2 = myFaces[i].getIntVertInd(1);
-      loopVertices.insert(i1);
-      loopVertices.insert(i2);
-      myIntLoop.push_back(FaEdge(i1,i2));
+      myIntLoop.push_back(myFaces[i].getIntEdge());
+      loopVertices.insert(myIntLoop.back().first);
+      loopVertices.insert(myIntLoop.back().second);
     }
 
   if (myIntLoop.empty()) return false; // no intersection
