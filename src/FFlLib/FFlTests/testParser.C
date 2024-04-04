@@ -15,6 +15,8 @@
 #include "FFlLib/FFlInit.H"
 #include "FFlLib/FFlLinkHandler.H"
 #include "FFlLib/FFlElementBase.H"
+#include "FFlLib/FFlAttributeBase.H"
+#include "FFlLib/FFlField.H"
 #include "FFlLib/FFlGroup.H"
 #include "FFlLib/FFlIOAdaptors/FFlReaders.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
@@ -100,6 +102,36 @@ TEST(TestFFl,NastranParser)
   ASSERT_TRUE(group != NULL);
   EXPECT_EQ(group->size(),11U);
   printGroup(group);
+}
+
+
+/*!
+  \brief Creates a unit test for parsing of tapered beams.
+*/
+
+TEST(TestFFl,TaperedBeams)
+{
+  using DoubleVec = std::vector<double>;
+
+  FFlLinkHandler part;
+  ASSERT_GT(FFlReaders::instance()->read(inpdir+"PBEAM-test.nas",&part),0);
+  std::cout <<"Successfully read "<< inpdir <<"PBEAM-test.nas"<< std::endl;
+
+  size_t i = 0;
+  std::vector<DoubleVec> values(part.getAttributeCount("PBEAMSECTION"));
+  for (const AttributeMap::value_type& att : part.getAttributes("PBEAMSECTION"))
+  {
+    DoubleVec& fields = values[i++];
+    for (FFlFieldBase* field : *att.second)
+      fields.push_back(static_cast<FFlField<double>*>(field)->getValue());
+    std::cout <<"Property "<< att.first <<":";
+    for (double d : fields) std::cout <<" "<< d;
+    std::cout << std::endl;
+  }
+
+  for (i = 1; i < values.size(); i++)
+    for (size_t j = 0; j < values.front().size(); j++)
+      EXPECT_NEAR(values.front()[j],values[i][j],1.0e-8);
 }
 
 
