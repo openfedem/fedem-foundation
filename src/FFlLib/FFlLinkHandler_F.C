@@ -1170,6 +1170,9 @@ SUBROUTINE(ffl_getbeamsection,FFL_GETBEAMSECTION) (double* section,
   section[10] = curSec->Sy.getValue();
   section[11] = curSec->Sz.getValue();
 
+  // Main axis direction for non-symmetric cross sections
+  section[13] = curSec->phi.getValue();
+
   FFlPEFFLENGTH* curLen = dynamic_cast<FFlPEFFLENGTH*>
                           (curElm->getAttribute("PEFFLENGTH"));
   section[12] = curLen ? curLen->length.getValue() : 0.0;

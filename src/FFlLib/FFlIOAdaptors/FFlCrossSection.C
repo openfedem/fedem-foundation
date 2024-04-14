@@ -93,6 +93,7 @@ FFlCrossSection::FFlCrossSection (const std::string& Type,
     J  = (a*pow3(ta) + hw*pow3(tw) + b*pow3(tb))/3.0;
     K1 = hw*tw/A;
     K2 = 5.0*(a*ta+b*tb)/(6.0*A);
+    S1 = hf*tb*pow3(b)/(ta*pow3(a) + tb*pow3(b)) - ya;
 
 #ifdef FFL_DEBUG
     std::cout <<"I-profile: a="<< a <<" b="<< b <<" h="<< hw+ta+tb
@@ -118,6 +119,7 @@ FFlCrossSection::FFlCrossSection (const std::string& Type,
     J   = (hw*pow3(tw) + bf*pow3(tf))/3.0;
     K1  = hw*tw/A;
     K2  = bf*tf/A;
+    S1  = yf;
 
 #ifdef FFL_DEBUG
     std::cout <<"T-profile: bf="<< bf <<" h="<< hw+tf
@@ -159,6 +161,40 @@ FFlCrossSection::FFlCrossSection (const std::string& Type,
   else
     ListUI <<"\n *** FFlCrossSection: Type \"" << Type <<"\" is not supported."
            <<"\n            Replace it with a general cross section entry.\n";
+}
+
+
+double FFlCrossSection::findMainAxes ()
+{
+  if (Izy == 0.0) return 0.0;
+
+  double fi = 0.5*atan2(-2.0*Izy,Iyy-Izz);
+  double cf = cos(fi);
+  double sf = sin(fi);
+  double s2 = sin(2.0*fi);
+
+  // Find the principal moments of inertia
+  double Iy = Izz*sf*sf + Iyy*cf*cf - Izy*s2;
+  double Iz = Izz*cf*cf + Iyy*sf*sf + Izy*s2;
+#ifdef FFL_DEBUG
+  std::cout <<"           phi="<< 180.0*fi/M_PI
+            <<" I1="<< Iy <<" I2="<< Iz << std::endl;
+#endif
+  Iyy = Iy;
+  Izz = Iz;
+  Izy = 0.0;
+
+  // Transform the shear centre offset
+  s2 = cf*S2 - sf*S1;
+  S1 = cf*S1 + sf*S2;
+  S2 = s2;
+
+  // Transform the shear stiffness factors
+  s2 = cf*cf*K2 + sf*sf*K1;
+  K1 = cf*cf*K1 + sf*sf*K2;
+  K2 = s2;
+
+  return 180.0*fi/M_PI;
 }
 
 
