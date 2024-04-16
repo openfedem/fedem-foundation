@@ -135,6 +135,35 @@ TEST(TestFFl,TaperedBeams)
 }
 
 
+/*!
+  \brief Creates a unit test for parsing various cross section types.
+*/
+
+TEST(TestFFl,BeamCrossSections)
+{
+  using DoubleVec = std::vector<double>;
+
+  FFlLinkHandler part, partB;
+  ASSERT_GT(FFlReaders::instance()->read(inpdir+"RectangularBeam.nas",&partB),0);
+  ASSERT_GT(FFlReaders::instance()->read(inpdir+"PBEAML-test.nas",&part),0);
+  std::cout <<"Successfully read "<< inpdir <<"PBEAML-test.nas"<< std::endl;
+  for (const AttributeMap::value_type& att : partB.getAttributes("PBEAMSECTION"))
+    part.addAttribute(att.second->clone());
+
+  size_t i = 0;
+  std::vector<DoubleVec> values(part.getAttributeCount("PBEAMSECTION"));
+  for (const AttributeMap::value_type& att : part.getAttributes("PBEAMSECTION"))
+  {
+    DoubleVec& fields = values[i++];
+    for (FFlFieldBase* field : *att.second)
+      fields.push_back(static_cast<FFlField<double>*>(field)->getValue());
+    std::cout <<"PBEAMSECTION "<< att.first <<":";
+    for (double d : fields) std::cout <<" "<< d;
+    std::cout << std::endl;
+  }
+}
+
+
 void ffl_setLink(FFlLinkHandler* part);
 SUBROUTINE(ffl_getcoor,FFL_GETCOOR) (double* X, double* Y, double* Z,
                                      const int& iel, int& ierr);
