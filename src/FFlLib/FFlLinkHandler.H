@@ -196,14 +196,14 @@ public:
   void getMassProperties(double& M, FaVec3& Xcg, FFaTensor3& I) const;
 
   NodesCIter findFreeNodeAtPoint(const FaVec3& point, double tol,
-				 int dofFilter = -1) const;
+                                 int dofFilter = -1) const;
   NodesCIter findClosestNode(const FaVec3& point) const;
 
   FFlNode* createAttachableNode(FFlNode* fromNode, const FaVec3& nodePos,
-				FFlConnectorItems& cItems);
+                                FFlConnectorItems* cItems = NULL);
 
   ElementsCIter findClosestElement(const FaVec3& point,
-				   const std::vector<FFlTypeInfoSpec::Cathegory>&) const;
+                                   const std::vector<FFlTypeInfoSpec::Cathegory>&) const;
   FFlElementBase* findClosestElement(const FaVec3& point, const FFlGroup& group) const;
   FFlElementBase* findClosestElement(const FaVec3& point, FFlGroup* group = NULL) const;
 
@@ -270,6 +270,7 @@ public:
 
   FFlNode* createNodeAtPoint(const FaVec3& nodePos, int DOFs = 0);
 
+#ifdef FT_USE_CONNECTORS
   int createConnector(const FFaCompoundGeometry& compound,
                       const FaVec3& nodePos, int spiderType,
                       FFlConnectorItems& cItems);
@@ -277,6 +278,7 @@ public:
   int deleteConnectorProperties(const std::vector<int>& propertiesID);
   int deleteConnectorElements(const std::vector<int>& elementsID);
   int deleteConnectorNodes(const std::vector<int>& nodesID);
+#endif
 
 protected:
   typedef NodesVec::iterator    NodesIter;

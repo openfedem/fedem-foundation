@@ -38,6 +38,11 @@ static FFaCheckSum*    chkSum  = NULL;
 static std::vector<FFlLinkHandler*> ourLinks;
 
 
+#define GET_ATTRIBUTE(el,att) dynamic_cast<FFl##att*>((el)->getAttribute(#att))
+#define LINK_ATTRIBUTE(att,ID) \
+  theLink ? dynamic_cast<FFl##att*>(theLink->getAttribute(#att,ID)) : NULL
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Basic object init. Used both by the reducer and the recovery processes.
 //
@@ -58,6 +63,12 @@ static int ffl_basic_init (int maxNodes, int maxElms,
   {
     ListUI <<" *** Error: FE data file must be specified through -linkfile\n";
     return -1;
+  }
+
+  if (theLink)
+  {
+    std::cerr <<"ffl_init: Logic error, FE part already exists"<< std::endl;
+    return -99;
   }
 
   theLink = new FFlLinkHandler(maxNodes,maxElms);
@@ -212,7 +223,7 @@ SUBROUTINE(ffl_reducer_init,FFL_REDUCER_INIT) (const int& maxNodes,
 
 DLLexport(int) ffl_loadPart (const std::string& fileName)
 {
-  return theLink ? -99 : ffl_basic_init(0,0,fileName);
+  return ffl_basic_init(0,0,fileName);
 }
 
 
@@ -387,8 +398,7 @@ SUBROUTINE(ffl_getsize,FFL_GETSIZE) (int& nnod, int& nel, int& ndof, int& nmnpc,
     if (curTyp == "BEAM2")
     {
       // Add extra nodes for beams with pin flags
-      FFlPBEAMPIN* myPin = dynamic_cast<FFlPBEAMPIN*>
-                           ((*eit)->getAttribute("PBEAMPIN"));
+      FFlPBEAMPIN* myPin = GET_ATTRIBUTE(*eit,PBEAMPIN);
       if (myPin)
       {
         npbeam++;
@@ -477,7 +487,7 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
 
       mnode[inod] = (*nit)->isExternal() ? 2 : 1;
       for (int i = 0; i < maxDOFs; i++)
-	msc[ndof+i] = (*nit)->isFixed(i+1) ? 0 : mnode[inod];
+        msc[ndof+i] = (*nit)->isFixed(i+1) ? 0 : mnode[inod];
       madof[inod+1] = madof[inod] + maxDOFs;
       ndof += maxDOFs;
       inod ++;
@@ -502,8 +512,7 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
     if ((*eit)->getTypeName() == "BEAM2")
     {
       // Add extra nodes for beams with pin flags
-      FFlPBEAMPIN* myPin = dynamic_cast<FFlPBEAMPIN*>
-                           ((*eit)->getAttribute("PBEAMPIN"));
+      FFlPBEAMPIN* myPin = GET_ATTRIBUTE(*eit,PBEAMPIN);
       if (myPin)
       {
         NodeCIter nit = (*eit)->nodesBegin();
@@ -762,7 +771,7 @@ SUBROUTINE(ffl_getcoor,FFL_GETCOOR) (double* X, double* Y, double* Z,
   {
     // Get beam orientation
     FaVec3 Zaxis;
-    FFlPORIENT* bo = dynamic_cast<FFlPORIENT*>(curElm->getAttribute("PORIENT"));
+    FFlPORIENT* bo = GET_ATTRIBUTE(curElm,PORIENT);
     if (!bo) // If no PORIENT, try the equivalent old name also
       bo = dynamic_cast<FFlPORIENT*>(curElm->getAttribute("PBEAMORIENT"));
     if (bo) Zaxis = bo->directionVector.getValue();
@@ -788,8 +797,7 @@ SUBROUTINE(ffl_getcoor,FFL_GETCOOR) (double* X, double* Y, double* Z,
     Z[4] = Z[1];
 
     // Get beam eccentricities, if any
-    FFlPBEAMECCENT* curEcc = dynamic_cast<FFlPBEAMECCENT*>
-                             (curElm->getAttribute("PBEAMECCENT"));
+    FFlPBEAMECCENT* curEcc = GET_ATTRIBUTE(curElm,PBEAMECCENT);
     if (!curEcc) return;
 
     FaVec3 e1 = curEcc->node1Offset.getValue();
@@ -814,8 +822,7 @@ SUBROUTINE(ffl_getcoor,FFL_GETCOOR) (double* X, double* Y, double* Z,
     Z[1] = Z[0];
 
     // Get bushing eccentricity, if any
-    FFlPBUSHECCENT* curEcc = dynamic_cast<FFlPBUSHECCENT*>
-                             (curElm->getAttribute("PBUSHECCENT"));
+    FFlPBUSHECCENT* curEcc = GET_ATTRIBUTE(curElm,PBUSHECCENT);
     if (!curEcc) return;
 
     FaVec3 e1 = curEcc->offset.getValue();
@@ -848,7 +855,7 @@ SUBROUTINE(ffl_getmat,FFL_GETMAT) (double& E, double& nu, double& rho,
   FFlElementBase* curElm = ffl_getElement(iel);
   if (!curElm) return;
 
-  FFlPMAT* curMat = dynamic_cast<FFlPMAT*>(curElm->getAttribute("PMAT"));
+  FFlPMAT* curMat = GET_ATTRIBUTE(curElm,PMAT);
   if (!curMat)
   {
     ListUI <<" *** Error: No material attached to element "
@@ -875,7 +882,7 @@ SUBROUTINE(ffl_getptheta,FFL_GETPTHETA)(const int& pThetaID,
 					double& thetaInDeg, int& ierr)
 {
   ierr = 0;
-  FFlPTHETA* pTheta = dynamic_cast<FFlPTHETA*>(theLink->getAttribute("PTHETA",pThetaID));
+  FFlPTHETA* pTheta = LINK_ATTRIBUTE(PTHETA,pThetaID);
   if (pTheta)
     thetaInDeg = pTheta->theta.getValue();
   else
@@ -926,17 +933,18 @@ INTEGER_FUNCTION (ffl_getattributeid,FFL_GETATTRIBUTEID)
 INTEGER_FUNCTION(ffl_getmaxcompositeplys,FFL_GETMAXCOMPOSITEPLYS) ()
 {
   int maxPlys = -1;
-  for (const AttributeMap::value_type& p : theLink->getAttributes("PCOMP"))
-  {
-    int nPlys = static_cast<FFlPCOMP*>(p.second)->plySet.data().size();
-    if (nPlys > maxPlys) maxPlys = nPlys;
-  }
+  if (theLink)
+    for (const AttributeMap::value_type& p : theLink->getAttributes("PCOMP"))
+    {
+      int nPlys = static_cast<FFlPCOMP*>(p.second)->plySet.data().size();
+      if (nPlys > maxPlys) maxPlys = nPlys;
+    }
   return maxPlys;
 }
 
 INTEGER_FUNCTION(ffl_getpcompnumplys,FFL_GETPCOMPNUMPLYS) (const int& compID)
 {
-  FFlPCOMP* curComp = dynamic_cast<FFlPCOMP*>(theLink->getAttribute("PCOMP",compID));
+  FFlPCOMP* curComp = LINK_ATTRIBUTE(PCOMP,compID);
   if (!curComp)
   {
     ListUI <<" *** Error: No PCOMP with ID "<< compID <<"\n";
@@ -953,6 +961,7 @@ SUBROUTINE(ffl_getpcomp,FFL_GETPCOMP) (int& compID, int& nPlys, double& Z0,
                                        double* rho, int& ierr)
 {
   ierr = -1;
+  if (!theLink) return;
   const AttributeMap& pComps = theLink->getAttributes("PCOMP");
   if (pComps.empty()) return;
 
@@ -966,7 +975,7 @@ SUBROUTINE(ffl_getpcomp,FFL_GETPCOMP) (int& compID, int& nPlys, double& Z0,
     return;
   }
 
-  FFlPCOMP* curComp = dynamic_cast<FFlPCOMP*>(pit->second);
+  FFlPCOMP* curComp = static_cast<FFlPCOMP*>(pit->second);
   compID = curComp->getID();
   Z0     = curComp->Z0.getValue();
   nPlys  = curComp->plySet.data().size();
@@ -978,7 +987,7 @@ SUBROUTINE(ffl_getpcomp,FFL_GETPCOMP) (int& compID, int& nPlys, double& Z0,
 
   for (const FFlPCOMP::Ply& ply : curComp->plySet.getValue())
   {
-    if ((pMatShell = dynamic_cast<FFlPMATSHELL*>(theLink->getAttribute("PMATSHELL",ply.MID))))
+    if ((pMatShell = LINK_ATTRIBUTE(PMATSHELL,ply.MID)))
     {
       E1[i]   = pMatShell->E1.getValue();
       E2[i]   = pMatShell->E2.getValue();
@@ -988,7 +997,7 @@ SUBROUTINE(ffl_getpcomp,FFL_GETPCOMP) (int& compID, int& nPlys, double& Z0,
       G2Z[i]  = pMatShell->G2Z.getValue();
       rho[i]  = pMatShell->materialDensity.getValue();
     }
-    else if ((pMat = dynamic_cast<FFlPMAT*>(theLink->getAttribute("PMAT",ply.MID))))
+    else if ((pMat = LINK_ATTRIBUTE(PMAT,ply.MID)))
     {
       E1[i]   = pMat->youngsModule.getValue();
       E2[i]   = E1[i];
@@ -1019,7 +1028,7 @@ SUBROUTINE(ffl_getpmatshell,FFL_GETPMATSHELL) (const int& MID,
 					       double& G1Z, double& G2Z,
 					       double& rho, int& ierr)
 {
-  FFlPMATSHELL* pMatShell = dynamic_cast<FFlPMATSHELL*>(theLink->getAttribute("PMATSHELL",MID));
+  FFlPMATSHELL* pMatShell = LINK_ATTRIBUTE(PMATSHELL,MID);
   if (!pMatShell)
   {
     ListUI <<" *** Error: No PMATSHELL with ID "<< MID <<"\n";
@@ -1051,7 +1060,7 @@ SUBROUTINE(ffl_getthick,FFL_GETTHICK) (double* Th, const int& iel, int& ierr)
   FFlElementBase* curElm = ffl_getElement(iel);
   if (!curElm) return;
 
-  FFlPTHICK* curProp = dynamic_cast<FFlPTHICK*>(curElm->getAttribute("PTHICK"));
+  FFlPTHICK* curProp = GET_ATTRIBUTE(curElm,PTHICK);
   if (!curProp)
   {
     ListUI <<" *** Error: No thickness attached to element "
@@ -1082,8 +1091,7 @@ SUBROUTINE(ffl_getpinflags,FFL_GETPINFLAGS) (int& pA, int& pB,
   FFlElementBase* curElm = ffl_getElement(iel);
   if (!curElm) return;
 
-  FFlPBEAMPIN* curProperty = dynamic_cast<FFlPBEAMPIN*>
-                             (curElm->getAttribute("PBEAMPIN"));
+  FFlPBEAMPIN* curProperty = GET_ATTRIBUTE(curElm,PBEAMPIN);
   if (curProperty)
   {
     pA = curProperty->PA.getValue();
@@ -1107,7 +1115,7 @@ SUBROUTINE(ffl_getnsm,FFL_GETNSM) (double& Mass, const int& iel, int& ierr)
   FFlElementBase* curElm = ffl_getElement(iel);
   if (!curElm) return;
 
-  FFlPNSM* curProperty = dynamic_cast<FFlPNSM*>(curElm->getAttribute("PNSM"));
+  FFlPNSM* curProperty = GET_ATTRIBUTE(curElm,PNSM);
   if (curProperty) Mass = curProperty->NSM.getValue();
   ierr = 0;
 }
@@ -1127,7 +1135,7 @@ SUBROUTINE(ffl_getbeamsection,FFL_GETBEAMSECTION) (double* section,
   FFlElementBase* curElm = ffl_getElement(iel);
   if (!curElm) return;
 
-  FFlPMAT* curMat = dynamic_cast<FFlPMAT*>(curElm->getAttribute("PMAT"));
+  FFlPMAT* curMat = GET_ATTRIBUTE(curElm,PMAT);
   if (!curMat)
   {
     ListUI <<" *** Error: No material attached to element "
@@ -1136,8 +1144,7 @@ SUBROUTINE(ffl_getbeamsection,FFL_GETBEAMSECTION) (double* section,
     return;
   }
 
-  FFlPBEAMSECTION* curSec = dynamic_cast<FFlPBEAMSECTION*>
-                            (curElm->getAttribute("PBEAMSECTION"));
+  FFlPBEAMSECTION* curSec = GET_ATTRIBUTE(curElm,PBEAMSECTION);
   if (!curSec)
   {
     ListUI <<" *** Error: No beam section attached to element "
@@ -1173,8 +1180,7 @@ SUBROUTINE(ffl_getbeamsection,FFL_GETBEAMSECTION) (double* section,
   // Main axis direction for non-symmetric cross sections
   section[13] = curSec->phi.getValue();
 
-  FFlPEFFLENGTH* curLen = dynamic_cast<FFlPEFFLENGTH*>
-                          (curElm->getAttribute("PEFFLENGTH"));
+  FFlPEFFLENGTH* curLen = GET_ATTRIBUTE(curElm,PEFFLENGTH);
   section[12] = curLen ? curLen->length.getValue() : 0.0;
   ierr = 0;
 }
@@ -1229,7 +1235,7 @@ SUBROUTINE(ffl_getmass,FFL_GETMASS) (double* em, const int& iel, int& ndof,
   FFlElementBase* curElm = ffl_getElement(iel);
   if (!curElm) return;
 
-  FFlPMASS* curMass = dynamic_cast<FFlPMASS*>(curElm->getAttribute("PMASS"));
+  FFlPMASS* curMass = GET_ATTRIBUTE(curElm,PMASS);
   if (!curMass)
   {
     ListUI <<" *** Error: No mass matrix attached to element "
@@ -1268,7 +1274,7 @@ SUBROUTINE(ffl_getspring,FFL_GETSPRING) (double* ek, int& nedof,
   FFlElementBase* curElm = ffl_getElement(iel);
   if (!curElm) return;
 
-  FFlPSPRING* spr = dynamic_cast<FFlPSPRING*>(curElm->getAttribute("PSPRING"));
+  FFlPSPRING* spr = GET_ATTRIBUTE(curElm,PSPRING);
   if (!spr)
   {
     ListUI <<" *** Error: No stiffness matrix attached to spring element "
@@ -1315,15 +1321,14 @@ SUBROUTINE(ffl_getelcoorsys,FFL_GETELCOORSYS) (double* T, const int& iel,
   ierr = 0;
   FaMat34 Tmat;
 
-  FFlPCOORDSYS* sys = dynamic_cast<FFlPCOORDSYS*>
-                      (curElm->getAttribute("PCOORDSYS"));
+  FFlPCOORDSYS* sys = GET_ATTRIBUTE(curElm,PCOORDSYS);
   if (sys)
     Tmat.makeCS_Z_XZ(sys->Origo.getValue(),
 		     sys->Zaxis.getValue(),
 		     sys->XZpnt.getValue());
   else
   {
-    FFlPORIENT* po = dynamic_cast<FFlPORIENT*>(curElm->getAttribute("PORIENT"));
+    FFlPORIENT* po = GET_ATTRIBUTE(curElm,PORIENT);
     if (!po) // If no PORIENT, try the equivalent old name also
       po = dynamic_cast<FFlPORIENT*>(curElm->getAttribute("PBUSHORIENT"));
 
@@ -1368,8 +1373,7 @@ SUBROUTINE(ffl_getbush,FFL_GETBUSH) (double* k, const int& iel, int& ierr)
   FFlElementBase* curElm = ffl_getElement(iel);
   if (!curElm) return;
 
-  FFlPBUSHCOEFF* bush = dynamic_cast<FFlPBUSHCOEFF*>
-                        (curElm->getAttribute("PBUSHCOEFF"));
+  FFlPBUSHCOEFF* bush = GET_ATTRIBUTE(curElm,PBUSHCOEFF);
   if (!bush)
   {
     ListUI <<" *** Error: No coefficients attached to bushing element "
@@ -1400,7 +1404,7 @@ SUBROUTINE(ffl_getrgddofcomp,FFL_GETRGDDOFCOMP) (int* comp, const int& iel,
 
   if (curElm->getTypeName() == "RGD")
   {
-    FFlPRGD* pRGD = dynamic_cast<FFlPRGD*>(curElm->getAttribute("PRGD"));
+    FFlPRGD* pRGD = GET_ATTRIBUTE(curElm,PRGD);
     if (pRGD)
       comp[0] = pRGD->dependentDofs.getValue();
     else
@@ -1408,7 +1412,7 @@ SUBROUTINE(ffl_getrgddofcomp,FFL_GETRGDDOFCOMP) (int* comp, const int& iel,
   }
   else if (curElm->getTypeName() == "RBAR")
   {
-    FFlPRBAR* pRBAR = dynamic_cast<FFlPRBAR*>(curElm->getAttribute("PRBAR"));
+    FFlPRBAR* pRBAR = GET_ATTRIBUTE(curElm,PRBAR);
     if (pRBAR)
     {
       comp[0] = pRBAR->CNA.getValue();
@@ -1460,7 +1464,7 @@ SUBROUTINE(ffl_getwavgm,FFL_GETWAVGM) (int& refC, int* indC, double* weights,
     return;
   }
 
-  FFlPWAVGM* pWAVGM = dynamic_cast<FFlPWAVGM*>(curElm->getAttribute("PWAVGM"));
+  FFlPWAVGM* pWAVGM = GET_ATTRIBUTE(curElm,PWAVGM);
   if (pWAVGM)
   {
     ierr = 1;
@@ -1598,28 +1602,23 @@ static void getStrainCoatAttributes (FFlPSTRC* p, FFlPFATIGUE* pFat,
   else if (name == "Top")
     resSet = 3;
 
-  for (AttribsCIter ai = p->attributesBegin(); ai != p->attributesEnd(); ++ai)
+  FFlPMAT* curMat = GET_ATTRIBUTE(p,PMAT);
+  if (curMat)
   {
-    FFlAttributeBase* att = ai->second.getReference();
-    const std::string& type = att->getTypeName();
-    if (type == "PMAT")
-    {
-      FFlPMAT* curAtt = dynamic_cast<FFlPMAT*>(att);
-      id = curAtt->getID();
-      E  = curAtt->youngsModule.getValue();
-      nu = curAtt->poissonsRatio.getValue();
-    }
-    else if (type == "PTHICKREF")
-    {
-      FFlPTHICKREF* curAtt = dynamic_cast<FFlPTHICKREF*>(att);
-      FFlPTHICK* curThk = dynamic_cast<FFlPTHICK*>(att->getAttribute("PTHICK"));
-      Z = curThk->thickness.getValue() * curAtt->factor.getValue();
-    }
-    else if (type == "PHEIGHT")
-    {
-      FFlPHEIGHT* curAtt = dynamic_cast<FFlPHEIGHT*>(att);
-      Z = curAtt->height.getValue();
-    }
+    id = curMat->getID();
+    E  = curMat->youngsModule.getValue();
+    nu = curMat->poissonsRatio.getValue();
+  }
+
+  FFlPTHICKREF* curTref = NULL;
+  FFlPHEIGHT* curHeight = GET_ATTRIBUTE(p,PHEIGHT);
+  if (curHeight)
+    Z = curHeight->height.getValue();
+  else if ((curTref = GET_ATTRIBUTE(p,PTHICKREF)))
+  {
+    FFlPTHICK* curThk = GET_ATTRIBUTE(curTref,PTHICK);
+    if (curThk)
+      Z = curThk->thickness.getValue() * curTref->factor.getValue();
   }
 
   if (pFat)
@@ -1846,18 +1845,4 @@ void ffl_setLink (FFlLinkHandler* link)
 {
   delete theLink;
   theLink = link;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Deletes current FE part. Used by test programs only.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 22 Oct 2021 / 1.0
-////////////////////////////////////////////////////////////////////////////////
-
-void ffl_clearLink ()
-{
-  delete theLink;
-  theLink = NULL;
 }
