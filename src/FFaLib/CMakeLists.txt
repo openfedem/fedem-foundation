@@ -20,7 +20,10 @@ if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
   list ( APPEND LIB_ID_LIST FFaTests )
 else ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
   # These libraries are used by the GUI only
-  list ( APPEND LIB_ID_LIST FFaContainers FFaDynCalls FFaGeometry FFaTypeCheck )
+  if ( USE_CONNECTORS )
+    list ( APPEND LIB_ID_LIST FFaGeometry )
+  endif ( USE_CONNECTORS )
+  list ( APPEND LIB_ID_LIST FFaContainers FFaDynCalls FFaTypeCheck )
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
 set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 
