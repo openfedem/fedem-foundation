@@ -20,6 +20,7 @@ endif ( USE_VKI )
 set ( COMPONENT_FILE_LIST FFlFedemReader FFlFedemWriter FFlNastranReader
                           FFlOldFLMReader FFlReaderBase FFlReaders FFlVdmReader
                           FFlVTFWriter FFlSesamReader FFlAllIOAdaptors
+                          FFlCrossSection
 )
 
 ## Pure header files, i.e., header files without a corresponding source file

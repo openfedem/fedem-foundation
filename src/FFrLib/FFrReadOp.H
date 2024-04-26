@@ -8,6 +8,10 @@
 #ifndef FFR_READ_OP_H
 #define FFR_READ_OP_H
 
+#ifdef FFA_DEBUG
+#include <iostream>
+#endif
+
 #include "FFaLib/FFaOperation/FFaOperation.H"
 #include "FFaLib/FFaPatterns/FFaGenericFactory.H"
 #ifdef FT_USE_MEMPOOL
@@ -29,6 +33,13 @@ public:
     else
       return op1.dataType < op2.dataType;
   }
+
+#ifdef FFA_DEBUG
+  friend std::ostream& operator<< (std::ostream& os, const ReadOpCreatorType& op)
+  {
+    return os << op.dataType <<":"<< op.dataSize;
+  }
+#endif
 
 private:
   std::string dataType;

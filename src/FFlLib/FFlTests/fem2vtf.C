@@ -5,11 +5,10 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "FFlLib/FFlInit.H"
 #include "FFlLib/FFlLinkHandler.H"
 #include "FFlLib/FFlIOAdaptors/FFlReaders.H"
-#include "FFlLib/FFlIOAdaptors/FFlAllIOAdaptors.H"
 #include "FFlLib/FFlIOAdaptors/FFlVTFWriter.H"
-#include "FFlLib/FFlFEParts/FFlAllFEParts.H"
 #include <iostream>
 #include <cstring>
 #include <cctype>
