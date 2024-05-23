@@ -6,19 +6,19 @@
   This file is part of FEDEM - https://openfedem.org
 --->
 
-[![REUSE status](https://api.reuse.software/badge/github.com/SAP/fedem-foundation)](https://api.reuse.software/info/github.com/SAP/fedem-foundation)
+[![REUSE status](https://api.reuse.software/badge/github.com/openfedem/fedem-foundation)](https://api.reuse.software/info/github.com/openfedem/fedem-foundation)
 
 # FEDEM Foundation libraries
 
-![Fedem Logo](cfg/FedemLogo.png)
+![Fedem Logo](https://github.com/openfedem/.github/blob/main/profile/FedemLogo.png)
 
 ## About this project
 
 This project contains the source code of some application-independent libraries
 that are used as building blocks by the FEDEM solvers and also the FEDEM GUI.
 It is therefore consumed as a submodule both in
-[fedem-solvers](https://github.com/SAP/fedem-solvers) and in
-[fedem-gui](https://github.com/SAP/fedem-gui).
+[fedem-solvers](https://github.com/openfedem/fedem-solvers) and in
+[fedem-gui](https://github.com/openfedem/fedem-gui).
 
 ### Name convention
 
@@ -44,10 +44,10 @@ respectively.
 ## Requirements and Setup
 
 The build of the FEDEM foundation libraries will normally be handled by the respective
-supermodules ([fedem-solvers](https://github.com/SAP/fedem-solvers) and
-[fedem-gui](https://github.com/SAP/fedem-gui)). However, it is also
+supermodules ([fedem-solvers](https://github.com/openfedem/fedem-solvers) and
+[fedem-gui](https://github.com/openfedem/fedem-gui)). However, it is also
 possible to build them separately, for instance to perform some local testing, etc.
-To facilitate this, the [cmake-modules](https://github.com/SAP/cmake-modules)
+To facilitate this, the [cmake-modules](https://github.com/openfedem/cmake-modules)
 repository is included via submodule reference, to provide the compiler setup.
 
 We use the packages [googletest](https://github.com/google/googletest) and
@@ -73,19 +73,14 @@ add the command-line option `-DUSE_FORTRAN=ON` to the cmake command above.
 ## Contributing
 
 This project is open to feature requests, suggestions, bug reports, etc.,
-via [GitHub issues](https://github.com/SAP/fedem-foundation/issues).
+via [GitHub issues](https://github.com/openfedem/fedem-foundation/issues).
 Contributions and feedback are encouraged and always welcome.
 For more information about how to contribute,
 see our [Contribution Guidelines](.github/CONTRIBUTING.md).
 
-## Security / Disclosure
-
-If you find any bug that may be a security problem, please follow our instructions at [in our security policy](https://github.com/SAP/fedem-foundation/security/policy) on how to report it. Please do not create GitHub issues for security-related doubts or problems.
-
-## Code of Conduct
-
-We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone. By participating in this project, you agree to abide by its [Code of Conduct](https://github.com/SAP/.github/blob/main/CODE_OF_CONDUCT.md) at all times.
-
 ## Licensing
 
-Copyright 2023 SAP SE or an SAP affiliate company and fedem-foundation contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/SAP/fedem-foundation).
+Copyright 2023 SAP SE or an SAP affiliate company and fedem-foundation contributors.
+Please see our [LICENSE](LICENSE) for copyright and license information.
+Detailed information including third-party components and their licensing/copyright information
+is available via the [REUSE tool](https://api.reuse.software/info/github.com/openfedem/fedem-foundation).
