@@ -90,6 +90,7 @@ static FFlAttributeBase* createBeamSection (int PID, FFlCrossSection& data,
       myAtt->setName(comment.second);
 
 #ifdef FFL_DEBUG
+  std::cout << data;
   myAtt->print();
 #endif
   return myAtt;
@@ -2753,7 +2754,7 @@ bool FFlNastranReader::process_PBEAM (std::vector<std::string>& entry)
     while (iLast < entry.size() && isSOFIELD(entry[iLast]))
     {
       double endB[11]; endB[0] = 0.0;
-      memcpy(endB+1,&params,sizeof(params));
+      memcpy(endB+1,&params.A,10*sizeof(double));
       for (size_t i = 1; i < 8 && iLast+i < entry.size(); i++)
         if (!entry[iLast+i].empty())
           CONVERT_ENTRY ("PBEAM",fieldValue(entry[iLast+i],endB[i-1]));
@@ -3771,6 +3772,22 @@ bool FFlNastranReader::process_RBE3 (std::vector<std::string>& entry)
 //////////////////////////////////////////////////////////////////////// SPC ///
 ////////////////////////////////////////////////////////////////////////////////
 
+
+FFlNastranReader::IntMap::iterator FFlNastranReader::setDofFlag (int n, int flg)
+{
+  IntMap::iterator it = nodeStat.find(n);
+  if (it == nodeStat.end())
+    return nodeStat.insert({n,flg}).first;
+
+  if (flg > 0)
+    it->second |= flg;
+  else if (flg < 0)
+    it->second = -(-it->second | -flg);
+
+  return it;
+}
+
+
 bool FFlNastranReader::process_SPC (std::vector<std::string>& entry)
 {
   START_TIMER("process_SPC")
@@ -3789,7 +3806,7 @@ bool FFlNastranReader::process_SPC (std::vector<std::string>& entry)
 
     if (node > 0 && dofs > 0)
     {
-      nodeStat[node] = -convertDOF(dofs);
+      this->setDofFlag(node,-convertDOF(dofs));
       if (D != 0.0)
       {
         nWarnings++;
@@ -3831,11 +3848,11 @@ bool FFlNastranReader::process_SPC1 (std::vector<std::string>& entry)
         if (node1 > 0)
         {
           for (int node = node1+1; node <= node2; node++)
-            nodeStat[node] = -status;
+            this->setDofFlag(node,-status);
           node1 = 0;
         }
         else if (node2 > 0)
-          nodeStat[node2] = -status;
+          this->setDofFlag(node2,-status);
       }
   }
 
