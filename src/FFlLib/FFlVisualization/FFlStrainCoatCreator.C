@@ -10,6 +10,7 @@
 #endif
 
 #include "FFlLib/FFlLinkHandler.H"
+#ifdef FT_USE_STRAINCOAT
 #include "FFlLib/FFlElementBase.H"
 #include "FFlLib/FFlGroup.H"
 #include "FFlLib/FFlVisualization/FFlFaceGenerator.H"
@@ -354,3 +355,8 @@ bool FFlLinkHandler::assignFatigueProperty(int stdIndx, int curveIndx, double sC
 
   return true;
 }
+
+#else
+bool FFlLinkHandler::makeStrainCoat(FFlFaceGenerator*,FFlNamedPartBase*) { return false; }
+bool FFlLinkHandler::assignFatigueProperty(int,int,double,FFlNamedPartBase*) { return false; }
+#endif

@@ -15,6 +15,7 @@ set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
+set ( USE_STRAINCOAT TRUE )
 
 if ( USE_VTFAPI )
   find_package ( VTFAPI )
@@ -23,6 +24,10 @@ endif ( USE_VTFAPI )
 if ( USE_PROFILER )
   string ( APPEND CMAKE_CXX_FLAGS " -DFFL_TIMER" )
 endif ( USE_PROFILER )
+
+if ( USE_STRAINCOAT )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_STRAINCOAT" )
+endif ( USE_STRAINCOAT )
 
 if ( USE_VERTEXOBJ )
   list ( INSERT LIB_ID_LIST 2 FFlVisualization )
