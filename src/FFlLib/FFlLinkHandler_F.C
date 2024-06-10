@@ -1577,6 +1577,8 @@ SUBROUTINE(ffl_getload,FFL_GETLOAD) (const int& SID, int& iel, int& face,
 }
 
 
+#ifdef FT_USE_STRAINCOAT
+
 ////////////////////////////////////////////////////////////////////////////////
 // Auxiliary function for retrieval of strain coat attributes.
 //
@@ -1760,6 +1762,8 @@ INTEGER_FUNCTION(ffl_getnostrc,FFL_GETNOSTRC) ()
 
   return theLink->getElementCount(FFlLinkHandler::FFL_STRC,true);
 }
+
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////

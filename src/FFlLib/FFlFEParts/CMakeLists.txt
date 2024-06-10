@@ -17,15 +17,19 @@ set ( COMPONENT_FILE_LIST FFlAllFEParts FFlBEAM2 FFlBEAM3 FFlBUSH
                           FFlCLOAD FFlCMASS FFlCurvedFace
                           FFlHEX20 FFlHEX8 FFlNode FFlPBEAMECCENT FFlPBEAMPIN
                           FFlPBEAMSECTION FFlPBUSHCOEFF FFlPBUSHECCENT
-                          FFlPCOMP FFlPCOORDSYS FFlPEFFLENGTH FFlPFATIGUE
-                          FFlPHEIGHT FFlPLOAD FFlPMASS FFlPMAT
+                          FFlPCOMP FFlPCOORDSYS FFlPEFFLENGTH
+                          FFlPLOAD FFlPMASS FFlPMAT
                           FFlPMAT2D FFlPMAT3D FFlPMATSHELL FFlPNSM
                           FFlPORIENT FFlPRBAR FFlPRGD FFlPSPRING
-                          FFlPSTRC FFlPTHICK FFlPTHICKREF FFlPWAVGM
+                          FFlPTHICK FFlPWAVGM
                           FFlQUAD4 FFlQUAD8 FFlRBAR FFlRGD FFlShellElementBase
-                          FFlSPRING FFlSTRCoat FFlTET10 FFlTET4
+                          FFlSPRING FFlTET10 FFlTET4
                           FFlTRI3 FFlTRI6 FFlWAVGM FFlWEDG15 FFlWEDG6
 )
+if ( USE_STRAINCOAT )
+  list ( APPEND COMPONENT_FILE_LIST FFlPFATIGUE FFlPHEIGHT FFlPSTRC
+                                    FFlPTHICKREF FFlSTRCoat )
+endif ( USE_STRAINCOAT )
 if ( USE_VISUALS )
   list ( APPEND COMPONENT_FILE_LIST FFlVAppearance FFlVDetail )
 endif ( USE_VISUALS )

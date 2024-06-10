@@ -28,6 +28,10 @@ if ( USE_VERTEXOBJ )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VERTEX" )
 endif ( USE_VERTEXOBJ )
 
+if ( USE_VISUALS )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_VISUALS" )
+endif ( USE_VISUALS )
+
 
 ## Files with header and source with same name
 set ( COMPONENT_FILE_LIST FFlrFEResultBuilder FFlrFEResult
