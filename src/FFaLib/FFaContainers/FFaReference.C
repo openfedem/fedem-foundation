@@ -55,13 +55,6 @@
       * List access and editing
 */
 
-
-bool operator==(const FFaUnResolvedRef& tp1, const FFaUnResolvedRef& tp2)
-{
-  return (tp1.ID == tp2.ID && tp1.typeID == tp2.typeID);
-}
-
-
 FFaReferenceBase::FFaReferenceBase() : myOwnerFieldCont(NULL), myPtr(NULL)
 {
   myContextName = NULL;
@@ -230,7 +223,7 @@ const char* FFaReferenceBase::getRefTypeName() const
 int FFaReferenceBase::getRefTypeID() const
 {
   if (!IAmResolved)
-    return myUnresolvedRef->typeID;
+    return myUnresolvedRef->front();
   else if (IAmBound && myPtr)
     return myPtr->getTypeID();
   else
@@ -245,7 +238,7 @@ int FFaReferenceBase::getRefTypeID() const
 int FFaReferenceBase::getRefID() const
 {
   if (!IAmResolved)
-    return myUnresolvedRef->ID;
+    return myUnresolvedRef->operator[](1);
   else if (IAmBound && myPtr)
     return myPtr->getResolvedID();
   else
@@ -261,7 +254,7 @@ int FFaReferenceBase::getRefID() const
 void FFaReferenceBase::getRefAssemblyID(std::vector<int>& assID) const
 {
   if (!IAmResolved)
-    assID = myUnresolvedRef->assemblyID;
+    assID.assign(myUnresolvedRef->begin()+2,myUnresolvedRef->end());
   else if (IAmBound && myPtr)
     myPtr->getResolvedAssemblyID(assID);
   else
@@ -342,7 +335,8 @@ void FFaReferenceBase::resolve(FFaDynCB4<FFaFieldContainer*&,int,int,
 
 void FFaReferenceBase::unresolve()
 {
-  if (!IAmResolved || !myPtr) return;
+  if (!IAmResolved || !myPtr)
+    return;
 
 #ifdef FFA_DEBUG
   FFaFieldContainer* ofc = this->getOwnerFieldContainer();
@@ -352,10 +346,8 @@ void FFaReferenceBase::unresolve()
               <<" unresolved"<< std::endl;
 #endif
 
-  FFaUnResolvedRef* uResRef = new FFaUnResolvedRef;
-  uResRef->ID = myPtr->getResolvedID();
-  uResRef->typeID = myPtr->getTypeID();
-  myPtr->getResolvedAssemblyID(uResRef->assemblyID);
+  UnResolvedID* uResRef = new UnResolvedID({ myPtr->getTypeID(), myPtr->getResolvedID() });
+  myPtr->getResolvedAssemblyID(*uResRef);
 
   this->unbind();
   myUnresolvedRef = uResRef;
@@ -365,7 +357,8 @@ void FFaReferenceBase::unresolve()
 
 void FFaReferenceBase::updateAssemblyRef(int from, int to, size_t ind)
 {
-  if (IAmResolved || !myUnresolvedRef) return;
+  if (IAmResolved || !myUnresolvedRef)
+    return;
 
   if (from == 0 && to > 0)
   {
@@ -380,26 +373,37 @@ void FFaReferenceBase::updateAssemblyRef(int from, int to, size_t ind)
 #endif
 
     if (strcmp(this->getContextName(),"myParentAssembly") == 0)
-      if (myUnresolvedRef->assemblyID.empty() && myUnresolvedRef->ID == to)
+      if (myUnresolvedRef->size() == 2 && myUnresolvedRef->back() == to)
         return; // The parent assembly reference is already up to date
 
-    myUnresolvedRef->assemblyID.insert(myUnresolvedRef->assemblyID.begin(),0);
+    myUnresolvedRef->insert(myUnresolvedRef->begin()+2,0);
   }
 
-  if (ind < myUnresolvedRef->assemblyID.size())
-    if (myUnresolvedRef->assemblyID[ind] == from)
-      myUnresolvedRef->assemblyID[ind] = to;
+  if (ind+2 >= myUnresolvedRef->size())
+    return;
+
+  int& unResolvedRef = myUnresolvedRef->operator[](ind+2);
+  if (unResolvedRef == from)
+    unResolvedRef = to;
 }
 
 
 void FFaReferenceBase::updateAssemblyRef(const std::vector<int>& from,
                                          const std::vector<int>& to)
 {
-  if (!IAmResolved && myUnresolvedRef)
-    if (!from.empty() && from.size() == to.size())
-      if (myUnresolvedRef->assemblyID == from)
-        myUnresolvedRef->assemblyID = to;
-}
+  if (IAmResolved || !myUnresolvedRef)
+    return;
+
+  if (from.empty() || from.size() != to.size())
+    return;
+
+  for (size_t i = 2; i < myUnresolvedRef->size() && i-2 < from.size(); i++)
+    if (myUnresolvedRef->operator[](i) != from[i-2])
+      return;
+
+  for (size_t i = 2; i < myUnresolvedRef->size() && i-2 < to.size(); i++)
+    myUnresolvedRef->operator[](i) = to[i-2];
+ }
 
 
 void FFaReferenceBase::write(std::ostream& os) const
@@ -576,15 +580,13 @@ void FFaReferenceBase::copy(const FFaReferenceBase& aRef, bool unresolve)
 
   if (!aRef.IAmResolved)
   {
+    myUnresolvedRef = new UnResolvedID(*aRef.myUnresolvedRef);
     IAmResolved = false;
-    myUnresolvedRef = new FFaUnResolvedRef(*aRef.myUnresolvedRef);
   }
   else if (unresolve)
   {
-    myUnresolvedRef = new FFaUnResolvedRef();
-    myUnresolvedRef->ID = aRef.getRefID();
-    myUnresolvedRef->typeID = aRef.getRefTypeID();
-    aRef.getRefAssemblyID(myUnresolvedRef->assemblyID);
+    myUnresolvedRef = new UnResolvedID({ aRef.getRefTypeID(), aRef.getRefID() });
+    aRef.getRefAssemblyID(*myUnresolvedRef);
     IAmResolved = false;
   }
   else
@@ -599,15 +601,14 @@ void FFaReferenceBase::copy(const FFaReferenceBase& aRef, bool unresolve)
 void FFaReferenceBase::setRefID(int id)
 {
   this->unresolve();
-  if (!IAmResolved)
-    myUnresolvedRef->ID = id;
-  else
+
+  if (IAmResolved)
   {
-    myUnresolvedRef = new FFaUnResolvedRef;
-    myUnresolvedRef->ID = id;
-    myUnresolvedRef->typeID = 0;
+    myUnresolvedRef = new UnResolvedID({ 0, id });
     IAmResolved = false;
   }
+  else
+    myUnresolvedRef->operator[](1) = id;
 }
 
 
@@ -618,15 +619,14 @@ void FFaReferenceBase::setRefID(int id)
 void FFaReferenceBase::setRefTypeID(int id)
 {
   this->unresolve();
-  if (!IAmResolved)
-    myUnresolvedRef->typeID = id;
-  else
+
+  if (IAmResolved)
   {
-    myUnresolvedRef = new FFaUnResolvedRef;
-    myUnresolvedRef->ID = 0;
-    myUnresolvedRef->typeID = id;
+    myUnresolvedRef = new UnResolvedID({ id, 0 });
     IAmResolved = false;
   }
+  else
+    myUnresolvedRef->front() = id;
 }
 
 
@@ -637,21 +637,19 @@ void FFaReferenceBase::setRefTypeID(int id)
 void FFaReferenceBase::setRefAssemblyID(const std::vector<int>& assID)
 {
   this->unresolve();
-  if (!IAmResolved)
-    myUnresolvedRef->assemblyID = assID;
-  else
+
+  if (IAmResolved)
   {
-    myUnresolvedRef = new FFaUnResolvedRef;
-    myUnresolvedRef->ID = 0;
-    myUnresolvedRef->typeID = 0;
-    myUnresolvedRef->assemblyID = assID;
+    myUnresolvedRef = new UnResolvedID({ 0, 0 });
     IAmResolved = false;
   }
+
+  myUnresolvedRef->insert(myUnresolvedRef->end(),assID.begin(),assID.end());
 }
 
 
 /*!
-  Only used by the FFaFieldContainer or FFaReferenceListBase to clean a ToRef.
+  Only used by the FFaReferenceListBase to clean a ToRef.
 */
 
 void FFaReferenceBase::zeroOut()
@@ -663,12 +661,17 @@ void FFaReferenceBase::zeroOut()
   }
 }
 
+
+/*!
+  Only used by FFaFieldContainer to notify that the FieldContainer is obsolete.
+*/
+
 void FFaReferenceBase::zeroOutOrRemoveFromList()
 {
   this->zeroOut();
 
   if (IAmInAList && myOwnerReferenceList)
-    myOwnerReferenceList -> eraseReferenceIfNeeded(this);
+    myOwnerReferenceList->eraseReferenceIfNeeded(this);
 }
 
 
@@ -696,7 +699,7 @@ FFaFieldContainer* FFaReferenceBase::getOwnerFieldContainer() const
   else if (myOwnerReferenceList)
     return myOwnerReferenceList->getOwnerFieldContainer();
   else
-    return (FFaFieldContainer*)NULL;
+    return static_cast<FFaFieldContainer*>(NULL);
 }
 
 
@@ -720,7 +723,7 @@ FFaReferenceListBase* FFaReferenceBase::getOwnerReferenceList() const
   if (IAmInAList)
     return myOwnerReferenceList;
   else
-    return (FFaReferenceListBase*)NULL;
+    return static_cast<FFaReferenceListBase*>(NULL);
 }
 
 
@@ -731,9 +734,9 @@ FFaReferenceListBase* FFaReferenceBase::getOwnerReferenceList() const
 bool FFaReferenceBase::isEqual(const FFaReferenceBase* p) const
 {
   if (IAmResolved && p->IAmResolved)
-    return getRef() == p->getRef();
-  else if (!IAmResolved && !p->IAmResolved)
-    return *myUnresolvedRef == *(p->myUnresolvedRef);
-  else
+    return this->getRef() == p->getRef();
+  else if (IAmResolved || p->IAmResolved)
     return false;
+
+  return *myUnresolvedRef == *(p->myUnresolvedRef);
 }
