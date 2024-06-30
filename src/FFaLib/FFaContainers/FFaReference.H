@@ -14,14 +14,6 @@
 class FFaFieldContainer;
 class FFaReferenceListBase;
 
-struct FFaUnResolvedRef
-{
-  int ID;
-  int typeID;
-  std::vector<int> assemblyID;
-  friend bool operator==(const FFaUnResolvedRef& p, const FFaUnResolvedRef& q);
-};
-
 
 /*!
   \brief Base class for the guarded pointer FFaReference class.
@@ -91,8 +83,8 @@ private:
   friend class FFaFieldContainer;
   friend class FFaReferenceListBase;
 
-  void zeroOut(); //!< Only used by the FFaReferenceListBase to clean a ToRef
-  void zeroOutOrRemoveFromList(); //!< Only used by FFaFieldContainer to notify that the FieldContainer is obsolete
+  void zeroOut();
+  void zeroOutOrRemoveFromList();
 
   void setOwnerReferenceList(FFaReferenceListBase*);
   FFaReferenceListBase* getOwnerReferenceList() const;
@@ -103,7 +95,10 @@ private:
   void setRefTypeID(int id);
   void setRefAssemblyID(const std::vector<int>& assemblyID);
 
-  bool IAmResolved; //!< False if we have a FFaUnResolvedRef struct pointed to by myUnresolvedRef
+  //! Type of unique identification of the unresolved references
+  using UnResolvedID = std::vector<int>;
+
+  bool IAmResolved; //!< False if we have an UnResolvedID object pointed to by myUnresolvedRef
   bool IAmBound;    //!< True if myPtr is pointing to a container, and the container knows it
   bool IAmInAList;  //!< True if this FFaReference is maintained by a FFaReferenceList
 
@@ -114,7 +109,7 @@ private:
 
   union {
     FFaFieldContainer* myPtr;
-    FFaUnResolvedRef*  myUnresolvedRef;
+    UnResolvedID*      myUnresolvedRef;
   };
 
   const char* myContextName;
