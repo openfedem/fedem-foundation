@@ -16,7 +16,7 @@ message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 set ( COMPONENT_FILE_LIST FFaDynamicLibraryBase FFaFilePath FFaTag )
 
 ## Pure header files, i.e., header files without a corresponding source file
-set ( HPP_FILE_LIST FFaFortran FFaIO )
+set ( HPP_FILE_LIST FFaExport FFaFortran FFaIO )
 
 ## Pure implementation files, i.e., source files without corresponding header
 if ( WIN )

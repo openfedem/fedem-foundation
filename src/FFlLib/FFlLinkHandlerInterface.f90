@@ -230,18 +230,11 @@ module FFlLinkHandlerInterface
        integer , intent(out) :: cs, ierr
      end subroutine ffl_getcs
 
-     function ffl_hasAttribute (name, iel, ierr)
+     subroutine ffl_attribute (name, iel, ierr)
        character(len=*), intent(in) :: name
        integer , intent(in)         :: iel
-       integer , intent(out)        :: ierr
-       integer                      :: ffl_hasAttribute
-     end function ffl_hasAttribute
-
-     function ffl_getAttributeID (name, iel)
-       character(len=*), intent(in) :: name
-       integer , intent(in)         :: iel
-       integer                      :: ffl_getAttributeID
-     end function ffl_getAttributeID
+       integer , intent(inout)      :: ierr
+     end subroutine ffl_attribute
 
      subroutine ffl_getPMATSHELL (MID, E1, E2, NU12, G12, G1Z, G2Z, RHO, ierr)
        integer , parameter   :: dp = kind(1.0D0)
@@ -271,7 +264,7 @@ module FFlLinkHandlerInterface
 
   end interface
 
-  private :: ffl_release
+  private :: ffl_attribute, ffl_release
 
 
 contains
@@ -295,6 +288,24 @@ contains
     close(lpu)
     call ffl_full_init (ftlfile,'',ierr)
   end subroutine ffl_test_init
+
+  function ffl_hasAttribute (name, iel, status)
+    character(len=*), intent(in) :: name
+    integer , intent(in)         :: iel
+    integer , intent(out)        :: status
+    logical                      :: ffl_hasAttribute
+    status = 0 ! Return whether the attribute exists or not
+    call ffl_attribute (name,iel,status)
+    ffl_hasAttribute = status /= 0
+  end function ffl_hasAttribute
+
+  function ffl_getAttributeID (name, iel) result(status)
+    character(len=*), intent(in) :: name
+    integer         , intent(in) :: iel
+    integer                      :: status
+    status = 1 ! Return the attribute ID
+    call ffl_attribute (name,iel,status)
+  end function ffl_getAttributeID
 
   subroutine ffl_done (removeSingletons)
     logical, optional, intent(in) :: removeSingletons

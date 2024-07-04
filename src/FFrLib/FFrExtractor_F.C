@@ -25,7 +25,7 @@
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 
-static FFrExtractor* rdb     = NULL; //!< Pointer to the extractor object
+static FFrExtractor* ourRdb  = NULL; //!< Pointer to the extractor object
 static FFrEntryBase* stepPtr = NULL; //!< Pointer to the step number variable
 
 
@@ -40,8 +40,9 @@ SUBROUTINE(ffr_init,FFR_INIT) (const char* file,
 #endif
 ){
   ierr = 1;
-  if (!rdb) rdb = new FFrExtractor;
-  if (!rdb)
+  if (!ourRdb)
+    ourRdb = new FFrExtractor();
+  if (!ourRdb)
   {
     std::cerr <<"FFr_init: Error allocating extractor object."<< std::endl;
     return;
@@ -63,13 +64,13 @@ SUBROUTINE(ffr_init,FFR_INIT) (const char* file,
     {
       for (std::string& file : files)
         ListUI <<"\n   * Reading results file "<< FFaFilePath::checkName(file);
-      ierr = rdb->addFiles(files,false,true) ? 0 : 1;
+      ierr = ourRdb->addFiles(files,false,true) ? 0 : 1;
     }
   }
   else
   {
     ListUI <<"\n   * Reading results file "<< FFaFilePath::checkName(fnames);
-    ierr = rdb->addFile(fnames,true) ? 0 : 1;
+    ierr = ourRdb->addFile(fnames,true) ? 0 : 1;
   }
   ListUI <<"\n\n";
 }
@@ -80,8 +81,8 @@ SUBROUTINE(ffr_init,FFR_INIT) (const char* file,
 
 SUBROUTINE(ffr_done,FFR_DONE) ()
 {
-  if (rdb) delete rdb;
-  rdb = NULL;
+  delete ourRdb;
+  ourRdb = NULL;
   stepPtr = NULL;
 }
 
@@ -128,7 +129,7 @@ static FFrEntryBase* findPtr(const std::string& path, const std::string& ogType,
 #if FFR_DEBUG > 1
   if (dbgMsg) std::cout << dbgMsg << entry;
 #endif
-  return rdb->search(entry);
+  return ourRdb->search(entry);
 }
 
 
@@ -188,7 +189,7 @@ SUBROUTINE(ffr_realdata,FFR_REALDATA) (const double* data, const f90_int& nw,
 			      std::string(objectType,ncharO),
 			      baseId, "FFr_realData: ");
 
-  ierr = rdb->getSingleTimeStepData(ptr,data,nw) - nw;
+  ierr = ourRdb->getSingleTimeStepData(ptr,data,nw) - nw;
 #if FFR_DEBUG > 1
   std::cout <<"        Data:";
   for (int i = 0; i < nw+ierr; i++) std::cout <<" "<< data[i];
@@ -226,7 +227,7 @@ SUBROUTINE(ffr_intdata,FFR_INTDATA) (const f90_int* data, const f90_int& nw,
 			      std::string(objectType,ncharO),
 			      baseId, "FFr_intData: ");
 
-  ierr = rdb->getSingleTimeStepData(ptr,data,nw) - nw;
+  ierr = ourRdb->getSingleTimeStepData(ptr,data,nw) - nw;
 #if FFR_DEBUG > 1
   std::cout <<"       Data:";
   for (int i = 0; i < nw+ierr; i++) std::cout <<" "<< data[i];
@@ -255,13 +256,13 @@ SUBROUTINE(ffr_setposition,FFR_SETPOSITION) (const double& atime,
                                              double& btime, f90_int8& istep)
 {
   if (!stepPtr)
-    stepPtr = rdb->getTopLevelVar("Time step number");
+    stepPtr = ourRdb->getTopLevelVar("Time step number");
 
   int jstep = 0;
   bool getNextHigh = true;
-  if (!rdb->positionRDB(atime,btime,getNextHigh))
+  if (!ourRdb->positionRDB(atime,btime,getNextHigh))
     istep = -1;
-  else if (rdb->getSingleTimeStepData(stepPtr,&jstep,1) != 1)
+  else if (ourRdb->getSingleTimeStepData(stepPtr,&jstep,1) != 1)
     istep = -2;
   else
     istep = jstep; // Temporary cast from int until 64-bit integer is supported
@@ -294,14 +295,14 @@ SUBROUTINE(ffr_increment,FFR_INCREMENT) (double& btime, f90_int8& istep)
     istep = -999;
     return;
   }
-  else if (!rdb->incrementRDB())
+  else if (!ourRdb->incrementRDB())
     istep = -1;
-  else if (rdb->getSingleTimeStepData(stepPtr,&jstep,1) != 1)
+  else if (ourRdb->getSingleTimeStepData(stepPtr,&jstep,1) != 1)
     istep = -2;
   else
     istep = jstep; // Temporary cast from int until 64-bit integer is supported
 
-  btime = rdb->getCurrentRDBPhysTime();
+  btime = ourRdb->getCurrentRDBPhysTime();
 #ifdef FFR_DEBUG
   std::cout <<" istep="<< istep <<" time="<< btime << std::endl;
 #endif
@@ -320,7 +321,7 @@ SUBROUTINE(ffr_increment,FFR_INCREMENT) (double& btime, f90_int8& istep)
 SUBROUTINE(ffr_getdata,FFR_GETDATA) (const double* data, const f90_int& nw,
                                      const ptr_int& varPtr, f90_int& ierr)
 {
-  ierr = rdb->getSingleTimeStepData((const FFrEntryBase*)varPtr,data,nw) - nw;
+  ierr = ourRdb->getSingleTimeStepData((const FFrEntryBase*)varPtr,data,nw)-nw;
 #if FFR_DEBUG > 1
   std::cout <<"FFr_getData: Ptr= "<< varPtr <<" Data:";
   for (int i = 0; i < nw+ierr; i++) std::cout <<" "<< data[i];

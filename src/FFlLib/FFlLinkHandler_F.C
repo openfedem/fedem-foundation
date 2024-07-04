@@ -5,6 +5,18 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFlLinkHandler_F.C
+  \brief Fortran wrapper for the FFlLinkHandler methods.
+
+  \details This file contains some global-scope functions callable from Fortran.
+  It wraps the functionality needed by the FE Part Reducer and Recovery modules,
+  accessing the FE data of the Parts.
+
+  \author Knut Morten Okstad
+  \date 20 Sep 2000
+*/
+
 #include <algorithm>
 #include <cstring>
 
@@ -20,35 +32,32 @@
 #include "FFaLib/FFaAlgebra/FFaMat34.H"
 #include "FFaLib/FFaAlgebra/FFaCheckSum.H"
 #include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
+#include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaString/FFaTokenizer.H"
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
-#include "FFaLib/FFaDefinitions/FFaMsg.H"
+#include "FFaLib/FFaOS/FFaExport.H"
 
-#if defined(win32) || defined(win64)
-#include <windows.h>
-#define DLLexport(ret) extern "C" __declspec(dllexport) ret
-#else
-#define DLLexport(ret) extern "C" ret
-#endif
-
-static FFlLinkHandler* theLink = NULL;
-static FFaCheckSum*    chkSum  = NULL;
-
+//! \brief Pointers to all FE parts subjected to recovery during dynamics solve
 static std::vector<FFlLinkHandler*> ourLinks;
+//! \brief Pointer to FE part currently in calculation focus
+static FFlLinkHandler* ourLink = NULL;
+//! \brief Pointer to FFaCheckSum object for FE part in calculation focus
+static FFaCheckSum* chkSum = NULL;
 
-
+//! \brief Convenience macro for dynamic casting of an element attribute pointer
 #define GET_ATTRIBUTE(el,att) dynamic_cast<FFl##att*>((el)->getAttribute(#att))
+//! \brief Convenience macro for dynamic casting of a link attribute pointer
 #define LINK_ATTRIBUTE(att,ID) \
-  theLink ? dynamic_cast<FFl##att*>(theLink->getAttribute(#att,ID)) : NULL
+  ourLink ? dynamic_cast<FFl##att*>(ourLink->getAttribute(#att,ID)) : NULL
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Basic object init. Used both by the reducer and the recovery processes.
-//
-// Coded by: Jens Lien
-// Date/ver: Apr 2003 / 1.0
-////////////////////////////////////////////////////////////////////////////////
+//! \brief Initializes the FE part object #ourLink by reading data from file.
+//! \details Common function used both by the Reducer and the Recovery modules.
+//!
+//! \author Jens Lien
+//! \date Apr 2003
 
 static int ffl_basic_init (int maxNodes, int maxElms,
                            const std::string& partName = "")
@@ -65,14 +74,14 @@ static int ffl_basic_init (int maxNodes, int maxElms,
     return -1;
   }
 
-  if (theLink)
+  if (ourLink && partName.empty())
   {
     std::cerr <<"ffl_init: Logic error, FE part already exists"<< std::endl;
     return -99;
   }
 
-  theLink = new FFlLinkHandler(maxNodes,maxElms);
-  if (!theLink)
+  ourLink = new FFlLinkHandler(maxNodes,maxElms);
+  if (!ourLink)
   {
     std::cerr <<"ffl_init: Error allocating FE part object"<< std::endl;
     return -2;
@@ -84,21 +93,21 @@ static int ffl_basic_init (int maxNodes, int maxElms,
   // Read the FE data file into the FFlLinkHandler object
   FFaFilePath::checkName(linkFile);
   FFlFedemReader::ignoreCheckSum = !partName.empty();
-  if (FFlReaders::instance()->read(linkFile,theLink) > 0)
+  if (FFlReaders::instance()->read(linkFile,ourLink) > 0)
   {
-    ourLinks.push_back(theLink);
+    ourLinks.push_back(ourLink);
     return partName.empty() ? 0 : ourLinks.size();
   }
 
-  if (theLink->isTooLarge())
+  if (ourLink->isTooLarge())
     ListUI <<" *** Reduction and recovery of FE parts is only a demo feature\n"
 	   <<"     with the current license, and therefore limited to small"
 	   <<" models only.\n"
 	   <<"     To continue with the current model, you may toggle this part"
 	   <<"  into a Generic Part before solving.\n";
 
-  delete theLink;
-  theLink = NULL;
+  delete ourLink;
+  ourLink = NULL;
   return -3;
 }
 
@@ -129,7 +138,7 @@ SUBROUTINE(ffl_limited_init,FFL_LIMITED_INIT) (const int& maxNodes,
   std::string elmGroups;
   FFaCmdLineArg::instance()->getValue("group",elmGroups);
   if (!elmGroups.empty())
-    FFl::activateElmGroups(theLink,elmGroups);
+    FFl::activateElmGroups(ourLink,elmGroups);
 }
 
 
@@ -153,7 +162,7 @@ SUBROUTINE(ffl_full_init,FFL_FULL_INIT) (const char* linkFile,
 ){
   ierr = ffl_basic_init(0,0,std::string(linkFile,ncharF));
   if (ierr >= 0 && elmGroups && ncharG > 0)
-    FFl::activateElmGroups(theLink,std::string(elmGroups,ncharG));
+    FFl::activateElmGroups(ourLink,std::string(elmGroups,ncharG));
 }
 
 
@@ -170,7 +179,7 @@ SUBROUTINE(ffl_reducer_init,FFL_REDUCER_INIT) (const int& maxNodes,
 					       const int& maxElms,
 					       int& ierr)
 {
-  ierr = theLink ? 0 : ffl_basic_init(maxNodes,maxElms);
+  ierr = ourLink ? 0 : ffl_basic_init(maxNodes,maxElms);
   if (ierr < 0) return;
 
   // add external node reference through the extNodes flag:
@@ -197,7 +206,7 @@ SUBROUTINE(ffl_reducer_init,FFL_REDUCER_INIT) (const int& maxNodes,
     {
       FFlNode* theNode;
       for (int nId : nodeID)
-        if ((theNode = theLink->getNode(nId)))
+        if ((theNode = ourLink->getNode(nId)))
           theNode->setExternal();
         else
           ListUI <<"  ** Warning: Non-existing external node "<< nId
@@ -209,21 +218,8 @@ SUBROUTINE(ffl_reducer_init,FFL_REDUCER_INIT) (const int& maxNodes,
   FFaCmdLineArg::instance()->getValue("ftlout",ftlOut);
   if (ftlOut.empty()) return;
 
-  FFlFedemWriter writer(theLink);
+  FFlFedemWriter writer(ourLink);
   writer.write(ftlOut);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Allocate the FE part object and read FE data file. For unit testing only.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 28 Feb 2020 / 1.0
-////////////////////////////////////////////////////////////////////////////////
-
-DLLexport(int) ffl_loadPart (const std::string& fileName)
-{
-  return ffl_basic_init(0,0,fileName);
 }
 
 
@@ -236,10 +232,10 @@ DLLexport(int) ffl_loadPart (const std::string& fileName)
 
 SUBROUTINE(ffl_set,FFL_SET) (const int& linkIdx)
 {
-  if (linkIdx > 0 && (size_t)linkIdx <= ourLinks.size())
-    theLink = ourLinks[linkIdx-1];
+  if (linkIdx > 0 && linkIdx <= static_cast<int>(ourLinks.size()))
+    ourLink = ourLinks[linkIdx-1];
   else
-    theLink = NULL;
+    ourLink = NULL;
 
   delete chkSum;
   chkSum = NULL;
@@ -256,11 +252,11 @@ SUBROUTINE(ffl_set,FFL_SET) (const int& linkIdx)
 SUBROUTINE(ffl_release,FFL_RELEASE) (const int& removeSingletons)
 {
   if (ourLinks.empty())
-    delete theLink;
+    delete ourLink;
   else for (FFlLinkHandler* link : ourLinks)
     delete link;
   ourLinks.clear();
-  theLink = NULL;
+  ourLink = NULL;
   delete chkSum;
   chkSum = NULL;
   if (removeSingletons)
@@ -289,9 +285,9 @@ SUBROUTINE(ffl_export_vtf,FFL_EXPORT_VTF) (const char* VTFfile,
 					   const int ncharF, const int ncharN
 #endif
 ){
-  FFlVTFWriter writer(theLink);
+  FFlVTFWriter writer(ourLink);
   if (writer.write(std::string(VTFfile,ncharF),
-		   std::string(linkName,ncharN),linkID,-1))
+                   std::string(linkName,ncharN),linkID,-1))
     ierr = 0;
   else
     ierr = 1;
@@ -306,29 +302,26 @@ SUBROUTINE(ffl_export_vtf,FFL_EXPORT_VTF) (const char* VTFfile,
 // Date/ver: 17 March 2006 / 1.0
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef std::pair<std::string,size_t> ElmType;
-
-inline bool ElmTypeLess (const ElmType& lhs, const ElmType& rhs)
-{
-  return lhs.first < rhs.first;
-}
-
 SUBROUTINE(ffl_elmorder_vtf,FFL_ELMORDER_VTF) (int* vtfOrder, int& stat)
 {
   stat = 0;
-  if (!theLink) return;
+  if (!ourLink) return;
+
+  using ElmType = std::pair<std::string,size_t>;
 
   std::vector<ElmType> elmTypeVec;
-  elmTypeVec.reserve(theLink->getElementCount(FFlLinkHandler::FFL_FEM));
+  elmTypeVec.reserve(ourLink->getElementCount(FFlLinkHandler::FFL_FEM));
 
   // Establish a vector of element type element number pairs
   ElementsCIter e;
   size_t iel = 0;
-  for (e = theLink->fElementsBegin(); e != theLink->fElementsEnd(); ++e)
+  for (e = ourLink->fElementsBegin(); e != ourLink->fElementsEnd(); ++e)
     elmTypeVec.push_back(ElmType((*e)->getTypeName(),++iel));
 
   // Use stable_sort to avoid that elements of the same type change order
-  std::stable_sort(elmTypeVec.begin(),elmTypeVec.end(),ElmTypeLess);
+  std::stable_sort(elmTypeVec.begin(),elmTypeVec.end(),
+                   [](const ElmType& lhs, const ElmType& rhs)
+                   { return lhs.first < rhs.first; });
 
   // Check if any elements actually have changed order
   vtfOrder[0] = elmTypeVec.front().second;
@@ -347,11 +340,11 @@ SUBROUTINE(ffl_elmorder_vtf,FFL_ELMORDER_VTF) (int* vtfOrder, int& stat)
 
 SUBROUTINE(ffl_massprop,FFL_MASSPROP) (double& mass, double* cg, double* II)
 {
-  if (!theLink) return;
+  if (!ourLink) return;
 
   FaVec3 Xcg;
   FFaTensor3 Icg;
-  theLink->getMassProperties(mass,Xcg,Icg);
+  ourLink->getMassProperties(mass,Xcg,Icg);
   memcpy(cg,Xcg.getPt(),3*sizeof(double));
   memcpy(II,Icg.getPt(),6*sizeof(double));
 }
@@ -369,7 +362,7 @@ SUBROUTINE(ffl_getsize,FFL_GETSIZE) (int& nnod, int& nel, int& ndof, int& nmnpc,
                                      int& nrgd, int& nrbar, int& nwavgm,
                                      int& nprop, int& ncons, int& ierr)
 {
-  if (!theLink)
+  if (!ourLink)
   {
     std::cerr <<"ffl_getsize: FE part object not initialized"<< std::endl;
     ierr = -1;
@@ -379,19 +372,19 @@ SUBROUTINE(ffl_getsize,FFL_GETSIZE) (int& nnod, int& nel, int& ndof, int& nmnpc,
   nnod = ndof = nmnpc = nxnod = npbeam = nrgd = nrbar = nwavgm = 0;
 
   NodesCIter nit;
-  for (nit = theLink->nodesBegin(); nit != theLink->nodesEnd(); ++nit)
+  for (nit = ourLink->nodesBegin(); nit != ourLink->nodesEnd(); ++nit)
     if ((*nit)->hasDOFs()) // Skip all loose nodes
     {
       nnod ++;
       ndof += (*nit)->getMaxDOFs();
     }
 
-  ierr = nel = theLink->buildFiniteElementVec();
+  ierr = nel = ourLink->buildFiniteElementVec();
   if (ierr < 0) return;
 
   ElementsCIter eit;
   std::string curTyp;
-  for (eit = theLink->fElementsBegin(); eit != theLink->fElementsEnd(); ++eit)
+  for (eit = ourLink->fElementsBegin(); eit != ourLink->fElementsEnd(); ++eit)
   {
     nmnpc += (*eit)->getNodeCount();
     curTyp = (*eit)->getTypeName();
@@ -414,38 +407,14 @@ SUBROUTINE(ffl_getsize,FFL_GETSIZE) (int& nnod, int& nel, int& ndof, int& nmnpc,
   nnod += nxnod;
   ndof += nxnod*6;
   ncons = nrgd + nrbar + nwavgm;
-  nmat  = theLink->getAttributeCount("PMAT");
-  nprop = theLink->getAttributeCount("PTHICK")
-    +     theLink->getAttributeCount("PBEAMSECTION")
-    +     theLink->getAttributeCount("PNSM");
+  nmat  = ourLink->getAttributeCount("PMAT");
+  nprop = ourLink->getAttributeCount("PTHICK")
+    +     ourLink->getAttributeCount("PBEAMSECTION")
+    +     ourLink->getAttributeCount("PNSM");
 
   // Count the number of activated finite elements,
   // should be equal to nel if no element group specified
-  ierr = theLink->getElementCount(FFlLinkHandler::FFL_ALL,true);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Auxiliary function converting a beam pin flag into DOF status codes.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 13 Sep 2002 / 1.0
-////////////////////////////////////////////////////////////////////////////////
-
-static int resolvePinFlag (int pinFlag, int* msc)
-{
-  if (pinFlag <= 0) return 0;
-
-  int nndof = 6;
-  while (pinFlag > 0)
-  {
-    int ldof = pinFlag%10;
-    pinFlag /= 10;
-    while (nndof > ldof) msc[--nndof] = 0;
-    msc[--nndof] = 1;
-  }
-  while (nndof > 0) msc[--nndof] = 0;
-  return 6;
+  ierr = ourLink->getElementCount(FFlLinkHandler::FFL_ALL,true);
 }
 
 
@@ -461,7 +430,7 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
                                        double* X, double* Y, double* Z,
                                        int& ierr)
 {
-  if (!theLink)
+  if (!ourLink)
   {
     std::cerr <<"ffl_getnodes: FE part object not initialized"<< std::endl;
     ierr = -1;
@@ -474,7 +443,7 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
   ierr = inod = ndof = 0;
   madof[0] = 1;
 
-  for (nit = theLink->nodesBegin(); nit != theLink->nodesEnd(); ++nit)
+  for (nit = ourLink->nodesBegin(); nit != ourLink->nodesEnd(); ++nit)
   {
     maxDOFs = (*nit)->getMaxDOFs();
     if (maxDOFs == 3 || maxDOFs == 6)
@@ -501,14 +470,33 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
 #if FFL_DEBUG > 1
     else
       std::cout <<"ffl_getnodes: Ignoring loose node "<< (*nit)->getID()
-		<< std::endl;
+                << std::endl;
 #endif
   }
 
   if (inod >= nnod) return;
 
+  // Lambda function converting a beam pin flag into DOF status codes.
+  auto&& resolvePinFlag = [](int pinFlag, int* msc)
+  {
+    if (pinFlag <= 0) return 0;
+
+    int nndof = 6;
+    while (pinFlag > 0)
+    {
+      int ldof = pinFlag%10;
+      pinFlag /= 10;
+      while (nndof > ldof)
+        msc[--nndof] = 0;
+      msc[--nndof] = 1;
+    }
+    while (nndof > 0)
+      msc[--nndof] = 0;
+    return 6;
+  };
+
   ElementsCIter eit;
-  for (eit = theLink->fElementsBegin(); eit != theLink->fElementsEnd(); ++eit)
+  for (eit = ourLink->fElementsBegin(); eit != ourLink->fElementsEnd(); ++eit)
     if ((*eit)->getTypeName() == "BEAM2")
     {
       // Add extra nodes for beams with pin flags
@@ -560,7 +548,7 @@ SUBROUTINE(ffl_gettopol,FFL_GETTOPOL) (int& nel, int& nmnpc,
                                        int* mpbeam, int* mprgd, int* mprbar,
                                        int* mpwavgm, int& ierr)
 {
-  if (!theLink)
+  if (!ourLink)
   {
     std::cerr <<"ffl_gettopol: FE part object not initialized"<< std::endl;
     ierr = -1;
@@ -603,7 +591,7 @@ SUBROUTINE(ffl_gettopol,FFL_GETTOPOL) (int& nel, int& nmnpc,
   ierr = nel = nmnpc = npbeam = nrbar = nrgd = nwavgm = 0;
   mpmnpc[0] = 1;
 
-  for (eit = theLink->fElementsBegin(); eit != theLink->fElementsEnd(); ++eit)
+  for (eit = ourLink->fElementsBegin(); eit != ourLink->fElementsEnd(); ++eit)
   {
     // Find the SAM element type number
     tit = typeMap.find((*eit)->getTypeName());
@@ -646,7 +634,7 @@ SUBROUTINE(ffl_gettopol,FFL_GETTOPOL) (int& nel, int& nmnpc,
 
     // Find the nodal point correspondance
     for (nit = (*eit)->nodesBegin(); nit != (*eit)->nodesEnd(); ++nit)
-      if ((inod = theLink->getIntNodeID((*nit)->getID())) > 0)
+      if ((inod = ourLink->getIntNodeID((*nit)->getID())) > 0)
         mmnpc[nmnpc++] = inod;
       else if (inod < 0)
         ListUI <<"  ** Warning : DOF-less node "<< (*nit)->getID()
@@ -669,20 +657,19 @@ SUBROUTINE(ffl_gettopol,FFL_GETTOPOL) (int& nel, int& nmnpc,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Auxiliary function returning the element object for a given element number.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 18 Sep 2002 / 2.0
-////////////////////////////////////////////////////////////////////////////////
+//! \brief Auxiliary function returning a pointer to and indexed element object.
+//!
+//! \author Knut Morten Okstad
+//! \date 18 Sep 2002
 
 static FFlElementBase* ffl_getElement (int iel)
 {
   FFlElementBase* curElm = NULL;
-  if (!theLink)
-    std::cerr <<"ffl_getElement: Internal error, theLink is NULL"<< std::endl;
-  else if (!(curElm = theLink->getFiniteElement(iel)))
+  if (!ourLink)
+    std::cerr <<"ffl_getElement: Internal error, ourLink is NULL"<< std::endl;
+  else if (!(curElm = ourLink->getFiniteElement(iel)))
     ListUI <<" *** Error: Invalid element index "<< iel <<", out of range [1,"
-           << theLink->getElementCount(FFlLinkHandler::FFL_FEM) <<"]\n";
+           << ourLink->getElementCount(FFlLinkHandler::FFL_FEM) <<"]\n";
 
   return curElm;
 }
@@ -718,14 +705,14 @@ INTEGER_FUNCTION(ffl_ext2int,FFL_EXT2INT) (const int& nodeID, const int& ID)
   if (ID == 0) return 0; // silently ignore zero external ID
 
   int intID = -1;
-  if (!theLink)
-    std::cerr <<"ffl_ext2int: Internal error, theLink is NULL"<< std::endl;
+  if (!ourLink)
+    std::cerr <<"ffl_ext2int: Internal error, ourLink is NULL"<< std::endl;
   else if (ID < 0)
     intID = 0;
   else if (nodeID)
-    intID = theLink->getIntNodeID(ID);
+    intID = ourLink->getIntNodeID(ID);
   else
-    intID = theLink->getIntElementID(ID);
+    intID = ourLink->getIntElementID(ID);
 
   if (intID <= 0)
     ListUI <<" *** Error: Non-existing "<< (nodeID ? "node" : "element")
@@ -774,7 +761,8 @@ SUBROUTINE(ffl_getcoor,FFL_GETCOOR) (double* X, double* Y, double* Z,
     FFlPORIENT* bo = GET_ATTRIBUTE(curElm,PORIENT);
     if (!bo) // If no PORIENT, try the equivalent old name also
       bo = dynamic_cast<FFlPORIENT*>(curElm->getAttribute("PBEAMORIENT"));
-    if (bo) Zaxis = bo->directionVector.getValue();
+    if (bo)
+      Zaxis = bo->directionVector.getValue();
 
     if (Zaxis.isZero())
     {
@@ -877,52 +865,27 @@ SUBROUTINE(ffl_getmat,FFL_GETMAT) (double& E, double& nu, double& rho,
   }
 }
 
-/* class FFlPTHETA still missing, Bjorn
-SUBROUTINE(ffl_getptheta,FFL_GETPTHETA)(const int& pThetaID,
-					double& thetaInDeg, int& ierr)
-{
-  ierr = 0;
-  FFlPTHETA* pTheta = LINK_ATTRIBUTE(PTHETA,pThetaID);
-  if (pTheta)
-    thetaInDeg = pTheta->theta.getValue();
-  else
-  {
-    ierr = -1;
-    ListUI <<" *** Error: Did not find PTHETA property with ID "
-	   << pThetaID <<"\n";
-  }
-}
-*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check if an element has a certain attribute
 ////////////////////////////////////////////////////////////////////////////////
 
-INTEGER_FUNCTION (ffl_hasattribute,FFL_HASATTRIBUTE)
+SUBROUTINE (ffl_attribute,FFL_ATTRIBUTE) (const char* type,
 #ifdef _NCHAR_AFTER_CHARARG
-  (const char* type, const int nchar, const int& iel, int& ierr)
+                                          const int nchar,
+                                          const int& iel, int& status
 #else
-  (const char* type, const int& iel, int& ierr, const int nchar)
+                                          const int& iel, int& status,
+                                          const int nchar
 #endif
-{
-  ierr = -1;
+){
   FFlElementBase* curElm = ffl_getElement(iel);
-  if (!curElm) return -1;
-
-  ierr = 0;
-  return curElm->getAttribute(std::string(type,nchar)) ? 1 : 0;
-}
-
-
-INTEGER_FUNCTION (ffl_getattributeid,FFL_GETATTRIBUTEID)
-#ifdef _NCHAR_AFTER_CHARARG
-  (const char* type, const int nchar, const int& iel)
-#else
-  (const char* type, const int& iel, const int nchar)
-#endif
-{
-  FFlElementBase* curElm = ffl_getElement(iel);
-  return curElm ? curElm->getAttributeID(std::string(type,nchar)) : -1;
+  if (!curElm) // non-existing element
+    status = -1;
+  else if (status) // get the ID of this attribute, if the element has it
+    status = curElm->getAttributeID(std::string(type,nchar));
+  else // check whether the element has this attribute
+    status = curElm->getAttribute(std::string(type,nchar)) ? 1 : 0;
 }
 
 
@@ -933,8 +896,8 @@ INTEGER_FUNCTION (ffl_getattributeid,FFL_GETATTRIBUTEID)
 INTEGER_FUNCTION(ffl_getmaxcompositeplys,FFL_GETMAXCOMPOSITEPLYS) ()
 {
   int maxPlys = -1;
-  if (theLink)
-    for (const AttributeMap::value_type& p : theLink->getAttributes("PCOMP"))
+  if (ourLink)
+    for (const AttributeMap::value_type& p : ourLink->getAttributes("PCOMP"))
     {
       int nPlys = static_cast<FFlPCOMP*>(p.second)->plySet.data().size();
       if (nPlys > maxPlys) maxPlys = nPlys;
@@ -961,12 +924,12 @@ SUBROUTINE(ffl_getpcomp,FFL_GETPCOMP) (int& compID, int& nPlys, double& Z0,
                                        double* rho, int& ierr)
 {
   ierr = -1;
-  if (!theLink) return;
-  const AttributeMap& pComps = theLink->getAttributes("PCOMP");
+  if (!ourLink) return;
+  const AttributeMap& pComps = ourLink->getAttributes("PCOMP");
   if (pComps.empty()) return;
 
   AttributeMap::const_iterator pit = pComps.begin();
-  if (compID < 0 && -compID <= (int)pComps.size())
+  if (compID < 0 && -compID <= static_cast<int>(pComps.size()))
     std::advance(pit,-compID-1);
   else if ((pit = pComps.find(compID)) == pComps.end())
   {
@@ -1116,7 +1079,8 @@ SUBROUTINE(ffl_getnsm,FFL_GETNSM) (double& Mass, const int& iel, int& ierr)
   if (!curElm) return;
 
   FFlPNSM* curProperty = GET_ATTRIBUTE(curElm,PNSM);
-  if (curProperty) Mass = curProperty->NSM.getValue();
+  if (curProperty)
+    Mass = curProperty->NSM.getValue();
   ierr = 0;
 }
 
@@ -1196,18 +1160,18 @@ SUBROUTINE(ffl_getbeamsection,FFL_GETBEAMSECTION) (double* section,
 SUBROUTINE(ffl_getnodalcoor,FFL_GETNODALCOOR) (double& X, double& Y, double& Z,
                                                const int& inod, int& ierr)
 {
-  if (!theLink)
+  if (!ourLink)
   {
-    std::cerr <<"ffl_getnodalcoor: Internal error, theLink is NULL"<< std::endl;
+    std::cerr <<"ffl_getnodalcoor: Internal error, ourLink is NULL"<< std::endl;
     ierr = -1;
     return;
   }
 
-  FFlNode* curNode = theLink->getFENode(inod);
+  FFlNode* curNode = ourLink->getFENode(inod);
   if (!curNode)
   {
     ListUI <<" *** Error: Invalid node index "<< inod <<", out of range [1,"
-           << theLink->getNodeCount(FFlLinkHandler::FFL_FEM) <<"]\n";
+           << ourLink->getNodeCount(FFlLinkHandler::FFL_FEM) <<"]\n";
     ierr = -2;
     return;
   }
@@ -1444,10 +1408,10 @@ SUBROUTINE(ffl_getrgddofcomp,FFL_GETRGDDOFCOMP) (int* comp, const int& iel,
 SUBROUTINE(ffl_getwavgm,FFL_GETWAVGM) (int& refC, int* indC, double* weights,
                                        const int& iel, int& ierr)
 {
-  if (iel < 0 && theLink)
+  if (iel < 0 && ourLink)
   {
     int N = refC = ierr = 0;
-    for (const AttributeMap::value_type& p : theLink->getAttributes("PWAVGM"))
+    for (const AttributeMap::value_type& p : ourLink->getAttributes("PWAVGM"))
       if ((N = static_cast<FFlPWAVGM*>(p.second)->weightMatrix.getValue().size()) > refC)
         refC = N;
     return;
@@ -1460,7 +1424,7 @@ SUBROUTINE(ffl_getwavgm,FFL_GETWAVGM) (int& refC, int* indC, double* weights,
   if (curElm->getTypeName() != std::string("WAVGM"))
   {
     std::cerr <<"ffl_getwavgm: Invalid element type for element "
-	      << curElm->getID() <<": "<< curElm->getTypeName() << std::endl;
+              << curElm->getID() <<": "<< curElm->getTypeName() << std::endl;
     return;
   }
 
@@ -1487,10 +1451,17 @@ SUBROUTINE(ffl_getwavgm,FFL_GETWAVGM) (int& refC, int* indC, double* weights,
 
 SUBROUTINE(ffl_getloadcases,FFL_GETLOADCASES) (int* loadCases, int& nlc)
 {
-  std::set<int> IDs;
-  if (theLink) theLink->getLoadCases(IDs);
+  if (!ourLink)
+  {
+    nlc = 0;
+    return;
+  }
 
-  if (IDs.size() < (size_t)nlc) nlc = IDs.size();
+  std::set<int> IDs;
+  ourLink->getLoadCases(IDs);
+  if (nlc > static_cast<int>(IDs.size()))
+    nlc = IDs.size();
+
   std::set<int>::const_iterator sit = IDs.begin();
   for (int ilc = 0; ilc < nlc; ilc++, ++sit)
     loadCases[ilc] = *sit;
@@ -1506,11 +1477,11 @@ SUBROUTINE(ffl_getloadcases,FFL_GETLOADCASES) (int* loadCases, int& nlc)
 
 INTEGER_FUNCTION(ffl_getnoload,FFL_GETNOLOAD) (const int& SID)
 {
-  if (!theLink) return 0;
+  if (!ourLink) return 0;
 
   int nLoad = 0;
   LoadsVec loads;
-  theLink->getLoads(SID,loads);
+  ourLink->getLoads(SID,loads);
   for (FFlLoadBase* load : loads)
     nLoad += load->getTargetCount();
 
@@ -1528,9 +1499,9 @@ INTEGER_FUNCTION(ffl_getnoload,FFL_GETNOLOAD) (const int& SID)
 SUBROUTINE(ffl_getload,FFL_GETLOAD) (const int& SID, int& iel, int& face,
 				     double* P)
 {
-  if (!theLink)
+  if (!ourLink)
   {
-    std::cerr <<"ffl_getload: Internal error, theLink is NULL"<< std::endl;
+    std::cerr <<"ffl_getload: Internal error, ourLink is NULL"<< std::endl;
     iel = face = 0;
     return;
   }
@@ -1541,7 +1512,7 @@ SUBROUTINE(ffl_getload,FFL_GETLOAD) (const int& SID, int& iel, int& face,
   if (loads.empty())
   {
     iel = face = 0;
-    theLink->getLoads(SID,loads);
+    ourLink->getLoads(SID,loads);
     if (loads.empty()) return;
     lit = loads.begin();
   }
@@ -1556,9 +1527,9 @@ SUBROUTINE(ffl_getload,FFL_GETLOAD) (const int& SID, int& iel, int& face,
 
       int eid = iel;
       if (face < 0)
-	iel = theLink->getIntNodeID(eid);
+	iel = ourLink->getIntNodeID(eid);
       else
-	iel = theLink->getIntElementID(eid);
+	iel = ourLink->getIntElementID(eid);
       if (iel > 0) return;
 
       // This should never happen (implies logic error somewhere)
@@ -1580,11 +1551,10 @@ SUBROUTINE(ffl_getload,FFL_GETLOAD) (const int& SID, int& iel, int& face,
 #ifdef FT_USE_STRAINCOAT
 
 ////////////////////////////////////////////////////////////////////////////////
-// Auxiliary function for retrieval of strain coat attributes.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 28 May 2001 / 1.0
-////////////////////////////////////////////////////////////////////////////////
+//! \brief Auxiliary function for retrieval of strain coat attributes.
+//!
+//! \author Knut Morten Okstad
+//! \date 28 May 2001
 
 static void getStrainCoatAttributes (FFlPSTRC* p, FFlPFATIGUE* pFat,
                                      int& resSet, int& id,
@@ -1646,17 +1616,17 @@ SUBROUTINE(ffl_getstraincoat,FFL_GETSTRAINCOAT) (int& Id, int& nnod, int& npts,
                                                  double* SCF, int* SNcurve,
                                                  int& eId, int& ierr)
 {
-  if (!theLink)
+  if (!ourLink)
   {
-    std::cerr <<"ffl_getstraincoat: Internal error, theLink is NULL"
+    std::cerr <<"ffl_getstraincoat: Internal error, ourLink is NULL"
 	      << std::endl;
     ierr = -1;
     return;
   }
 
   ierr = 0;
-  static ElementsCIter eit = theLink->elementsBegin();
-  while (eit != theLink->elementsEnd())
+  static ElementsCIter eit = ourLink->elementsBegin();
+  while (eit != ourLink->elementsEnd())
   {
     FFlElementBase* curElm = *eit;
     ++eit;
@@ -1668,7 +1638,7 @@ SUBROUTINE(ffl_getstraincoat,FFL_GETSTRAINCOAT) (int& Id, int& nnod, int& npts,
       nnod = npts = 0;
       for (NodeCIter it = curElm->nodesBegin(); it != curElm->nodesEnd(); ++it)
       {
-        if ((nodes[nnod++] = theLink->getIntNodeID((*it)->getID())) < 0)
+        if ((nodes[nnod++] = ourLink->getIntNodeID((*it)->getID())) < 0)
         {
           ierr --;
           ListUI <<" *** Error: Non-existing node "<< (*it)->getID()
@@ -1698,7 +1668,7 @@ SUBROUTINE(ffl_getstraincoat,FFL_GETSTRAINCOAT) (int& Id, int& nnod, int& npts,
 
   // We have reached the end of the element list
   Id = nnod = npts = 0;
-  eit = theLink->elementsBegin();
+  eit = ourLink->elementsBegin();
   ierr = 1;
 }
 
@@ -1712,7 +1682,7 @@ SUBROUTINE(ffl_getstraincoat,FFL_GETSTRAINCOAT) (int& Id, int& nnod, int& npts,
 
 INTEGER_FUNCTION(ffl_getnostrcmat,FFL_GETNOSTRCMAT) ()
 {
-  if (!theLink)
+  if (!ourLink)
   {
     std::cerr <<"ffl_getnostrcmat: FE part object not initialized"<< std::endl;
     return -1;
@@ -1723,7 +1693,7 @@ INTEGER_FUNCTION(ffl_getnostrcmat,FFL_GETNOSTRCMAT) ()
   std::vector<AttribData>::const_iterator        ai;
   std::map<int,int>                              usedMat;
 
-  for (ei = theLink->elementsBegin(); ei != theLink->elementsEnd(); ++ei)
+  for (ei = ourLink->elementsBegin(); ei != ourLink->elementsEnd(); ++ei)
     if (FFlLinkHandler::isStrainCoat(*ei) && (*ei)->doCalculations())
       for (FFlAttributeBase* pstrc : (*ei)->getAttributes("PSTRC"))
         for (ai = pstrc->attributesBegin(); ai != pstrc->attributesEnd(); ++ai)
@@ -1735,11 +1705,11 @@ INTEGER_FUNCTION(ffl_getnostrcmat,FFL_GETNOSTRCMAT) ()
 
   int nMat = usedMat.size();
 #ifdef FFL_DEBUG
-  std::cout <<"ffl_getnostrcmat: Number of strain coat materials = "<< nMat
-	    << std::endl;
+  std::cout <<"ffl_getnostrcmat: Number of strain coat materials = "<< nMat;
   for (const std::pair<const int,int>& imat : usedMat)
-    std::cout <<"                  Id = "<< imat.first
-              <<" : # = "<< imat.second << std::endl;
+    std::cout <<"\n                  Id = "<< imat.first
+              <<" : # = "<< imat.second;
+  std::cout << std::endl;
 #endif
   return nMat;
 }
@@ -1754,13 +1724,13 @@ INTEGER_FUNCTION(ffl_getnostrcmat,FFL_GETNOSTRCMAT) ()
 
 INTEGER_FUNCTION(ffl_getnostrc,FFL_GETNOSTRC) ()
 {
-  if (!theLink)
+  if (!ourLink)
   {
     std::cerr <<"ffl_getnostrc: FE part object not initialized"<< std::endl;
     return -1;
   }
 
-  return theLink->getElementCount(FFlLinkHandler::FFL_STRC,true);
+  return ourLink->getElementCount(FFlLinkHandler::FFL_STRC,true);
 }
 
 #endif
@@ -1775,14 +1745,16 @@ INTEGER_FUNCTION(ffl_getnostrc,FFL_GETNOSTRC) ()
 
 SUBROUTINE(ffl_calcs,FFL_CALCS) (int& ierr)
 {
-  if (!theLink)
+  if (!ourLink)
   {
     std::cerr <<"ffl_calcs: FE part object not initialized"<< std::endl;
     ierr = -1;
     return;
   }
 
-  if (!chkSum) chkSum = new FFaCheckSum;
+  if (!chkSum)
+    chkSum = new FFaCheckSum();
+
   if (!chkSum)
   {
     std::cerr <<"ffl_calcs: Error allocating checksum object"<< std::endl;
@@ -1791,8 +1763,8 @@ SUBROUTINE(ffl_calcs,FFL_CALCS) (int& ierr)
   }
 
   chkSum->reset();
-  theLink->calculateChecksum(chkSum);
-  ierr = (int)chkSum->getCurrent();
+  ourLink->calculateChecksum(chkSum);
+  ierr = chkSum->getCurrent();
 }
 
 
@@ -1805,7 +1777,8 @@ SUBROUTINE(ffl_calcs,FFL_CALCS) (int& ierr)
 
 SUBROUTINE(ffl_addcs_int,FFL_ADDCS_INT) (int& value)
 {
-  if (chkSum) chkSum->add(value);
+  if (chkSum)
+    chkSum->add(value);
 }
 
 
@@ -1818,7 +1791,8 @@ SUBROUTINE(ffl_addcs_int,FFL_ADDCS_INT) (int& value)
 
 SUBROUTINE(ffl_addcs_double,FFL_ADDCS_DOUBLE) (double& value)
 {
-  if (chkSum) chkSum->add(value);
+  if (chkSum)
+    chkSum->add(value);
 }
 
 
@@ -1832,21 +1806,33 @@ SUBROUTINE(ffl_addcs_double,FFL_ADDCS_DOUBLE) (double& value)
 SUBROUTINE(ffl_getcs,FFL_GETCS) (int& cs, int& ierr)
 {
   if (chkSum)
-    cs = (int)chkSum->getCurrent();
+    cs = chkSum->getCurrent();
   else
     ierr = -2;
 }
 
 
+//! \cond DO_NOT_DOCUMENT
 ////////////////////////////////////////////////////////////////////////////////
-// Set the FE part to use. Used by test programs only.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 21 Feb 2018 / 1.0
-////////////////////////////////////////////////////////////////////////////////
+//! \brief Sets the FE part to use (used by test programs only).
+//! \author Knut Morten Okstad
+//! \date 21 Feb 2018
 
 void ffl_setLink (FFlLinkHandler* link)
 {
-  delete theLink;
-  theLink = link;
+  delete ourLink;
+  ourLink = link;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//! \brief Allocates the FE part object and reads FE data file.
+//! \details For unit testing only.
+//! \author Knut Morten Okstad
+//! \date 28 Feb 2020
+
+DLLexport(int) ffl_loadPart (const std::string& fileName)
+{
+  return ffl_basic_init(0,0,fileName);
+}
+
+//! \endcond
