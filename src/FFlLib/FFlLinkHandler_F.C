@@ -32,17 +32,11 @@
 #include "FFaLib/FFaAlgebra/FFaMat34.H"
 #include "FFaLib/FFaAlgebra/FFaCheckSum.H"
 #include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
+#include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaString/FFaTokenizer.H"
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
-#include "FFaLib/FFaDefinitions/FFaMsg.H"
-
-#if defined(win32) || defined(win64)
-#include <windows.h>
-#define DLLexport(ret) extern "C" __declspec(dllexport) ret
-#else
-#define DLLexport(ret) extern "C" ret
-#endif
+#include "FFaLib/FFaOS/FFaExport.H"
 
 //! \brief Pointers to all FE parts subjected to recovery during dynamics solve
 static std::vector<FFlLinkHandler*> ourLinks;
@@ -230,19 +224,6 @@ SUBROUTINE(ffl_reducer_init,FFL_REDUCER_INIT) (const int& maxNodes,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Allocate the FE part object and read FE data file. For unit testing only.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 28 Feb 2020 / 1.0
-////////////////////////////////////////////////////////////////////////////////
-
-DLLexport(int) ffl_loadPart (const std::string& fileName)
-{
-  return ffl_basic_init(0,0,fileName);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Sets calculation focus on an already open FE part.
 //
 // Coded by: Knut Morten Okstad
@@ -321,17 +302,12 @@ SUBROUTINE(ffl_export_vtf,FFL_EXPORT_VTF) (const char* VTFfile,
 // Date/ver: 17 March 2006 / 1.0
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef std::pair<std::string,size_t> ElmType;
-
-inline bool ElmTypeLess (const ElmType& lhs, const ElmType& rhs)
-{
-  return lhs.first < rhs.first;
-}
-
 SUBROUTINE(ffl_elmorder_vtf,FFL_ELMORDER_VTF) (int* vtfOrder, int& stat)
 {
   stat = 0;
   if (!ourLink) return;
+
+  using ElmType = std::pair<std::string,size_t>;
 
   std::vector<ElmType> elmTypeVec;
   elmTypeVec.reserve(ourLink->getElementCount(FFlLinkHandler::FFL_FEM));
@@ -343,7 +319,9 @@ SUBROUTINE(ffl_elmorder_vtf,FFL_ELMORDER_VTF) (int* vtfOrder, int& stat)
     elmTypeVec.push_back(ElmType((*e)->getTypeName(),++iel));
 
   // Use stable_sort to avoid that elements of the same type change order
-  std::stable_sort(elmTypeVec.begin(),elmTypeVec.end(),ElmTypeLess);
+  std::stable_sort(elmTypeVec.begin(),elmTypeVec.end(),
+                   [](const ElmType& lhs, const ElmType& rhs)
+                   { return lhs.first < rhs.first; });
 
   // Check if any elements actually have changed order
   vtfOrder[0] = elmTypeVec.front().second;
@@ -441,30 +419,6 @@ SUBROUTINE(ffl_getsize,FFL_GETSIZE) (int& nnod, int& nel, int& ndof, int& nmnpc,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Auxiliary function converting a beam pin flag into DOF status codes.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 13 Sep 2002 / 1.0
-////////////////////////////////////////////////////////////////////////////////
-
-static int resolvePinFlag (int pinFlag, int* msc)
-{
-  if (pinFlag <= 0) return 0;
-
-  int nndof = 6;
-  while (pinFlag > 0)
-  {
-    int ldof = pinFlag%10;
-    pinFlag /= 10;
-    while (nndof > ldof) msc[--nndof] = 0;
-    msc[--nndof] = 1;
-  }
-  while (nndof > 0) msc[--nndof] = 0;
-  return 6;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Establish global nodal arrays needed by SAM.
 //
 // Coded by: Knut Morten Okstad
@@ -521,6 +475,25 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
   }
 
   if (inod >= nnod) return;
+
+  // Lambda function converting a beam pin flag into DOF status codes.
+  auto&& resolvePinFlag = [](int pinFlag, int* msc)
+  {
+    if (pinFlag <= 0) return 0;
+
+    int nndof = 6;
+    while (pinFlag > 0)
+    {
+      int ldof = pinFlag%10;
+      pinFlag /= 10;
+      while (nndof > ldof)
+        msc[--nndof] = 0;
+      msc[--nndof] = 1;
+    }
+    while (nndof > 0)
+      msc[--nndof] = 0;
+    return 6;
+  };
 
   ElementsCIter eit;
   for (eit = ourLink->fElementsBegin(); eit != ourLink->fElementsEnd(); ++eit)
@@ -684,11 +657,10 @@ SUBROUTINE(ffl_gettopol,FFL_GETTOPOL) (int& nel, int& nmnpc,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Auxiliary function returning the element object for a given element number.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 18 Sep 2002 / 2.0
-////////////////////////////////////////////////////////////////////////////////
+//! \brief Auxiliary function returning a pointer to and indexed element object.
+//!
+//! \author Knut Morten Okstad
+//! \date 18 Sep 2002
 
 static FFlElementBase* ffl_getElement (int iel)
 {
@@ -893,52 +865,27 @@ SUBROUTINE(ffl_getmat,FFL_GETMAT) (double& E, double& nu, double& rho,
   }
 }
 
-/* class FFlPTHETA still missing, Bjorn
-SUBROUTINE(ffl_getptheta,FFL_GETPTHETA)(const int& pThetaID,
-					double& thetaInDeg, int& ierr)
-{
-  ierr = 0;
-  FFlPTHETA* pTheta = LINK_ATTRIBUTE(PTHETA,pThetaID);
-  if (pTheta)
-    thetaInDeg = pTheta->theta.getValue();
-  else
-  {
-    ierr = -1;
-    ListUI <<" *** Error: Did not find PTHETA property with ID "
-	   << pThetaID <<"\n";
-  }
-}
-*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check if an element has a certain attribute
 ////////////////////////////////////////////////////////////////////////////////
 
-INTEGER_FUNCTION (ffl_hasattribute,FFL_HASATTRIBUTE)
+SUBROUTINE (ffl_attribute,FFL_ATTRIBUTE) (const char* type,
 #ifdef _NCHAR_AFTER_CHARARG
-  (const char* type, const int nchar, const int& iel, int& ierr)
+                                          const int nchar,
+                                          const int& iel, int& status
 #else
-  (const char* type, const int& iel, int& ierr, const int nchar)
+                                          const int& iel, int& status,
+                                          const int nchar
 #endif
-{
-  ierr = -1;
+){
   FFlElementBase* curElm = ffl_getElement(iel);
-  if (!curElm) return -1;
-
-  ierr = 0;
-  return curElm->getAttribute(std::string(type,nchar)) ? 1 : 0;
-}
-
-
-INTEGER_FUNCTION (ffl_getattributeid,FFL_GETATTRIBUTEID)
-#ifdef _NCHAR_AFTER_CHARARG
-  (const char* type, const int nchar, const int& iel)
-#else
-  (const char* type, const int& iel, const int nchar)
-#endif
-{
-  FFlElementBase* curElm = ffl_getElement(iel);
-  return curElm ? curElm->getAttributeID(std::string(type,nchar)) : -1;
+  if (!curElm) // non-existing element
+    status = -1;
+  else if (status) // get the ID of this attribute, if the element has it
+    status = curElm->getAttributeID(std::string(type,nchar));
+  else // check whether the element has this attribute
+    status = curElm->getAttribute(std::string(type,nchar)) ? 1 : 0;
 }
 
 
@@ -1604,11 +1551,10 @@ SUBROUTINE(ffl_getload,FFL_GETLOAD) (const int& SID, int& iel, int& face,
 #ifdef FT_USE_STRAINCOAT
 
 ////////////////////////////////////////////////////////////////////////////////
-// Auxiliary function for retrieval of strain coat attributes.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 28 May 2001 / 1.0
-////////////////////////////////////////////////////////////////////////////////
+//! \brief Auxiliary function for retrieval of strain coat attributes.
+//!
+//! \author Knut Morten Okstad
+//! \date 28 May 2001
 
 static void getStrainCoatAttributes (FFlPSTRC* p, FFlPFATIGUE* pFat,
                                      int& resSet, int& id,
@@ -1866,15 +1812,27 @@ SUBROUTINE(ffl_getcs,FFL_GETCS) (int& cs, int& ierr)
 }
 
 
+//! \cond DO_NOT_DOCUMENT
 ////////////////////////////////////////////////////////////////////////////////
-// Set the FE part to use. Used by test programs only.
-//
-// Coded by: Knut Morten Okstad
-// Date/ver: 21 Feb 2018 / 1.0
-////////////////////////////////////////////////////////////////////////////////
+//! \brief Sets the FE part to use (used by test programs only).
+//! \author Knut Morten Okstad
+//! \date 21 Feb 2018
 
 void ffl_setLink (FFlLinkHandler* link)
 {
   delete ourLink;
   ourLink = link;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//! \brief Allocates the FE part object and reads FE data file.
+//! \details For unit testing only.
+//! \author Knut Morten Okstad
+//! \date 28 Feb 2020
+
+DLLexport(int) ffl_loadPart (const std::string& fileName)
+{
+  return ffl_basic_init(0,0,fileName);
+}
+
+//! \endcond
