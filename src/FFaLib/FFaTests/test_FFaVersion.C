@@ -7,6 +7,7 @@
 
 #include "gtest/gtest.h"
 #include "FFaLib/FFaDefinitions/FFaVersionNumber.H"
+#include "Admin/FedemAdmin.H"
 
 
 std::ostream& operator<<(std::ostream& os, const FFaVersionNumber& v)
@@ -22,6 +23,10 @@ TEST(TestFFaLib,Version)
   FFaVersionNumber v3("R5.1.2");
   FFaVersionNumber v4("R7.5 (build 12)");
 
+  std::cout << FedemAdmin::getCopyrightString()
+            <<"\nVersion: "<< FedemAdmin::getVersion()
+            <<"\nBuild date: "<< FedemAdmin::getBuildDate()
+            <<"\nBuild year: "<< FedemAdmin::getBuildYear() << std::endl;
   std::cout <<"v1 = "<< v1.getString() << std::endl;
   std::cout <<"v2 = "<< v2.getString() << std::endl;
   std::cout <<"v3 = "<< v3.getString() << std::endl;
@@ -39,4 +44,5 @@ TEST(TestFFaLib,Version)
 
   EXPECT_LT(v2,FFaVersionNumber("R4.2.1"));
   EXPECT_GT(v4,FFaVersionNumber("R7.5"));
+  std::cout << FedemAdmin::getCopyrightString() << std::endl;
 }

@@ -26,8 +26,9 @@ static int build_no =
 
 const char* FedemAdmin::getVersion ()
 {
-  static char full_version[32];
-  snprintf(full_version,32,"%s (build %d)",fedem_version,build_no);
+  static char full_version[32] = "\0";
+  if (!full_version[0])
+    snprintf(full_version,32,"%s (build %d)",fedem_version,build_no);
   return full_version;
 }
 
@@ -39,15 +40,23 @@ const char* FedemAdmin::getBuildDate ()
 
 const char* FedemAdmin::getBuildYear ()
 {
-  static char year[5]; year[4] = '\0';
-  return strncpy(year,build_date+7,4);
+  static char year[5] = "\0";
+  if (!year[0])
+  {
+    size_t iyear = 3;
+    while (iyear < strlen(build_date) && build_date[iyear] != ' ') ++iyear;
+    while (iyear < strlen(build_date) && build_date[iyear] == ' ') ++iyear;
+    strncpy(year,build_date+iyear,4);
+  }
+  return year;
 }
 
 
 const char* FedemAdmin::getCopyrightString ()
 {
   static char copyright[30] = "Copyright 2016 - 2000  SAP SE";
-  strncpy(copyright+17,build_date+7,4);
+  if (!strncmp(copyright+17,"2000",4))
+    strncpy(copyright+17,getBuildYear(),4);
   return copyright;
 }
 
