@@ -14,8 +14,8 @@
 
 ## About this project
 
-This project contains the source code of some application-independent libraries
-that are used as building blocks by the FEDEM solvers and also the FEDEM GUI.
+This project contains the source code of application-independent libraries
+that are used as building blocks by the FEDEM solvers and the FEDEM GUI.
 It is therefore consumed as a submodule both in
 [fedem-solvers](https://github.com/openfedem/fedem-solvers) and in
 [fedem-gui](https://github.com/openfedem/fedem-gui).
@@ -26,20 +26,20 @@ The main bulk of the libraries of this repository are named `FF*Lib` where the d
 prefix stands for "FEDEM foundation" and the subsequent letter(s) indicates the
 purpose of the library:
 
-* FFaLib - Auxiliary classes
-* FFlLib - FE part handling
-* FFrLib - Result file API
-* FFpLib - Post-processing of curve data
-* FFlrLib - Handling of FE part results
-* FFaFunctionLib - Management and evaluation of explicit functions
-* FFaMathExpr - Implementation of math expression functions
+* [FFaLib](src/FFaLib) - Auxiliary classes
+* [FFlLib](src/FFlLib) - FE part handling
+* [FFrLib](src/FFrLib) - Result file API
+* [FFpLib](src/FFpLib) - Post-processing of curve data
+* [FFlrLib](src/FFlrLib) - Handling of FE part results
+* [FFaFunctionLib](src/FFaFunctionLib) - Management and evaluation of explicit functions
+* [FFaMathExpr](src/FFaMathExpr) - Implementation of math expression functions
 
 The classes of the above libraries are typically named by what library they belong to,
 e.g., `FFaTensor3` belongs to `FFaLib`, `FFlNode` belongs to `FFlLib`, etc.
 
-In addition, there are two libraries `FiDeviceFunctions` and `FiUserElmPlugin` which
-implements interfaces to external data files and user-defined finite elements,
-respectively.
+In addition, there are two libraries [FiDeviceFunctions](src/FiDeviceFunctions)
+and [FiUserElmPlugin](src/FiUserElmPlugin) which implement interfaces to
+external data files and user-defined finite elements, respectively.
 
 ## Requirements and Setup
 
@@ -64,7 +64,7 @@ executed by:
     cmake .. -DCMAKE_BUILD_TYPE=Release
     make check
 
-All of the FEDEM foundation libraries contains C++ code only, except for
+All of the FEDEM foundation libraries contain C++ code only, except for
 [FFaFunctionLib](src/FFaFunctionLib) which also contains some Fortran code (`*.f90`)
 implementing various explicit mathematical functions.
 This Fortran code is not compiled by default. To build with the Fortran code included,
