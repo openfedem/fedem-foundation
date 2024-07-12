@@ -254,14 +254,14 @@ TEST(TestFFa,CheckSum)
   // rounding to the given number of significant digits
   csA.add(A,10);
   csB.add(B,10);
-  std::cout <<"Checksum with 10 signigicant digits "<< csA.getCurrent() << std::endl;
+  std::cout <<"Checksum with 10 significant digits "<< csA.getCurrent() << std::endl;
   ASSERT_EQ(csA.getCurrent(),csB.getCurrent());
   csA.add(A,3);
   csB.add(B,3);
-  std::cout <<"Checksum after 3 signigicant digits "<< csA.getCurrent() << std::endl;
+  std::cout <<"Checksum after 3 significant digits "<< csA.getCurrent() << std::endl;
   csA.add(A,1);
   csB.add(A,1);
-  std::cout <<"Checksum after 1 signigicant digit "<< csA.getCurrent() << std::endl;
+  std::cout <<"Checksum after 1 significant digit "<< csA.getCurrent() << std::endl;
   ASSERT_EQ(csA.getCurrent(),csB.getCurrent());
   // Test old checksum algorithm for doubles, casting to float.
   // This has shown to be a less stable approach.
@@ -273,7 +273,7 @@ TEST(TestFFa,CheckSum)
   B *= 1000.0;
   csA.add(A,10);
   csB.add(B,10);
-  std::cout <<"Checksum with 10 signigicant digits "<< csA.getCurrent() << std::endl;
+  std::cout <<"Checksum with 10 significant digits "<< csA.getCurrent() << std::endl;
   ASSERT_EQ(csA.getCurrent(),csB.getCurrent());
   csA.add(A);
   csB.add(B);
