@@ -14,7 +14,10 @@ message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 
 if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
-  list ( APPEND LIB_ID_LIST FFpExport FFpDLL FFpTests )
+  list ( APPEND LIB_ID_LIST FFpExport FFpDLL )
+  if ( BUILD_TESTS )
+    list ( APPEND LIB_ID_LIST FFpTests )
+  endif ( BUILD_TESTS )
 else ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
   string ( APPEND CMAKE_CXX_FLAGS " -DFFR_LISTVIEW" )
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )

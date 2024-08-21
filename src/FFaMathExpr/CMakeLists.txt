@@ -8,9 +8,9 @@
 
 set ( LIB_ID FFaMathExpr )
 set ( LIB_ID_LIST )
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND BUILD_TESTS )
   set ( LIB_ID_LIST FFaMathExprTests )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND BUILD_TESTS )
 set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )

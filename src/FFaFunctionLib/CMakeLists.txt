@@ -9,7 +9,10 @@
 set ( LIB_ID FFaFunctionLib )
 set ( LIB_ID_LIST )
 if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
-  set ( LIB_ID_LIST FFaFunctionTests FFaFunctionDLL )
+  set ( LIB_ID_LIST FFaFunctionDLL )
+  if ( BUILD_TESTS )
+    list ( APPEND LIB_ID_LIST FFaFunctionTests )
+  endif ( BUILD_TESTS )
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
 set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 
