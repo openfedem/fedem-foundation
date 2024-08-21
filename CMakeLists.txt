@@ -40,18 +40,22 @@ unset ( _MODULES CACHE )
 include ( CheckPFUnit )
 include ( FedemConfig )
 
+if ( BUILD_TESTS )
+
 # Enable regression/unit testing
 
-enable_testing ()
-set ( CTEST_OPTIONS --force-new-ctest-process --output-on-failure -O CTest.txt )
-if ( CMAKE_CONFIGURATION_TYPES )
-  list ( APPEND CTEST_OPTIONS --build-config \"$<CONFIGURATION>\" )
-endif ( CMAKE_CONFIGURATION_TYPES )
-add_custom_target ( check COMMAND ${CMAKE_CTEST_COMMAND} ${CTEST_OPTIONS} )
+  enable_testing ()
+  set ( CTEST_OPTIONS --force-new-ctest-process --output-on-failure -O CTest.txt )
+  if ( CMAKE_CONFIGURATION_TYPES )
+    list ( APPEND CTEST_OPTIONS --build-config \"$<CONFIGURATION>\" )
+  endif ( CMAKE_CONFIGURATION_TYPES )
+  add_custom_target ( check COMMAND ${CMAKE_CTEST_COMMAND} ${CTEST_OPTIONS} )
 
-include ( GTest ) # Using the google test framework for C++ unit tests
-if ( USE_FORTRAN )
-  include ( pFUnit ) # Using the pFUnit test framework for Fortran unit tests
-endif ( USE_FORTRAN )
+  include ( GTest ) # Using the google test framework for C++ unit tests
+  if ( USE_FORTRAN )
+    include ( pFUnit ) # Using the pFUnit test framework for Fortran unit tests
+  endif ( USE_FORTRAN )
+
+endif ( BUILD_TESTS )
 
 add_subdirectory ( src )
