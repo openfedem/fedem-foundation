@@ -26,6 +26,13 @@ void FFaSwitchBoard::init()
 }
 
 
+void FFaSwitchBoard::removeInstance()
+{
+  delete FFaSwitchBoard::ourConnections;
+  delete FFaSwitchBoard::protectedIterators;
+}
+
+
 // Initialisation of FFaSlotBase0::ourClassTypeID :
 //FFASWB_MAKE_SLOTBASE_ID_INIT_TEMPLATE(0,,)
 

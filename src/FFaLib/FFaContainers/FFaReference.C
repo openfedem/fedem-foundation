@@ -644,6 +644,7 @@ void FFaReferenceBase::setRefAssemblyID(const std::vector<int>& assID)
     IAmResolved = false;
   }
 
+  myUnresolvedRef->resize(2);
   myUnresolvedRef->insert(myUnresolvedRef->end(),assID.begin(),assID.end());
 }
 

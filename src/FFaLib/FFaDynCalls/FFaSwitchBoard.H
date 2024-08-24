@@ -66,6 +66,7 @@ public:
   static void removeAllSenderConnections(FFaSwitchBoardConnector* sender);
 
   static void init();
+  static void removeInstance();
 
 private:
   static bool isProtected(FFaSlotList::iterator i);

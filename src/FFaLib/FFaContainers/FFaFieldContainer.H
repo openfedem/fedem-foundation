@@ -154,6 +154,9 @@ protected:
 
   FieldContainerMap myFields;
 
+public:
+  static void removeDictInstance() { FieldContainerDict::removeInstance(); }
+
 private:
   friend class FFaReferenceBase;
 
