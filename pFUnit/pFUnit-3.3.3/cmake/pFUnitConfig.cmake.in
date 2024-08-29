@@ -6,9 +6,12 @@
 #    PFUNIT_DRIVER       - The pFUnit driver needed for running tests
 #    add_pfunit_test     - Helper function for defining test suites with .pf-files
 
-find_package (PythonInterp
-    REQUIRED
-    )
+if (CMAKE_VERSION VERSION_LESS 3.12)
+  find_package (PythonInterp REQUIRED)
+else (CMAKE_VERSION VERSION_LESS 3.12)
+  find_package (Python)
+  set (PYTHON_EXECUTABLE ${Python_EXECUTABLE})
+endif (CMAKE_VERSION VERSION_LESS 3.12)
 
 set (PFUNIT_FOUND TRUE)
 set (PFUNIT_VERSION "@PROJECT_VERSION@")
