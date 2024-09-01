@@ -7,6 +7,7 @@
 --->
 
 [![REUSE status](https://api.reuse.software/badge/github.com/openfedem/fedem-foundation)](https://api.reuse.software/info/github.com/openfedem/fedem-foundation)
+[![Test status](https://github.com/openfedem/fedem-foundation/actions/workflows/run-test.yml/badge.svg)](https://github.com/openfedem/fedem-foundation/actions/workflows/run-test.yml)
 
 # FEDEM Foundation libraries
 

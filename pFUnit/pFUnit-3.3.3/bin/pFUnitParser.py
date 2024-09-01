@@ -42,7 +42,7 @@ def compiler_set_line(line, filename=None):
 
 def getSubroutineName(line):
     try:
-        m = re.match('\s*subroutine\s+(\w*)\s*(\\([\w\s,]*\\))?\s*(!.*)*$',
+        m = re.match(r"\s*subroutine\s+(\w*)\s*(\([\w\s,]*\))?\s*(!.*)*$",
                      line, re.IGNORECASE)
         return m.groups()[0]
     except Exception:
@@ -58,7 +58,7 @@ def parseArgsFirstRest(directiveName, line):
 
     argStr = ''
     if directiveName != '':
-        m = re.match('\s*'+directiveName+'\s*\\((.*\w.*)\\)\s*$',
+        m = re.match(r"\s*{}\s*\((.*\w.*)\)\s*$".format(directiveName),
                      line, re.IGNORECASE)
         if m:
             argStr = m.groups()[0]
@@ -102,7 +102,7 @@ def parseArgsFirstSecondRest(directiveName, line):
 
 
 def getSelfObjectName(line):
-    m = re.match('\s*subroutine\s+\w*\s*\\(\s*(\w+)\s*(,\s*\w+\s*)*\\)\s*$',
+    m = re.match(r"\s*subroutine\s+\w*\s*\(\s*(\w+)\s*(,\s*\w+\s*)*\)\s*$",
                  line, re.IGNORECASE)
     if m:
         return m.groups()[0]
@@ -111,7 +111,7 @@ def getSelfObjectName(line):
 
 
 def getTypeName(line):
-    m = re.match('\s*type(.*::\s*|\s+)(\w*)\s*$', line, re.IGNORECASE)
+    m = re.match(r"\s*type(.*::\s*|\s+)(\w*)\s*$", line, re.IGNORECASE)
     return m.groups()[1]
 
 
@@ -130,18 +130,18 @@ class AtTest(Action):
         self.keyword = '@test'
 
     def match(self, line):
-        m = re.match('\s*'+self.keyword+'(\s*(\\(.*\\))?\s*$)',
+        m = re.match(r"\s*{}(\s*(\(.*\))?\s*$)".format(self.keyword),
                      line, re.IGNORECASE)
         return m
 
     def action(self, m, line):
-        options = re.match('\s*'+self.keyword+'\s*\\((.*)\\)\s*$',
+        options = re.match(r"\s*{}\s*\((.*)\)\s*$".format(self.keyword),
                            line, re.IGNORECASE)
         method = {}
 
         if options:
 
-            npesOption = re.search('npes\s*=\s*\\[([0-9,\s]+)\\]',
+            npesOption = re.search(r"npes\s*=\s*\[([0-9,\s]+)\]",
                                    options.groups()[0], re.IGNORECASE)
             if npesOption:
                 npesString = npesOption.groups()[0]
@@ -149,31 +149,31 @@ class AtTest(Action):
                 method['npRequests'] = npes
 
             # ifdef is optional
-            matchIfdef = re.match('.*ifdef\s*=\s*(\w+)',
+            matchIfdef = re.match(r".*ifdef\s*=\s*(\w+)",
                                   options.groups()[0], re.IGNORECASE)
             if matchIfdef:
                 ifdef = matchIfdef.groups()[0]
                 method['ifdef'] = ifdef
 
-            matchIfndef = re.match('.*ifndef\s*=\s*(\w+)',
+            matchIfndef = re.match(r".*ifndef\s*=\s*(\w+)",
                                    options.groups()[0], re.IGNORECASE)
             if matchIfndef:
                 ifndef = matchIfndef.groups()[0]
                 method['ifndef'] = ifndef
 
-            matchType = re.match('.*type\s*=\s*(\w+)',
+            matchType = re.match(r".*type\s*=\s*(\w+)",
                                  options.groups()[0], re.IGNORECASE)
             if matchType:
                 print ('Type', matchType.groups()[0])
                 method['type'] = matchType.groups()[0]
 
-            paramOption = re.search('testParameters\s*=\s*[{](.*)[}]',
+            paramOption = re.search(r"testParameters\s*=\s*[{](.*)[}]",
                                     options.groups()[0], re.IGNORECASE)
             if paramOption:
                 paramExpr = paramOption.groups()[0]
                 method['testParameters'] = paramExpr
 
-            casesOption = re.search('cases\s*=\s*(\\[[0-9,\s]+\\])',
+            casesOption = re.search(r"cases\s*=\s*(\[[0-9,\s]+\])",
                                     options.groups()[0], re.IGNORECASE)
             if casesOption:
                 method['cases'] = casesOption.groups()[0]
@@ -206,32 +206,32 @@ class AtTestCase(Action):
         self.parser = parser
 
     def match(self, line):
-        m = re.match('\s*@testcase\s*(|\\(.*\\))\s*$', line, re.IGNORECASE)
+        m = re.match(r"\s*@testcase\s*(|\(.*\))\s*$", line, re.IGNORECASE)
         return m
 
     def action(self, m, line):
-        options = re.match('\s*@testcase\s*\\((.*)\\)\s*$',
+        options = re.match(r"\s*@testcase\s*\((.*)\)\s*$",
                            line, re.IGNORECASE)
         if options:
-            value = re.search('constructor\s*=\s*(\w*)',
+            value = re.search(r"constructor\s*=\s*(\w*)",
                               options.groups()[0], re.IGNORECASE)
             if value:
                 self.parser.userTestCase['constructor'] = value.groups()[0]
 
-            value = re.search('npes\s*=\s*\\[([0-9,\s]+)\\]',
+            value = re.search(r"npes\s*=\s*\[([0-9,\s]+)\]",
                               options.groups()[0], re.IGNORECASE)
             if value:
                 npesString = value.groups()[0]
                 npes = map(int, npesString.split(','))
                 self.parser.userTestCase['npRequests'] = npes
 
-            value = re.search('cases\s*=\s*(\\[[0-9,\s]+\\])',
+            value = re.search(r"cases\s*=\s*(\[[0-9,\s]+\])",
                               options.groups()[0], re.IGNORECASE)
             if value:
                 cases = value.groups()[0]
                 self.parser.userTestCase['cases'] = cases
 
-            value = re.search('testParameters\s*=\s*[{](.*)[}]',
+            value = re.search(r"testParameters\s*=\s*[{](.*)[}]",
                               options.groups()[0], re.IGNORECASE)
             if value:
                 paramExpr = value.groups()[0]
@@ -248,8 +248,7 @@ class AtSuite(Action):
         self.parser = parser
 
     def match(self, line):
-        nameRe = "'\w+'|" + """\w+"""
-        m = re.match("\s*@suite\s*\\(\s*name\s*=\s*("+nameRe+")\s*\\)\s*$",
+        m = re.match(r"\s*@suite\s*\(\s*name\s*=\s*('\w+'|\"\w+\")\s*\)\s*$",
                      line, re.IGNORECASE)
         return m
 
@@ -263,7 +262,7 @@ class AtBegin(Action):
         self.parser = parser
 
     def match(self, line):
-        m = re.match('\s*module\s+(\w*)\s*$', line, re.IGNORECASE)
+        m = re.match(r"\s*module\s+(\w*)\s*$", line, re.IGNORECASE)
         return m
 
     def action(self, m, line):
@@ -279,7 +278,7 @@ class AtAssert(Action):
         self.parser = parser
 
     def match(self, line):
-        m = re.match('\s*@assert(' + assertVariants + ')\s*\\((.*\w.*)\\)\s*$',
+        m = re.match(r"\s*@assert({})\s*\((.*\w.*)\)\s*$".format(assertVariants),
                      line, re.IGNORECASE)
         return m
 
@@ -309,18 +308,16 @@ class AtAssertAssociated(Action):
         self.parser = parser
 
     def match(self, line):
-        m = re.match('\s*@assertassociated\s*\\((.*\w.*)\\)\s*$',
+        m = re.match(r"\s*@assertassociated\s*\((.*\w.*)\)\s*$",
                      line, re.IGNORECASE)
 
         if not m:
-            m = re.match('\s*@assertassociated\s*\\'
-                         + '((\s*([^,]*\w.*),\s*([^,]*\w.*),(.*\w*.*))\\)\s*$',
+            m = re.match(r"\s*@assertassociated\s*\((\s*([^,]*\w.*),\s*([^,]*\w.*),(.*\w*.*))\)\s*$",
                          line, re.IGNORECASE)
 
         # How to get both (a,b) and (a,b,c) to match?
         if not m:
-            m = re.match('\s*@assertassociated\s*\\'
-                         + '((\s*([^,]*\w.*),\s*([^,]*\w.*))\\)\s*$',
+            m = re.match(r"\s*@assertassociated\s*\((\s*([^,]*\w.*),\s*([^,]*\w.*))\)\s*$",
                          line, re.IGNORECASE)
         return m
 
@@ -369,7 +366,7 @@ class AtAssertNotAssociated(Action):
         self.name = '@assertnotassociated'
 
     def match(self, line):
-        m = re.match('\s*@assert(not|un)associated\s*\\((.*\w.*)\\)\s*$',
+        m = re.match(r"\s*@assert(not|un)associated\s*\((.*\w.*)\)\s*$",
                      line, re.IGNORECASE)
         if m:
             self.name = '@assert' + m.groups()[0] + 'associated'
@@ -377,14 +374,12 @@ class AtAssertNotAssociated(Action):
             self.name = '@assertnotassociated'
 
         if not m:
-            m = re.match('\s*@assert(not|un)associated\s*\\'
-                         + '((\s*([^,]*\w.*),\s*([^,]*\w.*),(.*\w*.*))\\)\s*$',
+            m = re.match(r"\s*@assert(not|un)associated\s*\((\s*([^,]*\w.*),\s*([^,]*\w.*),(.*\w*.*))\)\s*$",
                          line, re.IGNORECASE)
 
         # How to get both (a,b) and (a,b,c) to match?
         if not m:
-            m = re.match('\s*@assert(not|un)associated\s*\\'
-                         + '((\s*([^,]*\w.*),\s*([^,]*\w.*))\\)\s*$',
+            m = re.match(r"\s*@assert(not|un)associated\s*\((\s*([^,]*\w.*),\s*([^,]*\w.*))\)\s*$",
                          line, re.IGNORECASE)
 
         if m:
@@ -442,14 +437,12 @@ class AtAssertEqualUserDefined(Action):
         self.parser = parser
 
     def match(self, line):
-        m = re.match('\s*@assertequaluserdefined\s*\\'
-                     + '((\s*([^,]*\w.*),\s*([^,]*\w.*),(.*\w*.*))\\)\s*$',
+        m = re.match(r"\s*@assertequaluserdefined\s*\((\s*([^,]*\w.*),\s*([^,]*\w.*),(.*\w*.*))\)\s*$",
                      line, re.IGNORECASE)
 
         # How to get both (a,b) and (a,b,c) to match?
         if not m:
-            m = re.match('\s*@assertequaluserdefined\s*\\'
-                         + '((\s*([^,]*\w.*),\s*([^,]*\w.*))\\)\s*$',
+            m = re.match(r"\s*@assertequaluserdefined\s*\((\s*([^,]*\w.*),\s*([^,]*\w.*))\)\s*$",
                          line, re.IGNORECASE)
 
         return m
@@ -492,14 +485,12 @@ class AtAssertEquivalent(Action):
         self.parser = parser
 
     def match(self, line):
-        m = re.match('\s*@assertequivalent\s*\\'
-                     + '((\s*([^,]*\w.*),\s*([^,]*\w.*),(.*\w*.*))\\)\s*$',
+        m = re.match(r"\s*@assertequivalent\s*\((\s*([^,]*\w.*),\s*([^,]*\w.*),(.*\w*.*))\)\s*$",
                      line, re.IGNORECASE)
 
         # How to get both (a,b) and (a,b,c) to match?
         if not m:
-            m = re.match('\s*@assertequivalent\s*\\'
-                         + '((\s*([^,]*\w.*),\s*([^,]*\w.*))\\)\s*$',
+            m = re.match(r"\s*@assertequivalent\s*\((\s*([^,]*\w.*),\s*([^,]*\w.*))\)\s*$",
                          line, re.IGNORECASE)
 
         return m
@@ -539,9 +530,8 @@ class AtMpiAssert(Action):
         self.parser = parser
 
     def match(self, line):
-        m = re.match('\s*@mpiassert('
-                     + assertVariants
-                     + ')\s*\\((.*\w.*)\\)\s*$', line, re.IGNORECASE)
+        m = re.match(r"\s*@mpiassert({})\s*\((.*\w.*)\)\s*$".format(assertVariants),
+                     line, re.IGNORECASE)
         return m
 
     def appendSourceLocation(self, fileHandle, fileName, lineNumber):
@@ -575,7 +565,7 @@ class AtBefore(Action):
         self.parser = parser
 
     def match(self, line):
-        m = re.match('\s*@before\s*$', line, re.IGNORECASE)
+        m = re.match(r"\s*@before\s*$", line, re.IGNORECASE)
         return m
 
     def action(self, m, line):
@@ -590,7 +580,7 @@ class AtAfter(Action):
         self.parser = parser
 
     def match(self, line):
-        m = re.match('\s*@after\s*$', line, re.IGNORECASE)
+        m = re.match(r"\s*@after\s*$", line, re.IGNORECASE)
         return m
 
     def action(self, m, line):
@@ -605,11 +595,11 @@ class AtTestParameter(Action):
         self.parser = parser
 
     def match(self, line):
-        m = re.match('\s*@testParameter\s*(|.*)$', line, re.IGNORECASE)
+        m = re.match(r"\s*@testParameter\s*(|.*)$", line, re.IGNORECASE)
         return m
 
     def action(self, m, line):
-        options = re.match('\s*@testParameter\s*\\((.*)\\)\s*$',
+        options = re.match(r"\s*@testParameter\s*\((.*)\)\s*$",
                            line, re.IGNORECASE)
 
         self.parser.commentLine(line)
@@ -620,7 +610,7 @@ class AtTestParameter(Action):
         self.parser.outputFile.write(nextLine)
 
         if options:
-            value = re.search('constructor\s*=\s*(\w*)',
+            value = re.search(r"constructor\s*=\s*(\w*)",
                               options.groups()[0], re.IGNORECASE)
             if value:
                 self.parser.userTestCase['testParameterConstructor'] \
@@ -710,7 +700,7 @@ class Parser():
         self.makeWrapperModule()
 
     def isComment(self, line):
-        return re.match('\s*(!.*|)$', line)
+        return re.match(r"\s*(!.*|)$", line)
 
     def nextLine(self):
         while True:

@@ -1,8 +1,13 @@
-cmake_minimum_required(VERSION 2.8...3.0)
+cmake_minimum_required(VERSION 2.8...3.5)
 
 SET (CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
-find_package(PythonInterp REQUIRED) #Sets ${PYTHON_EXECUTABLE}
+if (CMAKE_VERSION VERSION_LESS 3.12)
+  find_package(PythonInterp REQUIRED) #Sets ${PYTHON_EXECUTABLE}
+else()
+  find_package(Python REQUIRED) #Sets ${Python_EXECUTABLE}
+  set(PYTHON_EXECUTABLE ${Python_EXECUTABLE})
+endif()
 
 set(srcs Assert.F90)
 
@@ -22,14 +27,10 @@ execute_process(
    OUTPUT_VARIABLE generated_sources_output
 )
 
-message( "Including generated files '${generated_sources_output}'." )
+message( STATUS "Including generated file(s) '${generated_sources_output}'" )
 include( ${CMAKE_CURRENT_BINARY_DIR}/${generated_sources_output} )
 
-#
-
 list(APPEND srcs AssertBasic.F90)
-
-#
 
 list(APPEND srcs AbstractTestResult.F90)
 list(APPEND srcs BaseTestRunner.F90)
@@ -50,7 +51,7 @@ list(APPEND srcs Params.F90)
 list(APPEND srcs XmlPrinter.F90)
 list(APPEND srcs ResultPrinter.F90)
 
-if ( ROBUST )
+if (ROBUST)
   list(APPEND srcs UnixPipeInterfaces.F90)
   list(APPEND srcs UnixProcess.F90)
   list(APPEND srcs RobustRunner.F90)
