@@ -88,6 +88,9 @@ char* FiASCFile::readLine(FT_FILE fd, bool commentsOnly)
 
 int FiASCFile::readChannel(int channel)
 {
+  vit0 = vit1 = myValues.begin();
+  if (myValues.size() > 1) ++vit1;
+
   if (myNumChannels == 1)
     return 0; // single-channel file, always in core
   else if (channel == myChannel)
@@ -197,8 +200,6 @@ int FiASCFile::readChannel(int channel)
     }
   }
 
-  vit0 = vit1 = myValues.begin();
-  if (myValues.size() > 1) ++vit1;
   myChannel = channel;
   return okRead ? 0 : -3;
 }
