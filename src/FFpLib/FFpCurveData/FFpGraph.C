@@ -75,6 +75,7 @@ bool FFpGraph::loadTemporalData (FFrExtractor* extractor, std::string& errMsg)
     return true; // No curves
 
   // Check that the extractor actually have time step data
+  const double epsT = 1.0e-12;
   double firstTimeStep = extractor->getFirstTimeStep();
   double lastTimeStep  = extractor->getLastTimeStep();
 #ifdef FFP_DEBUG
@@ -86,7 +87,7 @@ bool FFpGraph::loadTemporalData (FFrExtractor* extractor, std::string& errMsg)
 
   if (lastTimeStep == -HUGE_VAL)
     return true; // Extractor has no results yet
-  if (lastTimeStep < tmin || firstTimeStep > tmax)
+  if (lastTimeStep < tmin-epsT || firstTimeStep > tmax+epsT)
     return true; // Out-of-range
 
   // Find variable references and associated read operations for the curves
@@ -118,7 +119,7 @@ bool FFpGraph::loadTemporalData (FFrExtractor* extractor, std::string& errMsg)
   if (lastTimeStep < firstTimeStep) lastTimeStep = firstTimeStep;
 
   double currentTime = 0.0;
-  extractor->positionRDB(lastTimeStep,currentTime);
+  extractor->positionRDB(lastTimeStep,currentTime,true);
   tmin = currentTime;
 #ifdef FFP_DEBUG
   std::cout <<"                time = "<< currentTime << std::endl;
@@ -130,7 +131,7 @@ bool FFpGraph::loadTemporalData (FFrExtractor* extractor, std::string& errMsg)
   do
   {
     currentTime = extractor->getCurrentRDBPhysTime();
-    if (currentTime > tmax) break;
+    if (currentTime > tmax+epsT) break;
 
 #ifdef FFP_DEBUG
     nStep++;
@@ -226,7 +227,7 @@ bool FFpGraph::loadSpatialData (FFrExtractor* extractor, std::string& errMsg)
   // Position the results extractor to the first time step
   if (firstTimeStep < tmin) firstTimeStep = tmin;
   if (lastTimeStep  > tmax) lastTimeStep  = tmax;
-  extractor->positionRDB(firstTimeStep,currentTime);
+  extractor->positionRDB(firstTimeStep,currentTime,true);
 
   // Now read curve data, step by step
   do

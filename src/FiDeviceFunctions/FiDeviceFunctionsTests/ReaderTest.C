@@ -23,7 +23,8 @@ std::string srcdir; //!< Absolute path to the source directory of this test
   \brief Loads data files into a FiDeviceFunctionFactory.
 */
 
-int loadTest (const std::vector<std::string>& files, double* X = nullptr)
+int loadTest (const std::vector<std::string>& files,
+              double* X = nullptr, size_t N = 0)
 {
   char title[128], units[128];
   int handle, errors = 0;
@@ -51,9 +52,12 @@ int loadTest (const std::vector<std::string>& files, double* X = nullptr)
       }
       if (X)
       {
-        int stat = 0; // Try to evaluate this function at the value of *X
-        *X = FiDeviceFunctionFactory::instance()->getValue(handle,*X,stat,chn);
-        if (stat < 0) errors++;
+        int stat = 0; // Try to evaluate this function at the value(s) of X
+        for (size_t i = 0; i < N; i++)
+        {
+          X[i] = FiDeviceFunctionFactory::instance()->getValue(handle,X[i],stat,chn);
+          if (stat < 0) errors++;
+        }
       }
     }
     else
@@ -151,20 +155,33 @@ TEST_P(TestFiDF, Read)
 {
   ASSERT_FALSE(srcdir.empty());
   // Get evaluation point, if any.
+  size_t N = GetParam().n;
   double fv = GetParam().x;
   double* X = fv < 0.0 ? nullptr : &fv;
-  // Read the file and try to evaluate at given point X
-  ASSERT_EQ(loadTest({srcdir + GetParam().name}, X),0);
-  if (X)
+  if (N > 1)
   {
-    EXPECT_FLOAT_EQ(fv,GetParam().y);
+    // Test reading multiple points
+    X = new double[N];
+    for (size_t i = 0; i < N; i++)
+      X[i] = fv + i*0.02;
   }
+  else if (X)
+    N = 1;
+
+  // Read the file and try to evaluate at given point X
+  ASSERT_EQ(loadTest({srcdir + GetParam().name}, X, N),0);
+  for (size_t i = 0; i < N; i++)
+  {
+    EXPECT_FLOAT_EQ(X[i],GetParam().y);
+  }
+  if (N > 1) delete[] X;
 }
 
 //! Instantiate the test over a list of file names.
 INSTANTIATE_TEST_CASE_P(Read, TestFiDF,
                         testing::Values(Input("data/onepoint.dat",0.1,1.0),
                                         Input("data/twopoints.dat",0.1,1.2),
+                                        Input("data/horizontal.dat",0.2,0.123,10),
                                         Input("data/fivepoints.dat",0.15,1.35),
                                         Input("data/24H_Encoder_Replicator_DOS.asc",42049.64,2.45),
                                         "data/kerb_lhfx.dac",
