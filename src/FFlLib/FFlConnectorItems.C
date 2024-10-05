@@ -13,78 +13,79 @@
 
 bool operator== (const FFlConnectorItems& a, const FFlConnectorItems& b)
 {
-  if (&a == &b) return true;
+  if (&a == &b)
+    return true;
 
   if (a.nodes == b.nodes)
     if (a.elements == b.elements)
-      if (a.properties == b.properties)
-	return true;
+      return true;
 
   return false;
 }
 
 
-std::ostream&
-operator<< (std::ostream& s, const FFlConnectorItems& connector)
+std::ostream& operator<< (std::ostream& s, const FFlConnectorItems& c)
 {
-  if (!connector.nodes.empty()) {
+  if (!c.nodes.empty())
+  {
     s <<"\nNODES";
-    for (int n : connector.nodes) s <<' '<< n;
+    for (int n : c.nodes)
+      s <<' '<< n;
   }
-  if (!connector.elements.empty()) {
+
+  if (!c.elements.empty())
+  {
     s <<"\nELEMENTS";
-    for (int e : connector.elements) s <<' '<< e;
+    for (int e : c.elements)
+      s <<' '<< e;
   }
-  if (!connector.properties.empty()) {
-    s <<"\nPROPERTIES";
-    for (int p : connector.properties) s <<' '<< p;
-  }
-  s << std::endl <<"END";
-  return s;
+
+  return s <<"\nEND";
 }
 
 
-std::istream&
-operator>> (std::istream& s, FFlConnectorItems& connector)
+std::istream& operator>> (std::istream& s, FFlConnectorItems& c)
 {
-  connector.clear();
+  // Lambda function reading a vector of integers from the input stream
+  auto&& readStream = [&s](std::vector<int>& data)
+  {
+    while (s)
+    {
+      char c = ' ';
+      while (s && isspace(c))
+        s >> c; // read until next non-space character
+      if (s)
+        s.putback(c);
+      if (!s || !isdigit(c))
+        return; // read until next non-digit character
+
+      int i;
+      s >> i;
+      if (s)
+        data.push_back(i);
+    }
+  };
+
+  c.clear();
   std::string keyWord;
-  while (s.good()) {
+  while (s.good())
+  {
     s >> keyWord;
     bool isAlpha = true;
     for (size_t i = 0; i < keyWord.size() && isAlpha; i++)
       if (!isalpha(keyWord[i]))
         isAlpha = false;
 
-    if (isAlpha) {
+    if (isAlpha)
+    {
       if (keyWord == "NODES")
-	FFlConnectorItems::readStream(s,connector.nodes);
+        readStream(c.nodes);
       else if (keyWord == "ELEMENTS")
-	FFlConnectorItems::readStream(s,connector.elements);
-      else if (keyWord == "PROPERTIES")
-	FFlConnectorItems::readStream(s,connector.properties);
+        readStream(c.elements);
       else if (keyWord == "END")
-	break;
+        break;
     }
   }
+
   return s;
-}
-
-
-void FFlConnectorItems::readStream(std::istream& is, std::vector<int>& data)
-{
-  while (is) {
-    char c = ' ';
-    while (isspace(c)) {
-      is >> c;
-      if (!is) return;
-    }
-    is.putback(c);
-    if (!isdigit(c)) return; // read until next non-digit character
-
-    int i;
-    is >> i;
-    if (is)
-      data.push_back(i);
-  }
 }
