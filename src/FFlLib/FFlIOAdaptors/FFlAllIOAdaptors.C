@@ -20,8 +20,10 @@ void FFl::initAllReaders()
   FFlOldFLMReader::init();
   FFlNastranReader::init();
   FFlSesamReader::init();
+#ifdef FT_HAS_VKI
   FFlAbaqusReader::init();
   FFlAnsysReader::init();
+#endif
 
   initialized = true;
 }
@@ -29,7 +31,7 @@ void FFl::initAllReaders()
 
 void FFl::releaseAllReaders()
 {
-  FFlReaders::removeInstance ();
+  FFlReaders::removeInstance();
 
   initialized = false;
 }
