@@ -203,15 +203,17 @@ FiDevFormat FiDeviceFunctionFactory::identify(const std::string& fileName,
     }
   }
 
-  if (ending == "DAC")
-    format = DAC_FILE;
-  else if (ending == "ASC" || ending == "TXT")
+  if (ending == "ASC" || ending == "CSV" || ending == "TXT")
+  {
     if (status == IO_READ && FiASCFile::isMultiChannel(fd,fullName.c_str()))
       format = ASC_MC_FILE;
     else
       format = ASC_FILE;
+  }
   else if (ending == "TIM" || ending == "DRV" || ending == "RSP")
     format = RPC_TH_FILE;
+  else if (ending == "DAC")
+    format = DAC_FILE;
 
   if (fd) FT_close(fd);
   return format;
