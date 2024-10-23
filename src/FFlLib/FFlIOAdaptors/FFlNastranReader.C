@@ -15,7 +15,6 @@
 #include "FFlLib/FFlElementBase.H"
 #include "FFlLib/FFlGroup.H"
 
-#include "FFaLib/FFaAlgebra/FFaCheckSum.H"
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #ifdef FFL_TIMER
@@ -110,7 +109,6 @@ FFlNastranReader::FFlNastranReader (FFlLinkHandler* link, const int startHere)
   gridDefault = NULL;
   barDefault  = NULL;
   beamDefault = NULL;
-  attChkSum   = NULL;
   sizeOK      = true;
 }
 
@@ -124,7 +122,6 @@ FFlNastranReader::~FFlNastranReader ()
   delete gridDefault;
   delete barDefault;
   delete beamDefault;
-  delete attChkSum;
 
 #ifdef FFL_TIMER
   myProfiler->stopTimer("FFlNastranReader");
