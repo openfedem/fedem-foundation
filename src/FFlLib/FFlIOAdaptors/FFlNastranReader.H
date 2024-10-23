@@ -49,7 +49,7 @@ public:
   struct BulkEntry
   {
     std::string name;
-    FieldFormat ffmt;
+    FieldFormat ffmt = UNDEFINED;
     std::vector<std::string> fields;
     std::string cont;
   };
@@ -84,12 +84,14 @@ private:
     int G0;
     FaVec3 X;
     bool isBAR;
-    bool empty[5];
+    bool empty[5] = { false, false, false, false, false };
     BEAMOR(bool b = false) : isBAR(b) { PID = G0 = 0; }
   };
 
-  typedef std::map<int,int>  IntMap;
-  typedef std::pair<int,int> IntPair;
+  using IntPair     = std::pair<int,int>;
+  using IntMap      = std::map<int,int>;
+  using ElementMap  = std::map<int,FFlElementBase*>;
+  using LoadFaceMap = std::map<FFlLoadBase*,IntPair>;
 
   std::map<std::string,int> ignoredBulk; // Number of unsupported entries
   std::map<std::string,int> sxErrorBulk; // Number of syntax errors
@@ -120,9 +122,8 @@ private:
   std::set<int> PCOMPs;   // Set of PIDs that are of PCOMP type
 
   std::vector<FFlElementBase*> myWelds; // Temporary vector of all weld elements
-  std::vector<std::map<int,FFlElementBase*> > weld; // Weld connectivities
+  std::vector<ElementMap>      weld;    // Weld connectivities
 
-  typedef std::map<FFlLoadBase*,IntPair> LoadFaceMap;
   LoadFaceMap                loadFace; // Pressure load --> element face nodes
   std::map<FFlLoadBase*,int> loadCID; // Load --> coord. system ID for direction
 
