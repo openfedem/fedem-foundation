@@ -22,6 +22,8 @@
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 
+using DoubleVec = std::vector<double>;
+
 static std::string inpdir; //!< Full path of the input file directory
 
 
@@ -111,8 +113,6 @@ TEST(TestFFl,NastranParser)
 
 TEST(TestFFl,TaperedBeams)
 {
-  using DoubleVec = std::vector<double>;
-
   FFlLinkHandler part;
   ASSERT_GT(FFlReaders::instance()->read(inpdir+"PBEAM-test.nas",&part),0);
   std::cout <<"Successfully read "<< inpdir <<"PBEAM-test.nas"<< std::endl;
@@ -141,10 +141,9 @@ TEST(TestFFl,TaperedBeams)
 
 TEST(TestFFl,BeamCrossSections)
 {
-  using DoubleVec = std::vector<double>;
-
   FFlLinkHandler part, partB;
   ASSERT_GT(FFlReaders::instance()->read(inpdir+"RectangularBeam.nas",&partB),0);
+  std::cout <<"Successfully read "<< inpdir <<"RectangularBeam.nas"<< std::endl;
   ASSERT_GT(FFlReaders::instance()->read(inpdir+"PBEAML-test.nas",&part),0);
   std::cout <<"Successfully read "<< inpdir <<"PBEAML-test.nas"<< std::endl;
   for (const AttributeMap::value_type& att : partB.getAttributes("PBEAMSECTION"))
@@ -161,6 +160,22 @@ TEST(TestFFl,BeamCrossSections)
     for (double d : fields) std::cout <<" "<< d;
     std::cout << std::endl;
   }
+}
+
+
+/*!
+  \brief Creates a unit test for parsing Nastran MPC entries.
+*/
+
+TEST(TestFFl,MPC)
+{
+  FFlLinkHandler partA, partB;
+  ASSERT_GT(FFlReaders::instance()->read(inpdir+"MPC-test.nas",&partA),0);
+  std::cout <<"Successfully read "<< inpdir <<"MPC-test.nas"<< std::endl;
+  ASSERT_GT(FFlReaders::instance()->read(inpdir+"MPC_RGD_Test.nas",&partB),0);
+  std::cout <<"Successfully read "<< inpdir <<"MPC_RGD_Test.nas"<< std::endl;
+  EXPECT_EQ(partA.getElementCount("WAVGM"),2);
+  EXPECT_EQ(partB.getElementCount("WAVGM"),5);
 }
 
 
