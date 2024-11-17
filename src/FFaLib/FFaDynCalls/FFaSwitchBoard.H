@@ -15,7 +15,6 @@
 #include <map>
 #include <set>
 #include <list>
-#include <cstddef>
 
 #include "FFaLib/FFaPatterns/FFaInitialisation.H"
 
@@ -25,15 +24,11 @@ class FFaSwitchBoardConnector;
 
 struct FFaSlotBasePt
 {
-  FFaSlotBasePt(FFaSlotBase* slot) { slotPt = slot; isValid = true; protectedRefCount = 0; }
-
-  FFaSlotBase* slotPt;
-  bool isValid;
-  int protectedRefCount;
+  FFaSlotBase* slotPt = NULL;
+  short int refCount = 0;
 };
 
 typedef std::list<FFaSlotBasePt> FFaSlotList;
-typedef std::map<unsigned int,FFaSlotList> TypeIDToSlotBasePtListMap;
 
 typedef void(FFaSwitchBoardConnector::*anyMethodType)(...);
 typedef void(*anyFunctionType)(...);
@@ -49,16 +44,12 @@ public:
   // External interface
   static void connect(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot);
   static void disConnect(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot);
+  static void removeAllOwnerConnections(FFaSwitchBoardConnector* owner);
 
   // Used internally in SwitchBoard mechanism classes
-  static TypeIDToSlotBasePtListMap *getSlots(FFaSwitchBoardConnector * aSender, int aSubject)
-    {
-      return &(ourConnections->operator[](aSender)[aSubject]);
-    }
-
-  static FFaSlotList::iterator nextValidSlot(FFaSlotList::iterator i, FFaSlotList* slots,
-					     bool start,  bool &hasPassedEnd,
-					     FFaSwitchBoardConnector * aSender,  int aSubject,  unsigned int typeID );
+  static FFaSlotList& getSlots(FFaSwitchBoardConnector* sender, int subject, unsigned int typeID);
+  static FFaSlotList::iterator nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
+                                             FFaSwitchBoardConnector* sender, int subject);
   // Used by FFaSlotBase only
   static void removeSlotReference(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot);
 
@@ -69,15 +60,14 @@ public:
   static void removeInstance();
 
 private:
-  static bool isProtected(FFaSlotList::iterator i);
-  static void cleanUpAfterSlot(FFaSwitchBoardConnector * aSender, int aSubject, unsigned int typeID);
-  static void eraseSlotFromList(FFaSwitchBoardConnector * aSender, int aSubject, FFaSlotList &slots,
-				FFaSlotList::iterator iteratorToSlotToDelete );
+  static void cleanUpAfterSlot(FFaSwitchBoardConnector* sender, int subject);
 
-  //          map<Sender, map< Subject, SlotTypeId, List of slots  > >
-  static std::map<FFaSwitchBoardConnector*, std::map<int,TypeIDToSlotBasePtListMap> >*  ourConnections;
+  typedef std::map<unsigned int,FFaSlotList>         SlotContainer;
+  typedef std::map<int,SlotContainer>                SlotMap;
+  typedef std::map<FFaSwitchBoardConnector*,SlotMap> SwitchBoardConnection;
 
-  static std::list<FFaSlotList::iterator>* protectedIterators;
+  // (Sender, Subject, SlotTypeId) --> List of slots
+  static SwitchBoardConnection* ourConnections;
 };
 
 static FFaInitialisation<FFaSwitchBoard> FFaSwitchBoard_Init;
@@ -90,7 +80,7 @@ static FFaInitialisation<FFaSwitchBoard> FFaSwitchBoard_Init;
 class FFaSwitchBoardConnector
 {
 public:
-  FFaSwitchBoardConnector() { IAmDeletingMe = false; }
+  FFaSwitchBoardConnector(const char* s = NULL) : IAmDeletingMe(false), label(s) {}
   virtual ~FFaSwitchBoardConnector();
 
   // Must only be used by FFaSlotN<*>
@@ -106,9 +96,14 @@ public:
     mySlots.insert(slot);
   }
 
+  // Mainly for debug output
+  const char* getLabel() const { return label ? label : ""; }
+  void setLabel(const char* s) { label = s; }
+
 private:
-  std::set<FFaSlotBase*, std::less<FFaSlotBase*> > mySlots;
+  std::set<FFaSlotBase*> mySlots;
   bool IAmDeletingMe;
+  const char* label;
 };
 
 
@@ -130,32 +125,8 @@ public:
   unsigned int getTypeID() const { return myTypeID; }
 
   // These methods must ONLY be used from FFaSwitchBoard
-
-  void addConnection(FFaSwitchBoardConnector* sender, int aSubject)
-    {
-      if (!IAmDeletingMe)
-	(mySwitchBoardLookups[sender])[aSubject]++;
-    }
-
-  void removeConnection(FFaSwitchBoardConnector* sender, int aSubject)
-    {
-      if (!IAmDeletingMe)
-	{
-	  (mySwitchBoardLookups[sender])[aSubject]--;
-	  if (((mySwitchBoardLookups[sender])[aSubject]) <= 0 )
-	    {
-	      (mySwitchBoardLookups[sender]).erase(aSubject);
-	      if ((mySwitchBoardLookups[sender]).empty())
-		{
-		  mySwitchBoardLookups.erase(sender);
-		  if (mySwitchBoardLookups.empty())
-		    {
-		      delete(this);
-		    }
-		}
-	    }
-	}
-    }
+  void addConnection(FFaSwitchBoardConnector* sender, int subject);
+  void removeConnection(FFaSwitchBoardConnector* sender, int subject);
 
   // Should be protected, used only by operator==
   virtual FFaSwitchBoardConnector* getObject() = 0;
@@ -354,17 +325,13 @@ FFASWB_MAKE_STATIC_SLOT_TEMPLATE(4, FFASWB_TEMPLATE4, FFASWB_ARGUMENT_LIST4, FFA
 
 #define FFASWB_MAKE_EMIT_FUNCTION_TEMPLATE(nr, templateDef, addedArgumentList, parameterList, typeList)	\
 													\
-templateDef												\
-void FFaSwitchBoardCall(FFaSwitchBoardConnector* sender, int subject addedArgumentList)			\
+templateDef void FFaSwitchBoardCall(FFaSwitchBoardConnector* sender, int subject addedArgumentList)	\
 {													\
-  bool hasPassedEnd = false;										\
   unsigned int typeID = FFaSlotBase##nr typeList::getClassTypeID();					\
-  FFaSlotList& ffaSlots = (*(FFaSwitchBoard::getSlots(sender,subject)))[typeID];			\
-  FFaSlotList::iterator i = FFaSwitchBoard::nextValidSlot(ffaSlots.begin(),&ffaSlots,true,hasPassedEnd,sender,subject,typeID); \
-  while (!hasPassedEnd) {										\
-    ((FFaSlotBase##nr typeList*)(i->slotPt))->invoke(parameterList);					\
-    i = FFaSwitchBoard::nextValidSlot(i,&ffaSlots,false,hasPassedEnd,sender,subject,typeID);		\
-  }													\
+  FFaSlotList& ffSlot = FFaSwitchBoard::getSlots(sender,subject,typeID);				\
+  FFaSlotList::iterator it = ffSlot.end();								\
+  while ((it = FFaSwitchBoard::nextValidSlot(it,ffSlot,sender,subject)) != ffSlot.end())		\
+    static_cast<FFaSlotBase##nr typeList*>(it->slotPt)->invoke(parameterList);				\
 }
 
 FFASWB_MAKE_EMIT_FUNCTION_TEMPLATE(0, inline, , , )

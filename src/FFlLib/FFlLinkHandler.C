@@ -50,6 +50,7 @@ FFlLinkHandler::FFlLinkHandler(size_t maxNodes, size_t maxElms)
   myProfiler = NULL;
 #endif
   myResults = NULL;
+  myChkSum  = NULL;
   nGenDofs  = 0;
   nodeLimit = maxNodes;
   elmLimit  = maxElms;
@@ -70,6 +71,7 @@ FFlLinkHandler::FFlLinkHandler(const FFlLinkHandler& otherLink)
   myProfiler = NULL;
 #endif
   myResults = NULL;
+  myChkSum  = NULL;
   nGenDofs  = otherLink.nGenDofs;
   tooLarge  = otherLink.tooLarge;
   nodeLimit = otherLink.nodeLimit;
@@ -126,6 +128,7 @@ FFlLinkHandler::FFlLinkHandler(const FFlGroup& fromGroup)
   myProfiler = NULL;
 #endif
   myResults = NULL;
+  myChkSum  = NULL;
   nodeLimit = elmLimit = nGenDofs = 0;
   tooLarge  = hasLooseNodes = isResolved = false;
   areElementsSorted = areNodesSorted = areLoadsSorted = true;
@@ -172,6 +175,7 @@ FFlLinkHandler::~FFlLinkHandler()
   myProfiler->report();
   delete myProfiler;
 #endif
+  delete myChkSum;
 }
 
 
@@ -207,6 +211,7 @@ void FFlLinkHandler::deleteGeometry()
   myGroupMap.clear();
   myLoads.clear();
   myAttributes.clear();
+  uniqueAtts.clear();
 #ifdef FT_USE_VISUALS
   myVisuals.clear();
 #endif
@@ -232,9 +237,12 @@ void FFlLinkHandler::deleteGeometry()
 
 unsigned int FFlLinkHandler::calculateChecksum(int csType, bool rndOff) const
 {
-  FFaCheckSum cs;
-  this->calculateChecksum(&cs,csType,rndOff);
-  return cs.getCurrent();
+  if (!myChkSum)
+    myChkSum = new FFaCheckSum();
+
+  myChkSum->reset();
+  this->calculateChecksum(myChkSum,csType,rndOff);
+  return myChkSum->getCurrent();
 }
 
 
@@ -940,16 +948,33 @@ const AttributeMap& FFlLinkHandler::getAttributes(const std::string& type) const
 
 
 /*!
-  Returns all spider reference nodes in the FE model.
+  Returns all spider reference nodes in the FE model,
+  which are not connected to other elements than the spider itself.
 */
 
 bool FFlLinkHandler::getRefNodes(std::vector<FFlNode*>& refNodes) const
 {
   refNodes.clear();
+  if (myNodes.empty())
+    return false;
+
+  // Find the largest external node number in the model
+  int Nmax = (*std::max_element(myNodes.begin(), myNodes.end(),
+                                [](FFlNode* a, FFlNode* b)
+                                {return a->getID() < b->getID(); }))->getID();
+#ifdef FFL_DEBUG
+  std::cout <<"Largest external node number: "<< Nmax << std::endl;
+#endif
+
+  // Determine the number of elements connected to each node
+  std::vector<short int> elmConnections(Nmax,0);
+  for (FFlElementBase* elm : myElements)
+    for (NodeCIter nit = elm->nodesBegin(); nit != elm->nodesEnd(); ++nit)
+      ++elmConnections[(*nit)->getID()];
 
   for (FFlElementBase* elm : myElements)
     if (elm->getCathegory() == FFlTypeInfoSpec::CONSTRAINT_ELM &&
-        elm->getNodeCount() > 2)
+        elm->getNodeCount() > 2 && elmConnections[elm->getNodeID(1)] == 1)
       refNodes.push_back(elm->getNode(1));
 
   return refNodes.empty();
@@ -1177,7 +1202,7 @@ bool FFlLinkHandler::addGroup(FFlGroup* group, bool silence)
 {
   if (!group) return false;
 
-  if (myGroupMap.insert(std::make_pair(group->getID(),group)).second)
+  if (myGroupMap.insert({group->getID(),group}).second)
   {
     isResolved = false;
     return true;
@@ -1192,20 +1217,12 @@ bool FFlLinkHandler::addGroup(FFlGroup* group, bool silence)
 }
 
 
-bool FFlLinkHandler::addAttribute(FFlAttributeBase* attr, bool silence)
-{
-  if (!attr) return false;
-
-  return this->addAttribute(attr,silence,attr->getTypeName());
-}
-
-
 bool FFlLinkHandler::addAttribute(FFlAttributeBase* attr, bool silence,
 				  const std::string& name)
 {
   if (!attr) return false;
 
-  if (myAttributes[name].insert(std::make_pair(attr->getID(),attr)).second)
+  if (myAttributes[name].insert({attr->getID(),attr}).second)
   {
     isResolved = false;
     return true;
@@ -1220,37 +1237,59 @@ bool FFlLinkHandler::addAttribute(FFlAttributeBase* attr, bool silence,
 }
 
 
-int FFlLinkHandler::addUniqueAttribute(FFlAttributeBase* newAtt, bool silence)
+bool FFlLinkHandler::addAttribute(FFlAttributeBase* attr, bool silence)
 {
-  if (!newAtt) return 0;
+  return attr ? this->addAttribute(attr,silence,attr->getTypeName()) : false;
+}
 
-  AttributeMap& atts = myAttributes[newAtt->getTypeName()];
+
+int FFlLinkHandler::addUniqueAttribute(FFlAttributeBase* attr, bool silence)
+{
+  if (!attr) return 0;
 
   // Check if an identical attribute already exists
-  for (const AttributeMap::value_type& attr : atts)
-    if (attr.second->isIdentic(newAtt))
+  for (const AttributeMap::value_type& attp : myAttributes[attr->getTypeName()])
+    if (attp.second->isIdentic(attr))
     {
-      delete newAtt;
-      return attr.first;
+      delete attr;
+      return attp.first;
     }
 
 #ifdef FFL_DEBUG
-  newAtt->print("Unique attribute ");
+  attr->print("Unique attribute ");
 #endif
-  if (atts.insert(std::make_pair(newAtt->getID(),newAtt)).second)
+
+  int attId = attr->getID();
+  this->addAttribute(attr,silence);
+  return attId;
+}
+
+
+int FFlLinkHandler::addUniqueAttributeCS(FFlAttributeBase*& attr)
+{
+  if (!myChkSum)
+    myChkSum = new FFaCheckSum();
+
+  // Calculate the checksum of the new attribute to determine its uniqueness
+  myChkSum->reset();
+  attr->calculateChecksum(myChkSum,FFl::CS_NOIDINFO);
+  unsigned int cs = myChkSum->getCurrent();
+
+  // Check if an identical attribute already exists
+  std::map<unsigned int,FFlAttributeBase*>::iterator cit = uniqueAtts.find(cs);
+  if (cit != uniqueAtts.end())
   {
-    isResolved = false;
-    return newAtt->getID();
+    delete attr;
+    attr = cit->second;
+    return attr->getID();
   }
 
-  if (!silence)
-    ListUI <<"\n  ** Warning: Multiple attributes with identical ID detected ("
-	   << newAtt->getTypeName() <<" "<< newAtt->getID()
-	   <<"). Only the first one is used.\n";
+#ifdef FFL_DEBUG
+  attr->print("Unique attribute ");
+#endif
 
-  int newId = newAtt->getID();
-  delete newAtt;
-  return newId;
+  uniqueAtts[cs] = attr;
+  return this->addAttribute(attr) ? attr->getID() : 0;
 }
 
 

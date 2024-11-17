@@ -9,6 +9,8 @@
 #define FFL_UTILS_H
 
 #include <string>
+#include <vector>
+#include <map>
 
 class FFlLinkHandler;
 class FaMat34;
@@ -16,9 +18,24 @@ class FaMat34;
 
 namespace FFl
 {
-  bool activateElmGroups(FFlLinkHandler* link,
+  struct DepDOF
+  {
+    int node;
+    int lDof;
+    double coeff;
+    DepDOF(int n = 1, int d = 1, double c = 1.0) : node(n), lDof(d), coeff(c) {}
+  };
+
+  using DepDOFs = std::vector<DepDOF>;
+  using MPC     = std::map<short int,DepDOFs>;
+  using MPCMap  = std::map<int,MPC>;
+
+  bool convertMPCsToWAVGM(FFlLinkHandler* part, const MPCMap& mpcs);
+
+  bool activateElmGroups(FFlLinkHandler* part,
                          const std::string& elmGroups = "");
-  bool extractBodyFromShell(FFlLinkHandler* link,
+
+  bool extractBodyFromShell(FFlLinkHandler* part,
                             const FaMat34& partCS, const std::string& fname);
 }
 

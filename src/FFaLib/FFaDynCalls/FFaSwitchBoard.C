@@ -6,151 +6,168 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "FFaLib/FFaDynCalls/FFaSwitchBoard.H"
+#ifdef FFA_DEBUG
 #include <iostream>
+#endif
 
 
 int FFaSlotBase::uniqueTypeId = 0;
 
-// Static member initialization FFaSwitchBoard :
-typedef std::map<FFaSwitchBoardConnector*,  std::map<int,TypeIDToSlotBasePtListMap> > SwitchBoardConnectionT;
-typedef std::list<std::list<FFaSlotBasePt>::iterator >                                SwitchBoartIteratorT;
+FFaSwitchBoard::SwitchBoardConnection* FFaSwitchBoard::ourConnections = NULL;
 
-SwitchBoardConnectionT* FFaSwitchBoard::ourConnections = 0;
-SwitchBoartIteratorT*   FFaSwitchBoard::protectedIterators = 0;
+
+static FFaSlotList::iterator eraseSlot(FFaSwitchBoardConnector* sender, int subject,
+                                       FFaSlotList& slots, FFaSlotList::iterator slit)
+{
+  if (slit->refCount < 0)
+    return ++slit;
+
+  slit->slotPt->removeConnection(sender,subject);
+
+  if (slit->refCount < 1)
+    return slots.erase(slit);
+
+  slit->refCount = -1;
+  return ++slit;
+}
 
 
 void FFaSwitchBoard::init()
 {
-  FFaSwitchBoard::ourConnections     = new SwitchBoardConnectionT();
-  FFaSwitchBoard::protectedIterators = new SwitchBoartIteratorT();
+  FFaSwitchBoard::ourConnections = new SwitchBoardConnection();
 }
 
 
 void FFaSwitchBoard::removeInstance()
 {
   delete FFaSwitchBoard::ourConnections;
-  delete FFaSwitchBoard::protectedIterators;
 }
 
 
-// Initialisation of FFaSlotBase0::ourClassTypeID :
-//FFASWB_MAKE_SLOTBASE_ID_INIT_TEMPLATE(0,,)
-
-//
-// The macro to make the different overloaded emit template functions :
-//
-
-
-void FFaSwitchBoard::connect(FFaSwitchBoardConnector * aSender, int aSubject, FFaSlotBase *aSlot)
+void FFaSwitchBoard::connect(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot)
 {
-  FFaSlotBasePt slotHolder(aSlot);
-  (((ourConnections->operator[](aSender))[aSubject])[aSlot->getTypeID()]).push_front(slotHolder);
-  aSlot->addConnection(aSender,aSubject);
+  ourConnections->operator[](sender)[subject][slot->getTypeID()].push_front({slot,0});
+  slot->addConnection(sender,subject);
 }
 
 
-void  FFaSwitchBoard::disConnect(FFaSwitchBoardConnector * aSender, int aSubject, FFaSlotBase *aSlot)
+void FFaSwitchBoard::disConnect(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot)
 {
-  std::list< FFaSlotBasePt>::iterator i;
-  std::list< FFaSlotBasePt>::iterator toDelete; 
-  std::list< FFaSlotBasePt>* ffaSlots;
-  unsigned int typeID;
+  // Increment to avoid accidental removal during looping if it is a working slot
+  slot->addConnection(sender,subject);
 
+  FFaSlotList& ffaSlots = FFaSwitchBoard::getSlots(sender,subject,slot->getTypeID());
+  for (FFaSlotList::iterator it = ffaSlots.begin(); it != ffaSlots.end();)
+    if (*slot == *(it->slotPt))
+      it = eraseSlot(sender,subject,ffaSlots,it);
+    else
+      ++it;
 
-  typeID = aSlot->getTypeID();
-  aSlot->addConnection(aSender,aSubject); // increment to avoid accidental removal during looping if aSlot is a working slot
-  ffaSlots = &(*FFaSwitchBoard::getSlots(aSender, aSubject))[typeID];
+  if (ffaSlots.empty())
+    FFaSwitchBoard::cleanUpAfterSlot(sender,subject);
 
-  i = ffaSlots->begin();                                                                                    
-  while(i != ffaSlots->end())                                                                               
-   {                                                                                                    
-     if (  (*aSlot) == (*((*i).slotPt))  )                
-       {                                                                                                
-	 toDelete = i;                                                                                  
-	 i++;
-	 FFaSwitchBoard::eraseSlotFromList(aSender, aSubject, (*ffaSlots), toDelete); 
-       }                                                                                                
-     else                                                                                               
-       { i++; }                                                                                                
-   } 
-
-  FFaSwitchBoard::cleanUpAfterSlot(aSender,aSubject,typeID);
-  aSlot->removeConnection(aSender,aSubject); // decrement to make it disappear if no longer used.
+  // Decrement to make it disappear if no longer used
+  slot->removeConnection(sender,subject);
 }
 
 
-void
-FFaSwitchBoard::removeAllSenderConnections(FFaSwitchBoardConnector* aSender)
+void FFaSwitchBoard::removeAllSenderConnections(FFaSwitchBoardConnector* sender)
 {
-  std::map<int , TypeIDToSlotBasePtListMap>::iterator subjIt;
-  std::map<int , TypeIDToSlotBasePtListMap>::iterator subjToDelete;
+  SwitchBoardConnection::iterator sbcIter = ourConnections->find(sender);
+  if (sbcIter == ourConnections->end())
+    return; // Nothing to do
 
-  TypeIDToSlotBasePtListMap::iterator typeIt;
-  TypeIDToSlotBasePtListMap::iterator typeToDelete;
-
-  std::list<FFaSlotBasePt>::iterator slotIt;
-  std::list<FFaSlotBasePt>::iterator slotToDelete;
-
-  subjIt = ourConnections->operator[](aSender).begin();
-  while (subjIt != ourConnections->operator[](aSender).end())
+  SlotMap::iterator subjIt, subjToDelete;
+  for (subjIt = sbcIter->second.begin(); subjIt != sbcIter->second.end();)
+  {
+    SlotContainer::iterator typeIt, typeToDelete;
+    for (typeIt = subjIt->second.begin(); typeIt != subjIt->second.end();)
     {
-      typeIt = (*subjIt).second.begin();
-      while (  typeIt != (*subjIt).second.end())
-	{
-	  slotIt = (*typeIt).second.begin();
-	  while ( slotIt != (*typeIt).second.end())
-	    {
-	      slotToDelete = slotIt;
-	      slotIt++;
-	      FFaSwitchBoard::eraseSlotFromList(aSender, (*subjIt).first, ((*typeIt).second), slotToDelete); 
-	    }
+      for (FFaSlotList::iterator it = typeIt->second.begin(); it != typeIt->second.end();)
+        it = eraseSlot(sender,subjIt->first,typeIt->second,it);
 
-	  typeToDelete = typeIt;
-	  typeIt ++; 
-	  if ( (*typeToDelete).second.empty() )
-	    {
-	      (*subjIt).second.erase(typeToDelete);
-	    }
-	}
-      subjToDelete = subjIt;
-      subjIt ++;
-      if ( (*subjToDelete).second.empty() )
-	{
-	  ourConnections->operator[](aSender).erase(subjToDelete);
-	}
-     }
-
-  if(ourConnections->operator[](aSender).empty()) 
-    {
-      ourConnections->erase(aSender);
+      typeToDelete = typeIt++;
+      if (typeToDelete->second.empty())
+        subjIt->second.erase(typeToDelete);
     }
+
+    subjToDelete = subjIt++;
+    if (subjToDelete->second.empty())
+      sbcIter->second.erase(subjToDelete);
+  }
+
+  if (sbcIter->second.empty())
+    ourConnections->erase(sender);
 }
 
 
-void FFaSwitchBoard::removeSlotReference(FFaSwitchBoardConnector * aSender, int aSubject, FFaSlotBase *aSlot)
+void FFaSwitchBoard::removeAllOwnerConnections(FFaSwitchBoardConnector* owner)
 {
-  std::list<FFaSlotBasePt>::iterator slotIt;
-  std::list<FFaSlotBasePt>::iterator toDelete;  
-  std::list<FFaSlotBasePt> *ffaSlots;
-
-  ffaSlots = &((*(FFaSwitchBoard::getSlots(aSender, aSubject)))[aSlot->getTypeID()]);
-
-  slotIt = ffaSlots->begin();
-  while ( slotIt != ffaSlots->end())
+  SwitchBoardConnection::iterator sbcIter = ourConnections->begin();
+  while (sbcIter != ourConnections->end())
+  {
+    SlotMap::iterator subjIt = sbcIter->second.begin();
+    while (subjIt != sbcIter->second.end())
     {
-      if ((*slotIt).slotPt == aSlot)
-	{
-	  toDelete = slotIt;
-	  slotIt++;
+      SlotContainer::iterator tit = subjIt->second.begin();
+      while (tit != subjIt->second.end())
+      {
+        for (FFaSlotList::iterator it = tit->second.begin(); it != tit->second.end();)
+          if (it->slotPt->getObject() == owner)
+            it = eraseSlot(sbcIter->first,subjIt->first,tit->second,it);
+          else
+            ++it;
 
-	  FFaSwitchBoard::eraseSlotFromList(aSender,aSubject,(*ffaSlots),toDelete); 
-	}
-      else
-	{ slotIt++; }
+        SlotContainer::iterator typeToDelete = tit++;
+        if (typeToDelete->second.empty())
+          subjIt->second.erase(typeToDelete);
+      }
+
+      SlotMap::iterator subjToDelete = subjIt++;
+      if (subjToDelete->second.empty())
+        sbcIter->second.erase(subjToDelete);
     }
-     
-  FFaSwitchBoard::cleanUpAfterSlot(aSender,aSubject,aSlot->getTypeID());
+
+    SwitchBoardConnection::iterator sbcToDelete = sbcIter++;
+    if (sbcToDelete->second.empty())
+      ourConnections->erase(sbcToDelete);
+  }
 }
+
+
+void FFaSwitchBoard::removeSlotReference(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot)
+{
+  FFaSlotList& ffaSlots = FFaSwitchBoard::getSlots(sender,subject,slot->getTypeID());
+  for (FFaSlotList::iterator it = ffaSlots.begin(); it != ffaSlots.end();)
+    if (it->slotPt == slot)
+      it = eraseSlot(sender,subject,ffaSlots,it);
+    else
+      ++it;
+
+  if (ffaSlots.empty())
+    FFaSwitchBoard::cleanUpAfterSlot(sender,subject);
+}
+
+
+FFaSlotList& FFaSwitchBoard::getSlots(FFaSwitchBoardConnector* sender,
+                                      int subject, unsigned int typeID)
+{
+  SwitchBoardConnection::iterator it1 = ourConnections->find(sender);
+  if (it1 != ourConnections->end())
+  {
+    SlotMap::iterator it2 = it1->second.find(subject);
+    if (it2 != it1->second.end())
+    {
+      SlotContainer::iterator it3 = it2->second.find(typeID);
+      if (it3 != it2->second.end())
+        return it3->second;
+    }
+  }
+
+  static FFaSlotList empty;
+  return empty;
+}
+
 
 /*!
   Function that finds the next slot that is available and valid for invoking.
@@ -158,106 +175,81 @@ void FFaSwitchBoard::removeSlotReference(FFaSwitchBoardConnector * aSender, int 
   iterate over the slots that can be deleted as we go.
 */
 
-std::list<FFaSlotBasePt>::iterator
-FFaSwitchBoard::nextValidSlot( std::list<FFaSlotBasePt>::iterator i, std::list<
-    FFaSlotBasePt> *ffaSlots, bool start, bool &hasPassedEnd,
-    FFaSwitchBoardConnector * aSender, int aSubject, unsigned int typeID )
+FFaSlotList::iterator
+FFaSwitchBoard::nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
+                              FFaSwitchBoardConnector* sender, int subject)
 {
-  std::list<FFaSlotBasePt>::iterator result;
-  std::list<FFaSlotBasePt>::iterator toDelete;
-
-  if ( start )
+#ifdef FFA_DEBUG
+  size_t islot = 0, nslot = slots.size();
+#endif
+  if (it == slots.end())
   {
-    i = ffaSlots->begin();
+#ifdef FFA_DEBUG
+    std::cout <<"FFaSwitchBoard: sender=\""<< sender->getLabel()
+              <<"\" signal="<< subject <<" nslot="<< nslot << std::endl;
+#endif
+    it = slots.begin();
   }
   else
   {
-    ( *i ).protectedRefCount--; // VS 2008 port FFaSwitchBoard::protectedIterators->pop_front();
-    if  ( (*i).protectedRefCount < 0 )
+#ifdef FFA_DEBUG
+    for (FFaSlotList::iterator j = slots.begin(); j != it && j != slots.end(); ++j)
+      ++islot;
+#endif
+    if (it->refCount < 0)
     {
-      std::cout << "Error: FFaSwitchboardcall::protectedRefcount negative"
-            << std::endl;
-    }
-    if( !(*i).isValid )
-    {
-      toDelete = i;
-      ++i;
-      ffaSlots->erase(toDelete);
+#ifdef FFA_DEBUG
+      std::cout <<"\tErasing invalid slot "<< islot << std::endl;
+#endif
+      it = slots.erase(it);
     }
     else
     {
-      ++i;
+      it->refCount--;
+      ++it;
+#ifdef FFA_DEBUG
+      ++islot;
+#endif
     }
   }
 
-  while (i != ffaSlots->end() && !(*i).isValid)
-  {
-    i++;
-  }
-
-  if (i != ffaSlots->end() && (*i).isValid)
-  {
-  (*i).protectedRefCount++;// VS 2008 port FFaSwitchBoard::protectedIterators->push_front(i);
+  for (; it != slots.end(); ++it)
+    if (it->refCount >= 0)
+    {
+      it->refCount++;
+#ifdef FFA_DEBUG
+      std::cout <<"\tUsing valid slot "<< islot << std::endl;
+#endif
+      return it;
     }
-  else
-  {
-    hasPassedEnd = true;
-    FFaSwitchBoard::cleanUpAfterSlot(aSender,aSubject,typeID);
-  }
+#ifdef FFA_DEBUG
+    else
+      ++islot;
+#endif
 
-  return i;
+  if (slots.empty())
+    FFaSwitchBoard::cleanUpAfterSlot(sender,subject);
+
+#ifdef FFA_DEBUG
+  if (nslot > 0)
+    std::cout <<"\tNo valid slot "<< islot << std::endl;
+#endif
+  return it;
 }
 
 
-void FFaSwitchBoard::eraseSlotFromList(FFaSwitchBoardConnector * aSender, 
-				       int aSubject, 
-				       std::list<FFaSlotBasePt> &ffaSlots, 
-				       std::list<FFaSlotBasePt>::iterator iteratorToSlotToDelete )
+void FFaSwitchBoard::cleanUpAfterSlot(FFaSwitchBoardConnector* sender, int subject)
 {
-  if((*iteratorToSlotToDelete).isValid) 
-    {
-      ((*iteratorToSlotToDelete).slotPt)->removeConnection(aSender,aSubject);
+  SwitchBoardConnection::iterator sbcIter = ourConnections->find(sender);
+  if (sbcIter == ourConnections->end())
+    return; // Nothing to do
 
-      if(!FFaSwitchBoard::isProtected(iteratorToSlotToDelete))
-	ffaSlots.erase(iteratorToSlotToDelete);
-      else
-	(*iteratorToSlotToDelete).isValid = false;
-    }
-} 
+  SlotMap::iterator subjIt = sbcIter->second.find(subject);
+  if (subjIt != sbcIter->second.end())
+    sbcIter->second.erase(subjIt);
 
- 
-bool FFaSwitchBoard::isProtected( std::list<FFaSlotBasePt>::iterator i)
-{
-  return ((*i).protectedRefCount > 0);
-  /* VS 2008 port
-  std::list< std::list<FFaSlotBasePt>::iterator >::iterator result;
-  
-  result = find(protectedIterators->begin(), protectedIterators->end(), i);
-  
-  if (result == protectedIterators->end())
-    return false;
-  else
-    return true;
-    */
-}
-
-
-void FFaSwitchBoard::cleanUpAfterSlot(FFaSwitchBoardConnector * aSender, int aSubject, unsigned int typeID)
-{
-  if ( (((ourConnections->operator[](aSender))[aSubject])[typeID]).empty() )
-    {
-      ((ourConnections->operator[](aSender))[aSubject]).erase(typeID);
-
-      if ( ((ourConnections->operator[](aSender))[aSubject]).empty() )
-	{
-	  (ourConnections->operator[](aSender)).erase(aSubject);
-
-	  if( (ourConnections->operator[](aSender)).empty())
-	    {
-	      ourConnections->erase(aSender);
-	    }
-	}
-    }	
+  if (sbcIter->second.empty())
+    ourConnections->erase(sbcIter);
 }
 
 
@@ -275,4 +267,37 @@ FFaSlotBase::~FFaSlotBase()
   for (const SwitchBoardConnectorMap::value_type& swb : mySwitchBoardLookups)
     for (const std::pair<const int,int>& ij : swb.second)
       FFaSwitchBoard::removeSlotReference(swb.first,ij.first,this);
+}
+
+
+void FFaSlotBase::addConnection(FFaSwitchBoardConnector* sender, int subject)
+{
+  if (IAmDeletingMe) return;
+
+  IntMap& lookUp = mySwitchBoardLookups[sender];
+  IntMap::iterator it = lookUp.find(subject);
+  if (it == lookUp.end())
+    lookUp[subject] = 1;
+  else
+    it->second++;
+}
+
+
+void FFaSlotBase::removeConnection(FFaSwitchBoardConnector* sender, int subject)
+{
+  if (IAmDeletingMe) return;
+
+  SwitchBoardConnectorMap::iterator cit = mySwitchBoardLookups.find(sender);
+  if (cit != mySwitchBoardLookups.end())
+  {
+    IntMap::iterator it = cit->second.find(subject);
+    if (it != cit->second.end() && --(it->second) < 1)
+      cit->second.erase(it);
+
+    if (cit->second.empty())
+      mySwitchBoardLookups.erase(cit);
+  }
+
+  if (mySwitchBoardLookups.empty())
+    delete this;
 }

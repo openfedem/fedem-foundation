@@ -19,8 +19,8 @@
 #include "FFlLib/FFlFEParts/FFlPBEAMSECTION.H"
 #include "FFlLib/FFlFEParts/FFlPBEAMPIN.H"
 #include "FFlLib/FFlFEParts/FFlPSPRING.H"
-#include "FFlLib/FFlFEParts/FFlPWAVGM.H"
 #include "FFlLib/FFlGroup.H"
+#include "FFlLib/FFlUtils.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include "FFaLib/FFaAlgebra/FFaMath.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
@@ -389,30 +389,11 @@ bool FFlSesamReader::readMasses (const Records& recs)
 
 bool FFlSesamReader::readLinearDependencies (const Records& recs)
 {
-  struct DepDOF
-  {
-    int node, lDof; double coeff;
-    DepDOF(int n, int d, double c) : node(n), lDof(d), coeff(c) {}
-  };
-  typedef std::vector<DepDOF>         DepDOFs;
-  typedef std::map<short int,DepDOFs> MPC;
-  typedef std::map<int,MPC>           MPCMap;
-
-  typedef std::vector<double>      DoubleVec;
-  typedef std::map<int,DoubleVec>  DoublesMap;
-  typedef std::map<int,DoublesMap> DoublesMapMap;
-
-  LSintMap::iterator            dit;
-  MPCMap::const_iterator        mit;
-  MPC::const_iterator           sdof;
-  DoublesMapMap::const_iterator it;
-  DoublesMap::const_iterator    jt;
-
   // Build a temporary MPC container of all linear dependency elements
-  MPCMap myMPCs;
+  FFl::MPCMap myMPCs;
   for (const Record& record : recs)
   {
-    const DoubleVec& fields = record.fields;
+    const std::vector<double>& fields = record.fields;
 
     int nodenum = (int)fields[0];
     int cnod    = (int)fields[1];
@@ -429,111 +410,27 @@ bool FFlSesamReader::readLinearDependencies (const Records& recs)
 #if FFL_DEBUG > 1
       std::cout <<'\t'<< sDof <<" "<< mDof <<" "<< c << std::endl;
 #endif
-      if ((dit = myLinearDepDofs.find(10*nodenum+sDof)) == myLinearDepDofs.end())
+      LSintMap::iterator dit = myLinearDepDofs.find(10*nodenum+sDof);
+      if (dit == myLinearDepDofs.end())
         ListUI <<"\n  ** DOF "<< sDof <<" in node "<< nodenum
                <<" is not defined as linear dependent (ignored).";
       else
       {
         dit->second ++; // Flag as slave DOF
-        myMPCs[nodenum][sDof].push_back(DepDOF(cnod,mDof,c));
+        myMPCs[nodenum][sDof].push_back(FFl::DepDOF(cnod,mDof,c));
       }
     }
   }
 
   // Verify that all linear dependent DOFs has been referred
-  for (dit = myLinearDepDofs.begin(); dit != myLinearDepDofs.end(); ++dit)
-    if (dit->second == 0)
-      ListUI <<"\n  ** Warning: DOF "<< (int)(dit->first)%10 <<" in node "
-             << (int)(dit->first)/10 <<" was tagged as linear dependent"
+  for (const LSintMap::value_type& ddof : myLinearDepDofs)
+    if (ddof.second == 0)
+      ListUI <<"\n  ** Warning: DOF "<< (int)(ddof.first)%10 <<" in node "
+             << (int)(ddof.first)/10 <<" was tagged as linear dependent"
              <<" but not referred in a linear dependency element.";
 
   // Create WAVGM elements for the multi-point constraints
-  for (mit = myMPCs.begin(); mit != myMPCs.end(); ++mit)
-  {
-    // Find the element nodes
-    std::vector<int> nodes(1,mit->first);
-    for (sdof = mit->second.begin(); sdof != mit->second.end(); ++sdof)
-      for (const DepDOF& dof : sdof->second)
-      {
-        size_t iNod = 1;
-        while (iNod < nodes.size() && dof.node != nodes[iNod]) iNod++;
-        if (iNod == nodes.size()) nodes.push_back(dof.node);
-      }
-#if FFL_DEBUG > 1
-    std::cout <<"Element nodes:";
-    for (int n : nodes) std::cout <<" "<< n;
-    std::cout << std::endl;
-#endif
-
-    size_t nRow = 0;
-    DoublesMapMap dofWeights;
-    for (sdof = mit->second.begin(); sdof != mit->second.end(); ++sdof)
-      if (sdof->first > 0 && sdof->first < 7)
-      {
-        // Find the weight matrix associated with this slave DOF
-        DoublesMap& dofWeight = dofWeights[sdof->first];
-        for (const DepDOF& dof : sdof->second)
-        {
-          DoubleVec& weights = dofWeight[dof.lDof];
-          weights.resize(nodes.size()-1,0.0);
-          for (size_t iNod = 1; iNod < nodes.size(); iNod++)
-            if (dof.node == nodes[iNod])
-            {
-              weights[iNod-1] = dof.coeff;
-              break;
-            }
-        }
-        nRow += 6; // Assuming all DOFs in the master node is referred
-#if FFL_DEBUG > 1
-        std::cout <<"Weight matrix associated with slave dof "<< sdof->first;
-        for (jt = dofWeight.begin(); jt != dofWeight.end(); ++jt)
-        {
-          std::cout <<"\n\t"<< jt->first <<":";
-          for (double c : jt->second) std::cout <<" "<< c;
-        }
-	std::cout << std::endl;
-#endif
-      }
-
-    int refC = 0;
-    size_t indx = 1;
-    size_t nMst = nodes.size() - 1;
-    int indC[6] = { 0, 0, 0, 0, 0, 0 };
-    DoubleVec weights(nRow*nMst,0.0);
-    for (it = dofWeights.begin(); it != dofWeights.end(); ++it, indx += 6*nMst)
-    {
-      refC = 10*refC + it->first; // Compressed slave DOFs identifier
-      indC[it->first-1] = indx;   // Index to first weight for this slave DOF
-      for (jt = it->second.begin(); jt != it->second.end(); ++jt)
-        for (size_t j = 0; j < jt->second.size(); j++)
-          weights[indx+6*j+jt->first-2] = jt->second[j];
-    }
-
-    int eID = myLink->getNewElmID();
-    FFlElementBase* newElem = ElementFactory::instance()->create("WAVGM",eID);
-    if (!newElem)
-    {
-      ListUI <<"\n *** Error: Failure creating WAVGM element "<< eID <<".\n";
-      return false;
-    }
-
-    newElem->setNodes(nodes);
-    if (!myLink->addElement(newElem))
-      return false;
-
-    FFlPWAVGM* newAtt = CREATE_ATTRIBUTE(FFlPWAVGM,"PWAVGM",eID);
-    newAtt->refC = -refC; // Hack: Negative refC means explicit constraints
-    newAtt->weightMatrix.data().swap(weights);
-    for (int j = 0; j < 6; j++)
-      newAtt->indC[j] = indC[j];
-
-    if (myLink->addAttribute(newAtt))
-      newElem->setAttribute(newAtt);
-    else
-      return false;
-  }
-
-  return true;
+  return FFl::convertMPCsToWAVGM(myLink,myMPCs);
 }
 
 
