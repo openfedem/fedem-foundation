@@ -15,6 +15,7 @@
 #include <map>
 #include <set>
 #include <list>
+#include <cstddef>
 
 #include "FFaLib/FFaPatterns/FFaInitialisation.H"
 
