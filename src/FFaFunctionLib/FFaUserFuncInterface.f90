@@ -22,11 +22,13 @@ module FFaUserFuncInterface
   interface
 
      !> @brief Loads the user-defined plugin(s) into core memory.
+     !> @param[in] plugin List of user-defined plugin libraries
      !> @param[in] funcId Index of function to return number of arguments for
      !> @param[out] sign Signature string of the user-defined function plugin
      !> @return Number of arguments for specified user-defined function
-     function ffauf_init (funcId,sign)
+     function ffauf_init (plugin,funcId,sign)
        integer                       :: ffauf_init
+       character(len=*), intent(in)  :: plugin
        integer         , intent(in)  :: funcId
        character(len=*), intent(out) :: sign
      end function ffauf_init
