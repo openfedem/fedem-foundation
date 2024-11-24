@@ -7,7 +7,7 @@
 # Library setup
 
 set ( LIB_ID FFaLib )
-set ( LIB_ID_LIST FFaAlgebra FFaCmdLineArg FFaDefinitions
+set ( LIB_ID_LIST FFaAlgebra FFaDefinitions
                   FFaOperation FFaOS FFaString
     )
 if ( USE_MEMPOOL )
@@ -17,11 +17,15 @@ if ( USE_PROFILER )
   list ( APPEND LIB_ID_LIST FFaProfiler )
 endif ( USE_PROFILER )
 if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+  list ( APPEND LIB_ID_LIST FFaCmdLineArg )
   if ( BUILD_TESTS )
     list ( APPEND LIB_ID_LIST FFaTests )
   endif ( BUILD_TESTS )
 else ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
   # These libraries are used by the GUI only
+  if ( "${APPLICATION_ID}" STREQUAL "fedemGui" )
+    list ( APPEND LIB_ID_LIST FFaCmdLineArg )
+  endif ( "${APPLICATION_ID}" STREQUAL "fedemGui" )
   if ( USE_CONNECTORS )
     list ( APPEND LIB_ID_LIST FFaGeometry )
   endif ( USE_CONNECTORS )
