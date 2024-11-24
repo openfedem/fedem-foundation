@@ -7,46 +7,48 @@
 
 #include <cstring>
 
-#include "FFaUserFuncPlugin.H"
-#include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
+#include "FFaFunctionLib/FFaUserFuncPlugin.H"
 #include "FFaLib/FFaString/FFaTokenizer.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 
 
-INTEGER_FUNCTION(ffauf_init,FFAUF_INIT) (const int& funcId, char* sign, int nc)
-{
+INTEGER_FUNCTION(ffauf_init,FFAUF_INIT) (const char* plugin,
+#ifdef _NCHAR_AFTER_CHARARG
+                                         const int ncp, const int& funcId,
+                                         char* sign, int nc
+#else
+                                         const int& funcId, char* sign,
+                                         const int ncp, int nc
+#endif
+){
   if (!FFaUserFuncPlugin::instance()->areLibsLoaded())
   {
-    // Get plugin file name from command-line
-    std::string plugin;
-    FFaCmdLineArg::instance()->getValue("plugin",plugin);
-    if (plugin.empty())
-    {
-      std::cerr <<"FFaUserFuncPlugin: No plugins specified."<< std::endl;
-      return -1;
-    }
-    else if (plugin[0] == '<')
+    std::string pluginLib;
+    if (ncp > 0 && plugin[0] == '<')
     {
       // We have a multi-file list, find the correct one containing
       // user-defined functions (there should only be one)
-      size_t i;
-      FFaTokenizer files(plugin,'<','>',',');
-      for (i = 0; i < files.size(); i++)
-	if (FFaUserFuncPlugin::instance()->validate(files[i]))
-	  break;
+      FFaTokenizer files(std::string(plugin,ncp),'<','>',',');
+      for (const std::string& file : files)
+        if (FFaUserFuncPlugin::instance()->validate(file))
+        {
+          pluginLib = file;
+          break;
+        }
+    }
+    else
+      pluginLib = std::string(plugin,ncp);
 
-      if (i < files.size())
-	plugin = files[i];
-      else
-      {
-	std::cerr <<"FFaUserFuncPlugin: No valid plugin specified."<< std::endl;
-	return -2;
-      }
+    if (pluginLib.empty())
+    {
+      std::cerr <<"FFaUserFuncPlugin: No valid plugin in \""
+                << std::string(plugin,ncp) <<"\"."<< std::endl;
+      return -2;
     }
 
     // Load the user-defined functions plugin and get its signature.
     // Pad the string with trailing spaces when returning to Fortran.
-    if (!FFaUserFuncPlugin::instance()->load(plugin))
+    if (!FFaUserFuncPlugin::instance()->load(pluginLib))
       return -3;
     else if (!FFaUserFuncPlugin::instance()->getSign(nc,sign))
       memset(sign,' ',nc);

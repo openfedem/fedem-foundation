@@ -22,11 +22,13 @@ module FiUserElmInterface
 
      !!=========================================================================
      !> @brief Loads the user-defined element plugin library into memory.
+     !> @param[in] plugin List of user-defined plugin libraries
      !> @param[in] gdata Global parameters that applies to all element instances
      !> @param[out] sign Description of the loaded library
      !> @param[out] ierr Error flag
-     subroutine Fi_UDE_Init (gdata,sign,ierr)
+     subroutine Fi_UDE_Init (plugin,gdata,sign,ierr)
        integer         , parameter   :: dp = kind(1.0D0)
+       character(len=*), intent(in)  :: plugin
        real(dp)        , intent(in)  :: gdata
        character(len=*), intent(out) :: sign
        integer         , intent(out) :: ierr

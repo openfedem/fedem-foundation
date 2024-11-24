@@ -12,7 +12,6 @@
 
 #include "FiDeviceFunctions/FiDeviceFunctionFactory.H"
 #include "FiDeviceFunctions/FiDeviceFunctionBase.H"
-#include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 #include <cstring>
 
@@ -67,9 +66,12 @@ SUBROUTINE(fidf_openwrite,FIDF_OPENWRITE) (const char* name,
                                            int& error, const int nchar
 #endif
 ){
-  // Set output endian formatting for the device from command-line option
+  // Set output endian formatting for the device depending on platform
+#if defined(win32) || defined(win64)
+  bool littleEndian = true;
+#else
   bool littleEndian = false;
-  FFaCmdLineArg::instance()->getValue("littleEndian",littleEndian);
+#endif
 
   fileIndex = FIDF->open(std::string(name,nchar),
                          (FiDevFormat)fileType,IO_WRITE,littleEndian);

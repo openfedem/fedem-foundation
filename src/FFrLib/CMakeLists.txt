@@ -53,9 +53,9 @@ set ( HEADER_FILE_LIST FFrReadOp FFrReadOpInit )
 
 ## Pure implementation files, i.e., source files without corresponding header
 set ( SOURCE_FILE_LIST FFrReadOpImpl )
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
   list ( APPEND SOURCE_FILE_LIST FFrExtractor_F )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
 
 ## Fortran 90 source files
 set ( F90_FILE_LIST FFrExtractorInterface )
@@ -98,5 +98,5 @@ target_link_libraries ( ${LIB_ID} ${DEPENDENCY_LIST} )
 
 if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
   add_library ( ${LIB_ID}_F ${F90_SOURCE_FILES} )
-  target_link_libraries ( ${LIB_ID}_F ${LIB_ID} )
+  target_link_libraries ( ${LIB_ID}_F ${LIB_ID} FFaCmdLineArg )
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )

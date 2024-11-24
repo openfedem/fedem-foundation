@@ -77,9 +77,9 @@ set ( HEADER_FILE_LIST FFlFEResultBase FFlField FFlInit
 
 ## Pure implementation files, i.e., source files without corresponding header
 set ( SOURCE_FILE_LIST )
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
   set ( SOURCE_FILE_LIST FFlLinkHandler_F )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
 
 ## Fortran 90 source files
 set ( F90_FILE_LIST FFlLinkHandlerInterface )
@@ -105,10 +105,6 @@ endforeach ( FILE ${F90_FILE_LIST} )
 
 set ( DEPENDENCY_LIST FFlFEParts FFaAlgebra FFaDefinitions )
 
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
-  list ( INSERT DEPENDENCY_LIST 0 FFlIOAdaptors )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
-
 if ( USE_MEMPOOL )
   list ( APPEND DEPENDENCY_LIST FFaPatterns )
 endif ( USE_MEMPOOL )
@@ -126,5 +122,5 @@ target_link_libraries ( ${LIB_ID} ${DEPENDENCY_LIST} )
 
 if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
   add_library ( ${LIB_ID}_F ${F90_SOURCE_FILES} )
-  target_link_libraries ( ${LIB_ID}_F ${LIB_ID} FFaCmdLineArg )
+  target_link_libraries ( ${LIB_ID}_F ${LIB_ID} FFlIOAdaptors FFaCmdLineArg )
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )

@@ -22,7 +22,7 @@
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 
-using DoubleVec = std::vector<double>;
+using DoubleVec = std::vector<double>; //!< Convenience alias
 
 static std::string inpdir; //!< Full path of the input file directory
 
@@ -63,17 +63,27 @@ int main (int argc, char** argv)
 
 
 /*!
+  \brief Convenience function initializing \a part from \a fileName
+*/
+
+static void readPart (FFlLinkHandler& part, const char* fileName)
+{
+  ASSERT_GT(FFlReaders::instance()->read(inpdir+ fileName,&part),0);
+  std::cout <<"\nSuccessfully read "<< inpdir << fileName << std::endl;
+}
+
+
+/*!
   \brief Creates a unit test for the Nastran element group parser.
 */
 
 TEST(TestFFl,NastranParser)
 {
   FFlLinkHandler part;
-  ASSERT_GT(FFlReaders::instance()->read(inpdir+"PistonPin.nas",&part),0);
-  std::cout <<"Successfully read "<< inpdir <<"PistonPin.nas"<< std::endl;
+  readPart(part,"PistonPin.nas");
 
   // Lambda function for printing an element group
-  auto printGroup = [](const FFlGroup* gr)
+  auto&& printGroup = [](const FFlGroup* gr)
   {
     std::cout <<"Element group "<< gr->getID() <<" \""<< gr->getName() <<"\":";
     for (const GroupElemRef& elm : *gr) std::cout <<" "<< elm.getID();
@@ -114,8 +124,7 @@ TEST(TestFFl,NastranParser)
 TEST(TestFFl,TaperedBeams)
 {
   FFlLinkHandler part;
-  ASSERT_GT(FFlReaders::instance()->read(inpdir+"PBEAM-test.nas",&part),0);
-  std::cout <<"Successfully read "<< inpdir <<"PBEAM-test.nas"<< std::endl;
+  readPart(part,"PBEAM-test.nas");
 
   size_t i = 0;
   std::vector<DoubleVec> values(part.getAttributeCount("PBEAMSECTION"));
@@ -142,10 +151,9 @@ TEST(TestFFl,TaperedBeams)
 TEST(TestFFl,BeamCrossSections)
 {
   FFlLinkHandler part, partB;
-  ASSERT_GT(FFlReaders::instance()->read(inpdir+"RectangularBeam.nas",&partB),0);
-  std::cout <<"Successfully read "<< inpdir <<"RectangularBeam.nas"<< std::endl;
-  ASSERT_GT(FFlReaders::instance()->read(inpdir+"PBEAML-test.nas",&part),0);
-  std::cout <<"Successfully read "<< inpdir <<"PBEAML-test.nas"<< std::endl;
+  readPart(part,"PBEAML-test.nas");
+  readPart(partB,"RectangularBeam.nas");
+
   for (const AttributeMap::value_type& att : partB.getAttributes("PBEAMSECTION"))
     part.addAttribute(att.second->clone());
 
@@ -170,18 +178,12 @@ TEST(TestFFl,BeamCrossSections)
 TEST(TestFFl,MPC)
 {
   FFlLinkHandler partA, partB;
-  ASSERT_GT(FFlReaders::instance()->read(inpdir+"MPC-test.nas",&partA),0);
-  std::cout <<"Successfully read "<< inpdir <<"MPC-test.nas"<< std::endl;
-  ASSERT_GT(FFlReaders::instance()->read(inpdir+"MPC_RGD_Test.nas",&partB),0);
-  std::cout <<"Successfully read "<< inpdir <<"MPC_RGD_Test.nas"<< std::endl;
+  readPart(partA,"MPC-test.nas");
+  readPart(partB,"MPC_RGD_Test.nas");
   EXPECT_EQ(partA.getElementCount("WAVGM"),2);
   EXPECT_EQ(partB.getElementCount("WAVGM"),5);
 }
 
-
-void ffl_setLink(FFlLinkHandler* part);
-SUBROUTINE(ffl_getcoor,FFL_GETCOOR) (double* X, double* Y, double* Z,
-                                     const int& iel, int& ierr);
 
 /*!
   \brief Creates a unit test for the SESAM input file parser.
@@ -192,23 +194,19 @@ TEST(TestFFl,SesamParser)
   FFlReaders::convertToLinear = 1;
 
   FFlLinkHandler part;
-  ASSERT_GT(FFlReaders::instance()->read(inpdir+"Krum-bjelke.FEM",&part),0);
-  std::cout <<"Successfully read "<< inpdir <<"Krim-bjelke.FEM"<< std::endl;
-
+  readPart(part,"Krum-bjelke.FEM");
   part.dump();
-  ffl_setLink(&part);
 
-  int ierr = 0;
+  int iel = 0;
   double X[5], Y[5], Z[5];
-  for (int iel = 1; iel <= part.getElementCount(); iel++)
+  for (ElementsCIter eit = part.elementsBegin(); eit != part.elementsEnd(); ++eit)
   {
-    F90_NAME(ffl_getcoor,FFL_GETCOOR) (X,Y,Z,iel,ierr);
-    ASSERT_EQ(ierr,0);
+    ASSERT_EQ((*eit)->getNodalCoor(X,Y,Z),0);
 
     FaVec3 end1(X[0],Y[0],Z[0]);
     FaVec3 end2(X[1],Y[1],Z[1]);
     FaVec3 Zaxis(X[2]-X[0],Y[2]-Y[0],Z[2]-Z[0]);
-    std::cout <<"\nElement "<< iel <<": "<< part.getElement(iel-1,true)->getID();
+    std::cout <<"\nElement "<< iel++ <<": "<< (*eit)->getID();
     std::cout <<"\nEnde 1: "<< end1;
     std::cout <<"\nEnde 2: "<< end2;
     std::cout <<"\nZ-akse: "<< Zaxis;

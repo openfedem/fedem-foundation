@@ -10,8 +10,7 @@
   \brief Fortran wrapper for the FiUserElmPlugin methods.
 */
 
-#include "FiUserElmPlugin.H"
-#include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
+#include "FiUserElmPlugin/FiUserElmPlugin.H"
 #include "FFaLib/FFaString/FFaTokenizer.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 #include <cstring>
@@ -19,54 +18,54 @@
 
 /*!
   \brief Loads the user-defined element plugin library into memory.
+  \arg plugin - List of user-defined plugin libraries
+  \arg ncp   - Length of the \a plugin string
   \arg gdata - Global parameters that applies to all element instances
   \arg sign  - Text string containing a description of the loaded library
   \arg nchar - Maximum length of the description string
   \arg ierr  - Error flag
 */
 
-SUBROUTINE (fi_ude_init,FI_UDE_INIT) (const double* gdata, char* sign,
+SUBROUTINE (fi_ude_init,FI_UDE_INIT) (const char* plugin,
 #ifdef _NCHAR_AFTER_CHARARG
-                                      int nchar, int& ierr
+                                      const int ncp, const double* gdata,
+                                      char* sign, int nchar, int& ierr
 #else
-                                      int& ierr, int nchar
+                                      const double* gdata, char* sign,
+                                      int& ierr, const int ncp, int nchar
 #endif
 ){
   ierr = 0;
   if (!FiUserElmPlugin::instance()->areLibsLoaded())
   {
     // Get plugin file name from command-line
-    std::string plugin;
-    FFaCmdLineArg::instance()->getValue("plugin",plugin);
-    if (plugin.empty())
-    {
-      std::cerr <<"FiUserElmPlugin: No plugins specified."<< std::endl;
-      ierr = -1;
-      return;
-    }
-    else if (plugin[0] == '<')
+    std::string pluginLib;
+    if (ncp > 0 && plugin[0] == '<')
     {
       // We have a multi-file list, find the correct one containing
       // user-defined functions (there should only be one)
-      size_t i;
-      FFaTokenizer files(plugin,'<','>',',');
-      for (i = 0; i < files.size(); i++)
-        if (FiUserElmPlugin::instance()->validate(files[i]))
+      FFaTokenizer files(std::string(plugin,ncp),'<','>',',');
+      for (const std::string& file : files)
+        if (FiUserElmPlugin::instance()->validate(file))
+        {
+          pluginLib = file;
           break;
+	}
+    }
+    else
+      pluginLib = std::string(plugin,ncp);
 
-      if (i < files.size())
-        plugin = files[i];
-      else
-      {
-        std::cerr <<"FiUserElmPlugin: No valid plugin specified."<< std::endl;
-        ierr = -2;
-        return;
-      }
+    if (pluginLib.empty())
+    {
+      std::cerr <<"FiUserElmPlugin: No valid plugin in \""
+                << std::string(plugin,ncp) <<"\"."<< std::endl;
+      ierr = -2;
+      return;
     }
 
     // Load the user-defined elements plugin and get its signature.
     // Pad the string with trailing spaces when returning to Fortran.
-    if (!FiUserElmPlugin::instance()->load(plugin))
+    if (!FiUserElmPlugin::instance()->load(pluginLib))
       ierr = -3;
     else if (!FiUserElmPlugin::instance()->getSign(nchar,sign))
       memset(sign,' ',nchar);
