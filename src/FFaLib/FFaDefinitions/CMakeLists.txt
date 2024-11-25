@@ -20,7 +20,10 @@ set ( COMPONENT_FILE_LIST FFaAppInfo FFaListViewItem FFaMsg
 set ( HEADER_FILE_LIST FFaViewItem )
 
 ## Pure implementation files, i.e., source files without corresponding header
-set ( SOURCE_FILE_LIST FFaMsg_F FFaViewItemUtils )
+set ( SOURCE_FILE_LIST FFaViewItemUtils )
+if ( USE_FORTRAN )
+  list ( APPEND SOURCE_FILE_LIST FFaMsg_F )
+endif ( USE_FORTRAN )
 
 
 foreach ( FILE ${COMPONENT_FILE_LIST} )

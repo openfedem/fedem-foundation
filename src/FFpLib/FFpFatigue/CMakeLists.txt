@@ -17,9 +17,9 @@ set ( COMPONENT_FILE_LIST FFpCycle FFpFatigue FFpSNCurve FFpSNCurveLib
                           FFpDamageAccumulator )
 ## Pure implementation files, i.e., source files without corresponding header
 set ( SOURCE_FILE_LIST )
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
   set ( SOURCE_FILE_LIST FFpFatigue_F )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
 
 foreach ( FILE ${COMPONENT_FILE_LIST} )
   list ( APPEND CPP_SOURCE_FILES ${FILE}.C )
@@ -33,6 +33,6 @@ endforeach ( FILE ${SOURCE_FILE_LIST} )
 
 add_library ( ${LIB_ID} ${CPP_SOURCE_FILES} ${CPP_HEADER_FILES} )
 target_link_libraries ( ${LIB_ID} FFaString FFaDefinitions )
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
   target_link_libraries ( ${LIB_ID} FFaCmdLineArg )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )

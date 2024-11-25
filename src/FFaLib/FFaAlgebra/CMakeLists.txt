@@ -23,9 +23,9 @@ set ( COMPONENT_FILE_LIST FFa3DLocation FFa3PArc FFaAlgebra FFaBody
 
 ## Pure implementation files, i.e., source files without corresponding header
 set ( SOURCE_FILE_LIST FFaBodyParser )
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
   list ( APPEND SOURCE_FILE_LIST FFaBodyHandler_F FFaTensorTransforms_F )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
 
 
 foreach ( FILE ${COMPONENT_FILE_LIST} )

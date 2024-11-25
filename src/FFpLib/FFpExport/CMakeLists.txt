@@ -20,7 +20,10 @@ endif ( USE_MEMPOOL )
 ## Files with header and source with same name
 set ( COMPONENT_FILE_LIST FFpBatchExport )
 ## Pure implementation files, i.e., source files without corresponding header
-set ( SOURCE_FILE_LIST FFpBatchExport_F FFpRPC3Data )
+set ( SOURCE_FILE_LIST FFpRPC3Data )
+if ( USE_FORTRAN )
+  list ( APPEND SOURCE_FILE_LIST FFpBatchExport_F )
+endif ( USE_FORTRAN )
 
 
 foreach ( FILE ${COMPONENT_FILE_LIST} )
@@ -34,7 +37,10 @@ endforeach ( FILE ${SOURCE_FILE_LIST} )
 
 
 set ( DEPENDENCY_LIST FFpCurveData FiDeviceFunctions
-                      FFrLib FFaCmdLineArg FFaDefinitions FFaOperation FFaOS )
+                      FFrLib FFaDefinitions FFaOperation FFaOS )
+if ( USE_FORTRAN )
+  list ( INSERT DEPENDENCY_LIST 3 FFaCmdLineArg )
+endif ( USE_FORTRAN )
 
 add_library ( ${LIB_ID} ${CPP_SOURCE_FILES} ${CPP_HEADER_FILES} )
 target_link_libraries ( ${LIB_ID} ${DEPENDENCY_LIST} )
