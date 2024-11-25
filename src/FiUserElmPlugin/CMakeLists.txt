@@ -15,7 +15,10 @@ message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 ## Files with header and source with same name
 set ( COMPONENT_FILE_LIST FiUserElmPlugin )
 ## Pure implementation files, i.e., source files without corresponding header
-set ( SOURCE_FILE_LIST FiUserElmPlugin_F )
+set ( SOURCE_FILE_LIST )
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
+  set ( SOURCE_FILE_LIST FiUserElmPlugin_F )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
 ## Pure header files, i.e., header files without a corresponding source file
 set ( HEADER_FILE_LIST )
 ## Fortran 90 source files

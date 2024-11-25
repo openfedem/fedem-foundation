@@ -31,7 +31,10 @@ set ( COMPONENT_FILE_LIST FFaFunctionManager FFaFunctionProperties FFaUserFuncPl
 ## Pure header files, i.e., header files without a corresponding source file
 set ( HEADER_FILE_LIST )
 ## Pure implementation files, i.e., source files without corresponding header
-set ( SOURCE_FILE_LIST FFaUserFuncPlugin_F )
+set ( SOURCE_FILE_LIST )
+if ( USE_FORTRAN )
+  set ( SOURCE_FILE_LIST FFaUserFuncPlugin_F )
+endif ( USE_FORTRAN )
 
 ## Fortran 90 source files
 set ( F90_FILE_LIST FFaMsgInterface
@@ -88,10 +91,8 @@ endif ( USE_FORTRAN )
 # The order of adding and linking libraries has implications for libraries
 # in other parts of the code. In particular vpm-libraries. RHR 1/9-2011.
 add_library ( ${LIB_ID} ${CPP_SOURCE_FILES} ${CPP_HEADER_FILES} )
-if ( USE_FORTRAN )
-  add_library ( ${LIB_ID}_F90 ${F90_SOURCE_FILES} )
-endif ( USE_FORTRAN )
 target_link_libraries ( ${LIB_ID} ${DEPENDENCY_LIST} )
 if ( USE_FORTRAN )
+  add_library ( ${LIB_ID}_F90 ${F90_SOURCE_FILES} )
   target_link_libraries ( ${LIB_ID}_F90 ${LIB_ID} )
 endif ( USE_FORTRAN )

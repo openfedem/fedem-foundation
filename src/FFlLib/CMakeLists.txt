@@ -105,6 +105,10 @@ endforeach ( FILE ${F90_FILE_LIST} )
 
 set ( DEPENDENCY_LIST FFlFEParts FFaAlgebra FFaDefinitions )
 
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
+  list ( INSERT DEPENDENCY_LIST 0 FFlIOAdaptors )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
+
 if ( USE_MEMPOOL )
   list ( APPEND DEPENDENCY_LIST FFaPatterns )
 endif ( USE_MEMPOOL )
@@ -122,5 +126,5 @@ target_link_libraries ( ${LIB_ID} ${DEPENDENCY_LIST} )
 
 if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
   add_library ( ${LIB_ID}_F ${F90_SOURCE_FILES} )
-  target_link_libraries ( ${LIB_ID}_F ${LIB_ID} FFlIOAdaptors FFaCmdLineArg )
+  target_link_libraries ( ${LIB_ID}_F ${LIB_ID} FFaCmdLineArg )
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )

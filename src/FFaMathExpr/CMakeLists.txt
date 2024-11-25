@@ -29,7 +29,10 @@ set ( COMPONENT_FILE_LIST FFaMathExpr FFaMathExprFactory
 ## Pure header files, i.e., header files without a corresponding source file
 set ( HEADER_FILE_LIST )
 ## Pure implementation files, i.e., source files without corresponding header
-set ( SOURCE_FILE_LIST FFaMathExprFactory_F FFaMathFunction )
+set ( SOURCE_FILE_LIST FFaMathFunction )
+if ( USE_FORTRAN )
+  list ( APPEND SOURCE_FILE_LIST FFaMathExprFactory_F )
+endif ( USE_FORTRAN )
 
 
 foreach ( FILE ${COMPONENT_FILE_LIST} )

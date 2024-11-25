@@ -17,9 +17,9 @@ set ( COMPONENT_FILE_LIST FFaMemoryProfiler FFaProfiler )
 
 ## Pure implementation files, i.e., source files without corresponding header
 set ( SOURCE_FILE_LIST )
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
   set ( SOURCE_FILE_LIST FFaProfiler_F )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
 
 
 foreach ( FILE ${COMPONENT_FILE_LIST} )

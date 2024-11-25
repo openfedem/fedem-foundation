@@ -33,10 +33,13 @@ set ( COMPONENT_FILE_LIST FiASCFile FiCurveASCFile FiDACFile
 ## Pure header files, i.e., header files without a corresponding source file
 set ( HEADER_FILE_LIST FiSwappedIO )
 ## Pure implementation files, i.e., source files without corresponding header
-set ( SOURCE_FILE_LIST FiDeviceFunctionFactory_F )
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
-  list ( APPEND SOURCE_FILE_LIST FiRAOTable_F )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+set ( SOURCE_FILE_LIST )
+if ( USE_FORTRAN )
+  set ( SOURCE_FILE_LIST FiDeviceFunctionFactory_F )
+  if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+    list ( APPEND SOURCE_FILE_LIST FiRAOTable_F )
+  endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+endif ( USE_FORTRAN )
 ## Fortran 90 source files
 set ( F90_FILE_LIST fiDeviceFunctionInterface fiRAOTableInterface )
 

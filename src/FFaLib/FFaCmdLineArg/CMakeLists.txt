@@ -20,9 +20,9 @@ set ( HEADER_FILE_LIST FFaCmdLineArg )
 
 ## Pure implementation files, i.e., source files without corresponding header
 set ( SOURCE_FILE_LIST FFaCmdLineArgImplementation )
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
-  set ( SOURCE_FILE_LIST ${SOURCE_FILE_LIST} FFaCmdLineArg_F )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
+  list ( APPEND SOURCE_FILE_LIST FFaCmdLineArg_F )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
 
 
 foreach ( FILE ${COMPONENT_FILE_LIST} )
