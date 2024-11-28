@@ -12,9 +12,9 @@ set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 
-if ( NOT "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+if ( "${APPLICATION_ID}" STREQUAL "fedemGui" )
   string ( APPEND CMAKE_CXX_FLAGS " -DFFR_LISTVIEW" )
-endif ( NOT "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemGui" )
 
 if ( USE_PROFILER )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_PROFILER" )

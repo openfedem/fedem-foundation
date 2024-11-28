@@ -18,7 +18,7 @@ if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
   if ( BUILD_TESTS )
     list ( APPEND LIB_ID_LIST FFpTests )
   endif ( BUILD_TESTS )
-else ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+elseif ( "${APPLICATION_ID}" STREQUAL "fedemGui" )
   string ( APPEND CMAKE_CXX_FLAGS " -DFFR_LISTVIEW" )
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
 
