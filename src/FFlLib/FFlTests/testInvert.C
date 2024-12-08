@@ -12,8 +12,7 @@
 
 #include "gtest.h"
 #include "FFlLib/FFlLinkHandler.H"
-#include "FFlLib/FFlFEParts/FFlQUAD4.H"
-#include "FFlLib/FFlFEParts/FFlTRI3.H"
+#include "FFlLib/FFlFEParts/FFlShells.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include <array>

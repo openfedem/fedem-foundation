@@ -13,18 +13,16 @@ message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 
 ## Files with header and source with same name
-set ( COMPONENT_FILE_LIST FFlAllFEParts FFlBEAM2 FFlBEAM3 FFlBUSH
-                          FFlCLOAD FFlCMASS FFlCurvedFace
-                          FFlHEX20 FFlHEX8 FFlNode FFlPBEAMECCENT FFlPBEAMPIN
+set ( COMPONENT_FILE_LIST FFlAllFEParts FFlBeams FFlBUSH
+                          FFlCMASS FFlCurvedFace FFlLoads FFlNode
+                          FFlPBEAMECCENT FFlPBEAMPIN
                           FFlPBEAMSECTION FFlPBUSHCOEFF FFlPBUSHECCENT
                           FFlPCOMP FFlPCOORDSYS FFlPEFFLENGTH
-                          FFlPLOAD FFlPMASS FFlPMAT
-                          FFlPMAT2D FFlPMAT3D FFlPMATSHELL FFlPNSM
+                          FFlPMASS FFlPMAT FFlPNSM
                           FFlPORIENT FFlPRBAR FFlPRGD FFlPSPRING
                           FFlPTHICK FFlPWAVGM
-                          FFlQUAD4 FFlQUAD8 FFlRBAR FFlRGD FFlShellElementBase
-                          FFlSPRING FFlTET10 FFlTET4
-                          FFlTRI3 FFlTRI6 FFlWAVGM FFlWEDG15 FFlWEDG6
+                          FFlRBAR FFlRGD FFlShells FFlSolids
+                          FFlSPRING FFlWAVGM
 )
 if ( USE_STRAINCOAT )
   list ( APPEND COMPONENT_FILE_LIST FFlPFATIGUE FFlPHEIGHT FFlPSTRC
