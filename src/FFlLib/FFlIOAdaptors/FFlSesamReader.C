@@ -38,6 +38,10 @@
 #define CREATE_ATTRIBUTE(type,name,id) \
   dynamic_cast<type*>(AttributeFactory::instance()->create(name,id));
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 FFlSesamReader::FFlSesamReader(FFlLinkHandler* aLink) : FFlReaderBase(aLink)
 {
@@ -1148,3 +1152,7 @@ const std::string& FFlSesamReader::findName (const Records& names, int ID)
   static std::string empty;
   return empty;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

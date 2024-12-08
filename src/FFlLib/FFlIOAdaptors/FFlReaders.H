@@ -15,6 +15,10 @@
 #include "FFaLib/FFaPatterns/FFaSingelton.H"
 #include "FFaLib/FFaDynCalls/FFaDynCB.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 class FFlLinkHandler;
 
 
@@ -64,4 +68,7 @@ private:
   friend class FFaSingelton<FFlReaders>;
 };
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

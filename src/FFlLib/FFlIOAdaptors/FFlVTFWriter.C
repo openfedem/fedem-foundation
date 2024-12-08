@@ -5,7 +5,7 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "FFlVTFWriter.H"
+#include "FFlLib/FFlIOAdaptors/FFlVTFWriter.H"
 #include "FFlLib/FFlLinkHandler.H"
 #include "FFlLib/FFlElementBase.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
@@ -27,6 +27,10 @@ class VTFAFile{};
 #else
 #define START_TIMER(function)
 #define STOPP_TIMER(function)
+#endif
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
 #endif
 
 
@@ -550,3 +554,7 @@ bool FFlVTFWriter::showError(const char* msg, int ID)
   STOPP_TIMER("write");
   return false;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

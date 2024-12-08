@@ -16,6 +16,10 @@
 #include <fstream>
 #include <cstring>
 
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
+
 
 /*!
   \brief Converter program from vrml or ftc to ftl.

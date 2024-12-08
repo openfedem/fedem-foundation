@@ -13,6 +13,10 @@
 #include "FFaLib/FFaPatterns/FFaMemPool.H"
 #endif
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 class FFlNode;
 
 
@@ -48,4 +52,7 @@ protected:
 #endif
 };
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

@@ -8,17 +8,21 @@
 #ifndef FFL_VDM_READER_H
 #define FFL_VDM_READER_H
 
-#include "FFlReaderBase.H"
-#include "FFaLib/FFaAlgebra/FFaMat34.H"
 #include <string>
 #include <map>
 
-
-class FFlAttributeBase;
+#include "FFaLib/FFaAlgebra/FFaMat34.H"
+#include "FFlLib/FFlIOAdaptors/FFlReaderBase.H"
 
 struct vdm_DataFun;
 struct vis_Model;
 struct vis_EProp;
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
+class FFlAttributeBase;
 
 
 class FFlVdmReader : public FFlReaderBase
@@ -81,4 +85,7 @@ protected:
   bool read(const char* fileName);
 };
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

@@ -8,13 +8,18 @@
 #ifndef FFL_VTF_WRITER_H
 #define FFL_VTF_WRITER_H
 
-#include "FFlWriterBase.H"
 #include <string>
 #include <vector>
 #include <set>
 #include <map>
 
+#include "FFlLib/FFlIOAdaptors/FFlWriterBase.H"
+
 class VTFAFile;
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlVTFWriter : public FFlWriterBase
@@ -56,4 +61,7 @@ private:
   std::map<int,int> myNodMap;
 };
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

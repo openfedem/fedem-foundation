@@ -15,6 +15,10 @@
 
 #include "FFaLib/FFaPatterns/FFaSingelton.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 class FFlPFATIGUE : public FFlAttributeBase
 {
@@ -36,8 +40,7 @@ public:
   FFlField<double> stressConcentrationFactor;
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPFATIGUE>    FFlPFATIGUETypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPFATIGUE> FFlPFATIGUEAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

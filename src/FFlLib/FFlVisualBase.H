@@ -15,7 +15,10 @@
 
 class FFlFieldBase;
 class FFaCheckSum;
-class FFaUnitCalculator;
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlVisualBase : public FFlPartBase
@@ -37,8 +40,6 @@ public:
 
   virtual FFlVisualBase* clone() const = 0;
 
-  virtual void convertUnits(const FFaUnitCalculator*) {}
-
 protected:
   void addField(FFlFieldBase& field) { myFields.push_back(&field); }
 
@@ -47,7 +48,7 @@ private:
 };
 
 
-typedef FFaGenericFactory<FFlVisualBase> VisualFactory;
+using VisualFactory = FFaGenericFactory<FFlVisualBase>;
 
 
 #define FFL_VISUAL_FACTORY_INIT(clName)			\
@@ -58,4 +59,7 @@ public:							\
   virtual FFlVisualBase* clone() const 	     	 	\
   { return new clName(*this); }
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

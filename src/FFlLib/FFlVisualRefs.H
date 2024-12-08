@@ -8,11 +8,16 @@
 #ifndef FFL_VISUAL_REFS_H
 #define FFL_VISUAL_REFS_H
 
-#include "FFlReference.H"
+#include "FFlLib/FFlReference.H"
 #include <vector>
 #include <string>
 
 class FFaCheckSum;
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 class FFlVisualBase;
 class FFlVAppearance;
 class FFlVDetail;
@@ -60,4 +65,7 @@ protected:
   FFlReference<FFlVisualBase> myDetail;
 };
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

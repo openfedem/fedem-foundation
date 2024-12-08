@@ -11,6 +11,10 @@
 #include "FFlLib/FFlLinkCSMask.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 void FFlVisualRefs::useVisualsFrom(const FFlVisualRefs* obj)
 {
@@ -34,9 +38,12 @@ bool FFlVisualRefs::setVisual(const FFlVisualBase* vis)
 
 bool FFlVisualRefs::setVisual(const std::string& type, int ID)
 {
-  if (type == FFlVAppearanceTypeInfoSpec::instance()->getTypeName())
+  using AppearanceTypeSpec = FFaSingelton<FFlTypeInfoSpec,FFlVAppearance>;
+  using DetailTypeSpec     = FFaSingelton<FFlTypeInfoSpec,FFlVDetail>;
+
+  if (type == AppearanceTypeSpec::instance()->getTypeName())
     myApp = ID;
-  else if (type == FFlVDetailTypeInfoSpec::instance()->getTypeName())
+  else if (type == DetailTypeSpec::instance()->getTypeName())
     myDetail = ID;
   else
     return false;
@@ -111,3 +118,7 @@ void FFlVisualRefs::checksum(FFaCheckSum* cs, int cstype) const
   if (myApp.getID())    cs->add(myApp.getID());
   if (myDetail.getID()) cs->add(myDetail.getID());
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

@@ -17,6 +17,10 @@
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include <array>
 
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
+
 
 /*!
   \brief This class creates a shell FE model with some random geometry.
@@ -109,7 +113,7 @@ int main (int argc, char** argv)
   releaseElement<FFlTRI3>();
   releaseElement<FFlQUAD4>();
   ElementFactory::removeInstance();
-  FFlNodeTypeInfoSpec::removeInstance();
+  FFaSingelton<FFlTypeInfoSpec,FFlNode>::removeInstance();
 
   return status;
 }

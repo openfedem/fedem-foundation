@@ -12,7 +12,9 @@
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
 
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlVDetail : public FFlVisualBase
@@ -20,8 +22,7 @@ class FFlVDetail : public FFlVisualBase
 public:
   FFlVDetail(int ID);
   FFlVDetail(const FFlVDetail& obj);
-  virtual ~FFlVDetail();
-  virtual void convertUnits(const FFaUnitCalculator* convCal);
+  virtual ~FFlVDetail() {}
 
   static void init();
 
@@ -34,7 +35,7 @@ public:
   FFlField<int> detail;
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlVDetail> FFlVDetailTypeInfoSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

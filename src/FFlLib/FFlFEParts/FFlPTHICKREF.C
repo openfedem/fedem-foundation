@@ -7,6 +7,10 @@
 
 #include "FFlPTHICKREF.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 FFlPTHICKREF::FFlPTHICKREF(int id) : FFlAttributeBase(id)
 {
@@ -24,13 +28,20 @@ FFlPTHICKREF::FFlPTHICKREF(const FFlPTHICKREF& obj) : FFlAttributeBase(obj)
 
 void FFlPTHICKREF::init()
 {
-  FFlPTHICKREFTypeInfoSpec::instance()->setTypeName("PTHICKREF");
-  FFlPTHICKREFTypeInfoSpec::instance()->setDescription("Strain coat heights");
-  FFlPTHICKREFTypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_PROP);
+  using TypeInfoSpec  = FFaSingelton<FFlTypeInfoSpec,FFlPTHICKREF>;
+  using AttributeSpec = FFaSingelton<FFlFEAttributeSpec,FFlPTHICKREF>;
 
-  FFlPTHICKREFAttributeSpec::instance()->addLegalAttribute("PTHICK", true);
+  TypeInfoSpec::instance()->setTypeName("PTHICKREF");
+  TypeInfoSpec::instance()->setDescription("Strain coat heights");
+  TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_PROP);
+
+  AttributeSpec::instance()->addLegalAttribute("PTHICK",true);
 
   AttributeFactory::instance()->registerCreator
-    (FFlPTHICKREFTypeInfoSpec::instance()->getTypeName(),
+    (TypeInfoSpec::instance()->getTypeName(),
      FFaDynCB2S(FFlPTHICKREF::create,int,FFlAttributeBase*&));
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

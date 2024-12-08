@@ -7,6 +7,10 @@
 
 #include "FFlPFATIGUE.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 FFlPFATIGUE::FFlPFATIGUE(int id) : FFlAttributeBase(id)
 {
@@ -47,11 +51,17 @@ bool FFlPFATIGUE::isIdentic(const FFlAttributeBase* otherAttrib) const
 
 void FFlPFATIGUE::init()
 {
-  FFlPFATIGUETypeInfoSpec::instance()->setTypeName("PFATIGUE");
-  FFlPFATIGUETypeInfoSpec::instance()->setDescription("Fatigue properties");
-  FFlPFATIGUETypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_PROP);
+  using TypeInfoSpec = FFaSingelton<FFlTypeInfoSpec,FFlPFATIGUE>;
+
+  TypeInfoSpec::instance()->setTypeName("PFATIGUE");
+  TypeInfoSpec::instance()->setDescription("Fatigue properties");
+  TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_PROP);
 
   AttributeFactory::instance()->registerCreator
-    (FFlPFATIGUETypeInfoSpec::instance()->getTypeName(),
+    (TypeInfoSpec::instance()->getTypeName(),
      FFaDynCB2S(FFlPFATIGUE::create,int,FFlAttributeBase*&));
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

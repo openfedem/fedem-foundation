@@ -15,6 +15,10 @@
 
 #include "FFaLib/FFaPatterns/FFaSingelton.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 class FFlPHEIGHT : public FFlAttributeBase
 {		
@@ -34,7 +38,7 @@ public:
   FFlField<double> height;
 };
 
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPHEIGHT>    FFlPHEIGHTTypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPHEIGHT> FFlPHEIGHTAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

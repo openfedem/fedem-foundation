@@ -8,9 +8,14 @@
 #ifndef FFL_OLD_FLM_READER_H
 #define FFL_OLD_FLM_READER_H
 
-#include "FFlReaderBase.H"
 #include <string>
 #include <cstdio>
+
+#include "FFlLib/FFlIOAdaptors/FFlReaderBase.H"
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlOldFLMReader : public FFlReaderBase
@@ -53,4 +58,7 @@ protected:
   };
 };
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

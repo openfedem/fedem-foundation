@@ -8,11 +8,16 @@
 #ifndef FFL_FEDEM_READER_H
 #define FFL_FEDEM_READER_H
 
-#include "FFlReaderBase.H"
-#include "FFaLib/FFaDynCalls/FFaDynCB.H"
 #include <string>
 #include <vector>
 #include <map>
+
+#include "FFaLib/FFaDynCalls/FFaDynCB.H"
+#include "FFlLib/FFlIOAdaptors/FFlReaderBase.H"
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlFedemReader : public FFlReaderBase
@@ -69,4 +74,7 @@ private:
   mutable unsigned int linkChecksum;
 };
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif
