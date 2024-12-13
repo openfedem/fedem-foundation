@@ -27,7 +27,7 @@ namespace FFlrResultResolver
   extern std::map<std::string,int> errMsg;
 
   void addMsg(const std::string& msg);
-  void setLinkInFocus(int baseId, FFrExtractor* rdb);
+  char setLinkInFocus(int baseId, FFrExtractor* rdb, const char kind='b');
   void clearLinkInFocus();
 
   FFaOperationBase* findPosition(const std::string& oType, int baseId,
