@@ -182,12 +182,30 @@ void FFlrResultResolver::addMsg(const std::string& msg)
 }
 
 
-void FFlrResultResolver::setLinkInFocus(int baseId, FFrExtractor* rdb)
+char FFlrResultResolver::setLinkInFocus(int baseId, FFrExtractor* rdb,
+                                        const char kind)
 {
-  ourElmResFields = findFEResults(baseId, rdb, "Elements");
-  ourNodeResFields = findFEResults(baseId, rdb, "Nodes");
   errMsg.clear();
   empty.clear();
+
+  if (kind != 'n')
+    ourElmResFields = findFEResults(baseId, rdb, "Elements");
+  else
+    ourElmResFields = NULL;
+
+  if (kind != 'e')
+    ourNodeResFields = findFEResults(baseId, rdb, "Nodes");
+  else
+    ourNodeResFields = NULL;
+
+  if (ourElmResFields && ourNodeResFields)
+    return 'b';
+  else if (ourElmResFields)
+    return 'e';
+  else if (ourNodeResFields)
+    return 'n';
+
+  return false;
 }
 
 
