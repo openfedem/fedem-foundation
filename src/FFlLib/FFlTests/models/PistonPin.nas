@@ -39,8 +39,13 @@ $*
 $*  Group (elements): 4  Name: Random element range with holes
 SET 4 = 21 THRU 30 EXCEPT 23,24,28
 $*
-$*  Group (elements): 3  Name: Random element range with duplicates
+$*  Group (elements): 5  Name: Random element range with duplicates
 SET 5 = 31 THRU 40 34 38 45
+$*
+$*  Group (elements): 6  Name: Random element list
+SET 6 = 11,12,13,14,15,16,17,18,19,
+20,21,22,23,24,25,26,27,28,
+29,30,33,45
 $*
 $*$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 $*
