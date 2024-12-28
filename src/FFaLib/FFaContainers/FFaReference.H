@@ -199,7 +199,7 @@ public:
   The pointer value in Fields of Ref pointers are not supposed to change.
 */
 
-typedef FFaReferenceBase* FFaRefPtr;
+using FFaRefPtr = FFaReferenceBase*;
 
 template<> inline
 FFaField<FFaRefPtr>::FFaField()

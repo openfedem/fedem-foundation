@@ -141,16 +141,16 @@ protected:
 
   // The read/writable fields
 
-  typedef std::set<std::string> FDict;
-  typedef FDict::const_iterator FDictIt;
+  using FDict   = std::set<std::string>;
+  using FDictIt = FDict::const_iterator;
 
   struct FDictLess
   {
     bool operator()(FDictIt s1, FDictIt s2) const { return *s1 < *s2; }
   };
 
-  typedef std::map<FDictIt,FFaFieldBase*,FDictLess> FieldContainerMap;
-  typedef FFaSingelton<FDict,FFaFieldContainer>     FieldContainerDict;
+  using FieldContainerMap  = std::map<FDictIt,FFaFieldBase*,FDictLess>;
+  using FieldContainerDict = FFaSingelton<FDict,FFaFieldContainer>;
 
   FieldContainerMap myFields;
 
@@ -173,7 +173,7 @@ private:
 
   // The internal book keeping of who is pointing to whom
 
-  typedef std::vector<FFaReferenceBase*> ReferenceSet;
+  using ReferenceSet = std::vector<FFaReferenceBase*>;
 
   ReferenceSet                     myRefBy;
   std::list<FFaReferenceBase*>     myRefTo;
@@ -189,12 +189,12 @@ private:
 #define FFA_FIELD_INIT(field, defaultValue, identifier)			\
   this->addField(identifier, &field);					\
   field.setValue(defaultValue,false);					\
-  field.setDefaultValue(defaultValue,false)
+  field.setDefaultValue(field.getValue(),false)
 
 #define FFA_OBSOLETE_FIELD_INIT(field, defaultValue, identifier, obj)	\
   obj->addField(identifier, &field);					\
   field.setValue(defaultValue,false);					\
-  field.setDefaultValue(defaultValue,false)
+  field.setDefaultValue(field.getValue(),false)
 
 #define FFA_FIELD_DEFAULT_INIT(field, identifier)	\
   this->addField(identifier, &field)
