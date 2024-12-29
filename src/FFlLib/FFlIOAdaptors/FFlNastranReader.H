@@ -8,7 +8,7 @@
 #ifndef FFL_NASTRAN_READER_H
 #define FFL_NASTRAN_READER_H
 
-#include "FFlReaderBase.H"
+#include "FFlLib/FFlIOAdaptors/FFlReaderBase.H"
 #include "FFlLib/FFlUtils.H"
 #include "FFaLib/FFaAlgebra/FFaMat34.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
@@ -59,24 +59,22 @@ private:
 
   struct CORD
   {
-    bool isComputed;
-    coordSysType type;
-    int RID;
-    int G[3];
+    bool isComputed = false;
+    coordSysType type = rectangular;
+    int RID = 0;
+    int G[3] = { 0, 0, 0 };
     FaVec3 Origo;
     FaVec3 Zaxis;
     FaVec3 XZpnt;
     FaMat34 Tmat;
-    CORD() : isComputed(false), type(rectangular) { RID = G[0]=G[1]=G[2] = 0; }
   };
 
   struct GRDSET
   {
-    int CP;
-    int CD;
-    int PS;
-    int SEID;
-    GRDSET() { CP = CD = PS = SEID = 0; }
+    int CP = 0;
+    int CD = 0;
+    int PS = 0;
+    int SEID = 0;
   };
 
   struct BEAMOR
@@ -134,6 +132,7 @@ private:
 
   mutable std::pair<int,std::string> lastComment;
 
+private:
   int lineCounter;
   bool sizeOK;
 
@@ -162,7 +161,8 @@ protected:
 
   // Detection and parsing of Nastran sets
   bool setsArePresent (const std::string& fileName);
-  bool processSet     (const std::string& fileName, const int startBulk);
+  bool processSet     (const std::string& fileName, const int startBlk);
+  bool processAllSets (std::istream& fs, const int startBulk);
   FFlGroup* processThisSet (std::string& setLine,
 			    const int startL, const int stopL);
 

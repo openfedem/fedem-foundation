@@ -59,7 +59,7 @@ static char isBulkData(const char* line)
     return 'y'; // Yes, we have bulk data
   else if (strncmp(line,bulkIdent2,strlen(bulkIdent2)) == 0)
     return 'p'; // We should parse this line too (GRID entry)
-  else if (strncmp(line+9,bulkIdent3,strlen(bulkIdent3)) == 0)
+  else if (strlen(line) > 9 && !strncmp(line+9,bulkIdent3,strlen(bulkIdent3)))
     return 'y'; // Yes, we have bulk data
   else if (strncmp(line,bulkIdent4,strlen(bulkIdent4)) == 0)
     return 'p'; // We should parse this line too (INCLUDE entry)
@@ -504,7 +504,7 @@ bool FFlNastranReader::getNextEntry (std::istream& is, BulkEntry& entry)
 
   std::vector<BulkEntry>::iterator beit;
   if (field == "INCLUDE")
-    entry.ffmt = FREE_FIELD; // Read include filename in free_field format
+    entry.ffmt = FREE_FIELD; // Read include filename in Free Field format
 
   else for (beit = ucEntries.begin(); beit != ucEntries.end(); ++beit)
 
@@ -554,58 +554,61 @@ bool FFlNastranReader::getNextEntry (std::istream& is, BulkEntry& entry)
 bool FFlNastranReader::getFields (std::istream& is, BulkEntry& entry)
 {
   std::string field;
-  int status = 1;
-  int nFields = (entry.ffmt == LARGE_FIELD ? 5 : 9);
+  const int nFields = (entry.ffmt == LARGE_FIELD ? 5 : 9);
 
   // Read through the data line
-  for (int i = 1; i < nFields; i++)
-  {
-    status = this->getNextField(is,field,entry.ffmt);
-    if (status == 0) return false;
-    if (status == 1 || !field.empty()) entry.fields.push_back(field);
-    if (status == 2)
-    {
-      // We have reached end-of-line before reading the expected number of bytes
-      // If the first character on the next line is a space, '+' or '*',
-      // that line is still considered as a continuation of the present line
-      char c;
-      if (is.get(c) && !is.eof())
-      {
-        is.putback(c);
-        if (strchr(" +*",c) || (c == ',' && entry.ffmt == FREE_FIELD))
-        {
-          // Yes, the next line is a continuation, but first fill up the
-          // the remaining fields of the current line, if any, with ""
-          if (field.empty()) entry.fields.push_back("");
-          for (int j = i+1; j < nFields; j++) entry.fields.push_back("");
-          entry.cont = "+";
-        }
-      }
-      return true;
-    }
-  }
+  int i = 0, ret = 0;
+  for (i = ret = 1; i < nFields && ret == 1; i++)
+    if ((ret = this->getNextField(is,field,entry.ffmt)) == 1 || !field.empty())
+      entry.fields.push_back(field);
 
-  // Special treatment of non-standard Free Field entries with 9 fields or more.
-  // Continue to read until a continuation marker or EOL is detected.
+  if (ret > 1)
+  {
+    // We have reached end-of-line before reading the expected number of bytes.
+    // If the first character on the next line is a space, '+' or '*',
+    // that line is still considered as a continuation of the present line.
+    char c;
+    if (is.get(c) && !is.eof())
+    {
+      is.putback(c);
+      if (strchr(" +*",c) || (c == ',' && entry.ffmt == FREE_FIELD))
+      {
+        // Yes, the next line is a continuation, but first fill up the
+        // the remaining fields of the current line, if any, with ""
+        if (field.empty()) entry.fields.push_back("");
+        for (int j = i+1; j < nFields; j++) entry.fields.push_back("");
+        entry.cont = "+";
+      }
+    }
+    return true;
+  }
+  else if (ret < 1)
+    return false; // Read failure
+
+  // Special treatment of non-standard Free Field entries with 9 fields or more
   if (entry.ffmt == FREE_FIELD)
   {
-    while ((status = this->getNextField(is,field,entry.ffmt)) == 1)
-      entry.fields.push_back(field);
-    if (status == 2)
+    // Continue to read until a continuation marker or EOL is detected
+    while ((ret = this->getNextField(is,field,entry.ffmt))%2 == 1)
+      if (ret == 1) entry.fields.push_back(field);
+
+    if (ret < 1)
+      return false; // Read failure
+    else if (!field.empty())
     {
-      // We have reached end-of-line before reading the expected number of bytes
+      // We have reached end-of-line.
       // If the first character on the next line is a space, ',', '+' or '*',
       // that line is still considered as a continuation of the present line
       char c;
       if (is.get(c) && !is.eof())
+        is.putback(c);
+      else
+        c = 'e'; // End-of-file
+      if (!strchr(" ,+*",c))
       {
-	is.putback(c);
-	if (!field.empty() && !strchr(" ,+*",c))
-	{
-	  // Not a continuation field, but a regular data field ends this line
-	  entry.fields.push_back(field);
-	  field = "";
-	}
+        // Not a continuation field, but a regular data field ends this line
+        entry.fields.push_back(field);
+        field = "";
       }
     }
     else
@@ -614,7 +617,7 @@ bool FFlNastranReader::getFields (std::istream& is, BulkEntry& entry)
 
   // Check for continuation field
   else if (!this->getNextField(is,field,CONT_FIELD))
-    return false;
+    return false; // Read failure
 
   // Some large field entries may use just an asterix as a continuation marker,
   // but this is also used to identify large field lines, we replace it with +
@@ -624,7 +627,7 @@ bool FFlNastranReader::getFields (std::istream& is, BulkEntry& entry)
   else if (!field.empty())
     entry.cont = field;
 
-  // Free field entries may continue also if they end with just a ','
+  // Free Field entries may continue also if they end with just a ','
   else if (entry.ffmt == FREE_FIELD)
   {
     char c;
@@ -658,18 +661,24 @@ bool FFlNastranReader::getFields (std::istream& is, BulkEntry& entry)
 }
 
 
+/*!
+  \return Status flag:
+  - 0 : error
+  - 1 : ok
+  - 2 : ok, but end-of-line detected
+  - 3 : ok, and end-of-line of a continuing Free Field format record
+*/
+
 int FFlNastranReader::getNextField (std::istream& is, std::string& field,
 				    const FieldFormat size)
 
 {
-  // Return value: 0 - error, 1 - ok, 2 - ok, but end-of-line detected
-
   START_TIMER("getNextField")
 
   int nChar, retval = 1;
   size_t blank = 0;
   bool goOn = true;
-  char c;
+  char c, d = 0;
 
   field.erase();
   for (nChar = 1; goOn; nChar++)
@@ -694,7 +703,7 @@ int FFlNastranReader::getNextField (std::istream& is, std::string& field,
       // End-of-line encountered
       lineCounter++;
       goOn = false;
-      retval = 2;
+      retval = size == FREE_FIELD && d == 0 ? 3 : 2;
 #if FFL_DEBUG > 4
       std::cout <<"c=EOL\n";
 #endif
@@ -720,7 +729,7 @@ int FFlNastranReader::getNextField (std::istream& is, std::string& field,
     {
       // This is a comment line, ignore it
       char line[BUFSIZ];
-      is.getline(line,BUFSIZ,'\n');
+      is.getline(line,BUFSIZ);
       if (strlen(line) > 1)
       {
 	// Store the comments for extraction of attribute names, etc.
@@ -738,7 +747,7 @@ int FFlNastranReader::getNextField (std::istream& is, std::string& field,
     }
     else if (size == FREE_FIELD)
     {
-      // Free field format, read everything until next ',' or ' ' or '\t'
+      // Free Field format, read everything until next ',' or ' ' or '\t'
       if (c != ',' && c != ' ' && c != '\t')
 	field += c;
       else if (c == ',' || !field.empty())
@@ -746,6 +755,7 @@ int FFlNastranReader::getNextField (std::istream& is, std::string& field,
 #if FFL_DEBUG > 4
       std::cout <<"c='"<< c <<"' "<< nChar <<" free field\n";
 #endif
+      d = c;
     }
     else if (c == '\t')
     {
@@ -811,7 +821,7 @@ int FFlNastranReader::getNextField (std::istream& is, std::string& field,
 	    <<"\" retval="<< retval << std::endl;
 #endif
 #ifdef FFL_DEBUG
-  if (lineCounter%1000 == 0 && retval == 2)
+  if (lineCounter%1000 == 0 && retval >= 2)
     std::cout <<"FFlNastranReader: processed "<< lineCounter <<" lines"
 	      << std::endl;
 #endif
@@ -830,36 +840,70 @@ bool FFlNastranReader::processThisEntry (BulkEntry& entry)
 #endif
   bool ok = this->processThisEntry (entry.name,entry.fields);
   if (sizeOK) entry.fields.clear();
-  lastComment = std::make_pair(0,"");
+  lastComment = { 0, "" };
   STOPP_TIMER("processThisEntry")
   return ok;
 }
 
 
-bool FFlNastranReader::processSet (const std::string& fname, const int startBulk)
+bool FFlNastranReader::processSet (const std::string& fname, const int startBlk)
+{
+  std::ifstream fs(fname);
+  return fs ? this->processAllSets(fs,startBlk) : false;
+}
+
+
+bool FFlNastranReader::processAllSets (std::istream& fs, const int startBulk)
 {
   START_TIMER("processSet")
 
-  std::ifstream fs(fname.c_str());
-  if (!fs) return false;
-
 #ifdef FFL_DEBUG
   std::cout <<"FFlNastranReader: starting SET parsing within lines 1-"
-	    << startBulk-1 << std::endl;
+            << startBulk-1 << std::endl;
 #endif
 
   char line[256];
   int nError = 0;
+  bool isNodeGroup = false;
   FFlGroup* aGroup = NULL;
   for (int lCounter = 0; !fs.eof() && lCounter < startBulk; lCounter++)
   {
     fs.getline(line,255);
+
     // Check for comment line possibly containing a group name
     if (line[0] == '$' && strlen(line) > 8)
-      lastComment = std::make_pair(lCounter+1,line);
+    {
+      if (!strncmp(line,"$HMSET  ",8) && strlen(line) > 23 && line[23] == '1')
+        isNodeGroup = true; // Ignore node groups from HyperMesh
+      else if (strncmp(line,"$HMSETTYPE",10)) // Ignore $HMSETTYPE records
+      {
+        lastComment.first = lineCounter;
+        lastComment.second += line;
+        lastComment.second += '\n';
+      }
+    }
+
     // Check for the "SET" keyword
     else if (strncmp(line,setIdent,strlen(setIdent)) == 0)
     {
+      if (aGroup)
+      {
+        // An element group has already been created, but not added yet
+        if (isNodeGroup) // Previous group was a node group, ignore it
+          delete aGroup;
+        else
+        {
+          // Check if the group was named after the group definition itself
+          if (lastComment.first > 0 &&
+              extractNameFromComment(lastComment.second))
+            aGroup->setName(lastComment.second);
+          myLink->addGroup(aGroup); // Add element group to the FE model
+        }
+        aGroup = NULL;
+        isNodeGroup = false;
+        lastComment = { 0, "" };
+      }
+
       // Delete trailing whitespaces, if any
       int startLin = lCounter+1;
       int lastChar = strlen(line);
@@ -884,34 +928,37 @@ bool FFlNastranReader::processSet (const std::string& fname, const int startBulk
 
       // Process the set definition and create an associated FFlGroup
       aGroup = this->processThisSet(setLine,startLin,lCounter+1);
-      if (aGroup)
-      {
-        aGroup->sortElements(true);
-        if (!myLink->addGroup(aGroup))
-          aGroup = NULL;
-        // Check if the group is named
-        else if (lastComment.first > 0 && lastComment.first < startLin)
-          if (extractNameFromComment(lastComment.second))
-          {
-            lastComment.first = 0;
-            aGroup->setName(lastComment.second);
-          }
-      }
-      else
+      if (!aGroup)
         nError++;
+
+      // Check if the group is named before the group definition itself
+      else if (lastComment.first > 0 && lastComment.first < startLin &&
+               extractNameFromComment(lastComment.second))
+      {
+        aGroup->setName(lastComment.second);
+        myLink->addGroup(aGroup);
+        aGroup = NULL;
+        lastComment = { 0, "" };
+      }
     }
     else if (isBulkData(line))
       break;
-    else
-      aGroup = NULL;
+  }
 
-    // Check if the last read comment contains a name of the last created group
-    if (aGroup && lastComment.first > 0)
+  if (aGroup)
+  {
+    // Process the last group not added yet
+    if (isNodeGroup) // Last group was a node group, ignore it
+      delete aGroup;
+    else
     {
-      lastComment.first = 0;
-      if (extractNameFromComment(lastComment.second))
+      // Check if the group was named after the group definition itself
+      if (lastComment.first > 0 &&
+          extractNameFromComment(lastComment.second))
         aGroup->setName(lastComment.second);
+      myLink->addGroup(aGroup);
     }
+    lastComment = { 0, "" };
   }
 
 #ifdef FFL_DEBUG
@@ -958,8 +1005,7 @@ FFlGroup* FFlNastranReader::processThisSet (std::string& setLine,
       ElementsCIter eit;
       for (eit = myLink->elementsBegin(); eit != myLink->elementsEnd(); ++eit)
         aGroup->addElement((*eit)->getID());
-      STOPP_TIMER("processThisSet")
-      return aGroup;
+      break;
     }
     else if (*charPtr == 'T') // "THRU" keyword
     {
@@ -1053,11 +1099,12 @@ FFlGroup* FFlNastranReader::processThisSet (std::string& setLine,
   {
     nWarnings++;
     ListUI <<"\n  ** Warning: "<< nNotes-oldNotes
-	   <<" non-existing elements were detected for Nastran SET "<< setId
-	   <<".\n              Only the 10 first are reported."
-	   <<"\n              Please verify that the model is consistent.\n";
+           <<" non-existing elements were detected for Nastran SET "<< setId
+           <<".\n              Only the 10 first are reported."
+           <<"\n              Please verify that the model is consistent.\n";
   }
 
+  aGroup->sortElements(true);
   STOPP_TIMER("processThisSet")
   return aGroup;
 }
@@ -1118,7 +1165,7 @@ bool FFlNastranReader::extractNameFromComment (std::string& commentLine,
       if (pos < commentLine.size()) commentLine.erase(pos);
 #if FFL_DEBUG > 1
       if (!commentLine.empty())
-	std::cout <<"\tFound name: "<< commentLine << std::endl;
+        std::cout <<"\tFound name: "<< commentLine << std::endl;
 #endif
       return !commentLine.empty();
     }

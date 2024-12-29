@@ -311,7 +311,7 @@ private:
   Specialized methods for FFaField.
 */
 
-typedef FFaReferenceListBase* FFaRefListPtr;
+using FFaRefListPtr = FFaReferenceListBase*;
 
 template<> inline
 FFaField<FFaRefListPtr>::FFaField()
