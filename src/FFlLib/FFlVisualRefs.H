@@ -9,6 +9,7 @@
 #define FFL_VISUAL_REFS_H
 
 #include "FFlLib/FFlReference.H"
+#include "FFlLib/FFlVisualBase.H"
 #include <vector>
 #include <string>
 
@@ -18,7 +19,6 @@ class FFaCheckSum;
 namespace FF_NAMESPACE {
 #endif
 
-class FFlVisualBase;
 class FFlVAppearance;
 class FFlVDetail;
 

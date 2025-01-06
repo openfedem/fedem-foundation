@@ -9,16 +9,14 @@
 #define FFL_FE_NODE_REFS_H
 
 #include "FFlLib/FFlReference.H"
+#include "FFlLib/FFlFEParts/FFlNode.H"
 
 class FFlFEElementTopSpec;
 class FFaCheckSum;
-class FaVec3;
 
 #ifdef FF_NAMESPACE
 namespace FF_NAMESPACE {
 #endif
-
-class FFlNode;
 
 using NodeRef   = FFlReference<FFlNode>;
 using NodeVec   = std::vector<NodeRef>;
