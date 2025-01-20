@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 2.8...3.5)
+cmake_minimum_required(VERSION 2.8...3.10)
 
-SET (CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
 if (CMAKE_VERSION VERSION_LESS 3.12)
   find_package(PythonInterp REQUIRED) #Sets ${PYTHON_EXECUTABLE}
@@ -27,8 +27,8 @@ execute_process(
    OUTPUT_VARIABLE generated_sources_output
 )
 
-message( STATUS "Including generated file(s) '${generated_sources_output}'" )
-include( ${CMAKE_CURRENT_BINARY_DIR}/${generated_sources_output} )
+message(STATUS "Including generated file(s) '${generated_sources_output}'")
+include(${CMAKE_CURRENT_BINARY_DIR}/${generated_sources_output})
 
 list(APPEND srcs AssertBasic.F90)
 
@@ -87,12 +87,10 @@ list(APPEND pysrcs CodeUtilities.py)
 list(APPEND pysrcs GenerateAssertsOnArrays.py)
 list(APPEND pysrcs Utilities.py)
 
-set(SOURCES ${srcs})
-
-add_library(pfunit STATIC ${SOURCES})
+add_library(pfunit STATIC ${srcs})
 
 include_directories(${CMAKE_BINARY_DIR}/mod)
 include_directories(${CMAKE_BINARY_DIR}/source)
 
-INSTALL(TARGETS pfunit DESTINATION lib)
-INSTALL(DIRECTORY  ${CMAKE_BINARY_DIR}/mod DESTINATION .)
+install(TARGETS pfunit DESTINATION lib)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/mod DESTINATION .)

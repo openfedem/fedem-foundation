@@ -13,19 +13,11 @@
 #
 # ------------------------------------------------------------------------ #
 INCLUDE(CMakeForceCompiler)
-cmake_minimum_required(VERSION 3.0...3.5)
+cmake_minimum_required(VERSION 3.0...3.10)
 cmake_policy(SET CMP0048 NEW)
-project (pFUnit
-    VERSION 3.1.1
-    LANGUAGES Fortran)
-#enable_language (Fortran)
+project(pFUnit VERSION 3.1.1 LANGUAGES Fortran)
 
-# MESSAGE(ENV{PFUNIT}:"$ENV{PFUNIT}") 
-# set (ENV_PFUNIT "$ENV{PFUNIT}")
-# MESSAGE(OK:"${ENV_PFUNIT}") 
-# OPTION(INSTALL_PATH "Use PFUNIT for development" "$ENV{PFUNIT}")  
-# OPTION(INSTALL_PATH "Use PFUNIT for development" "${ENV_PFUNIT}")  
-OPTION(INSTALL_PATH "Use PFUNIT for development" OFF) 
+OPTION(INSTALL_PATH "Use PFUNIT for development" OFF)
 IF(NOT INSTALL_PATH)
    IF(DEFINED ENV{PFUNIT})
       set (INSTALL_PATH "$ENV{PFUNIT}")
@@ -94,10 +86,10 @@ endif()
 if (${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
 
 if (UNIX)
-   execute_process (COMMAND ifort --version 
-		    OUTPUT_VARIABLE INTEL_COMPILER_VERSION)
-			   string (REGEX MATCH "([0-9]+)" 
-                    NUM_VERSION ${INTEL_COMPILER_VERSION})
+  execute_process (COMMAND ifort --version
+                   OUTPUT_VARIABLE INTEL_COMPILER_VERSION)
+  string (REGEX MATCH "([0-9]+)"
+          NUM_VERSION ${INTEL_COMPILER_VERSION})
   if ("${NUM_VERSION}" STREQUAL "13")
         add_definitions(-DINTEL_13)
   endif ()
