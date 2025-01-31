@@ -9,12 +9,13 @@
 #define FFL_PBEAM_ECCENT_H
 
 #include "FFlLib/FFlAttributeBase.H"
-#include "FFlLib/FFlFEAttributeSpec.H"
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
-
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlPBEAMECCENT : public FFlAttributeBase
@@ -31,7 +32,6 @@ public:
   virtual void resize(size_t n);
 
   FFL_FE_ATTRIBUTE_FACTORY_INIT(FFlPBEAMECCENT);
-  FFL_FE_ATTRIBUTE_SPEC(FFlPBEAMECCENT);
   FFL_TYPE_INFO(FFlPBEAMECCENT);
 
   FFlField<FaVec3> node1Offset;
@@ -39,8 +39,7 @@ public:
   FFlField<FaVec3> node3Offset;
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPBEAMECCENT>    FFlPBEAMECCENTTypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPBEAMECCENT> FFlPBEAMECCENTAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

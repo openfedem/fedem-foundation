@@ -36,6 +36,10 @@
 
 #define MAX_HEADER_LINES 1000
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 static std::string mainPath;
 
 static bool identFoundSet = false;
@@ -1208,3 +1212,7 @@ bool FFlNastranReader::extractNameFromComment (std::string& commentLine,
 
   return false;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

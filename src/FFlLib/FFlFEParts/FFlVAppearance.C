@@ -6,7 +6,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "FFlLib/FFlFEParts/FFlVAppearance.H"
-#include "FFaLib/FFaAlgebra/FFaUnitCalculator.H"
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 FFlVAppearance::FFlVAppearance(int id) : FFlVisualBase(id)
@@ -48,22 +51,17 @@ FFlVAppearance::FFlVAppearance(const FFlVAppearance& obj) : FFlVisualBase(obj)
 }
 
 
-FFlVAppearance::~FFlVAppearance()
-{
-}
-
-
-void FFlVAppearance::convertUnits(const FFaUnitCalculator*)
-{
-}
-
-
 void FFlVAppearance::init()
 {
-  FFlVAppearanceTypeInfoSpec::instance()->setTypeName("VAPPEARANCE");
-  FFlVAppearanceTypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::VISUAL_PROP);
+  using TypeInfoSpec = FFaSingelton<FFlTypeInfoSpec,FFlVAppearance>;
 
-  VisualFactory::instance()->registerCreator(FFlVAppearanceTypeInfoSpec::instance()->getTypeName(),
-					     FFaDynCB2S(FFlVAppearance::create,int,FFlVisualBase*&));
+  TypeInfoSpec::instance()->setTypeName("VAPPEARANCE");
+  TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::VISUAL_PROP);
 
+  VisualFactory::instance()->registerCreator(TypeInfoSpec::instance()->getTypeName(),
+                                             FFaDynCB2S(FFlVAppearance::create,int,FFlVisualBase*&));
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

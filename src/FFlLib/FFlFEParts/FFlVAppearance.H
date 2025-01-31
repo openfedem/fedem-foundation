@@ -11,9 +11,11 @@
 #include "FFlLib/FFlVisualBase.H"
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
-
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlVAppearance : public FFlVisualBase
@@ -21,8 +23,7 @@ class FFlVAppearance : public FFlVisualBase
 public:
   FFlVAppearance(int ID);
   FFlVAppearance(const FFlVAppearance& obj);
-  virtual ~FFlVAppearance();
-  virtual void convertUnits(const FFaUnitCalculator* convCal);
+  virtual ~FFlVAppearance() {}
 
   static void init();
 
@@ -43,7 +44,7 @@ public:
   int runningIdx;
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlVAppearance> FFlVAppearanceTypeInfoSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

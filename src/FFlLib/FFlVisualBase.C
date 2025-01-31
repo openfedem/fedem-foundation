@@ -10,6 +10,10 @@
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFaLib/FFaAlgebra/FFaCheckSum.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 const std::string& FFlVisualBase::getTypeName() const
 {
@@ -23,3 +27,7 @@ void FFlVisualBase::calculateChecksum(FFaCheckSum* cs, int csMask) const
   for (FFlFieldBase* field : myFields)
     field->calculateChecksum(cs);
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

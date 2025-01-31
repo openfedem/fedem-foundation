@@ -16,6 +16,10 @@ class FFlFieldBase;
 class FFaCheckSum;
 class FFaUnitCalculator;
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 class FFlAttributeBase : public FFlNamedPartBase,
 			 public FFlFEAttributeRefs
@@ -50,8 +54,6 @@ public:
   virtual void resize(size_t n) { if (n < myFields.size()) myFields.resize(n); }
 
 protected:
-  int getAttributeTypeID() const;
-
   void addField(FFlFieldBase& field) { myFields.push_back(&field); }
 
 private:
@@ -59,7 +61,7 @@ private:
 };
 
 
-typedef FFaGenericFactory<FFlAttributeBase> AttributeFactory;
+using AttributeFactory = FFaGenericFactory<FFlAttributeBase>;
 
 
 #define FFL_FE_ATTRIBUTE_FACTORY_INIT(clName)			\
@@ -70,4 +72,7 @@ public:								\
   virtual FFlAttributeBase* clone() const 	     	 	\
   { return new clName(*this); }
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

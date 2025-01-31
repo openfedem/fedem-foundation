@@ -9,11 +9,12 @@
 #define FFL_PFATIGUE_H
 
 #include "FFlLib/FFlAttributeBase.H"
-#include "FFlLib/FFlFEAttributeSpec.H"
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
 
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlPFATIGUE : public FFlAttributeBase
@@ -28,7 +29,6 @@ public:
   static void init();
 
   FFL_FE_ATTRIBUTE_FACTORY_INIT(FFlPFATIGUE);
-  FFL_FE_ATTRIBUTE_SPEC(FFlPFATIGUE);
   FFL_TYPE_INFO(FFlPFATIGUE);
 
   FFlField<int>    snCurveStd;
@@ -36,8 +36,7 @@ public:
   FFlField<double> stressConcentrationFactor;
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPFATIGUE>    FFlPFATIGUETypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPFATIGUE> FFlPFATIGUEAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

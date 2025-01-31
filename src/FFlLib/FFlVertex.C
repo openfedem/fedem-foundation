@@ -7,6 +7,10 @@
 
 #include "FFlLib/FFlVertex.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 FFlVertex::FFlVertex(double x, double y, double z) : FaVec3(x,y,z)
 {
@@ -38,3 +42,7 @@ short int FFlVertex::unRef()
   delete this;
   return 0;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

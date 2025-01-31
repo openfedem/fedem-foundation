@@ -12,6 +12,10 @@
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 char FFlReaders::convertToLinear = 0;
 
@@ -152,3 +156,7 @@ int FFlReaders::read(const std::string& fileName, FFlLinkHandler* link)
   FFaMsg::setSubTask("");
   return identified;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

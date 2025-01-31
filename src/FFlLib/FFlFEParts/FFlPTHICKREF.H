@@ -13,7 +13,9 @@
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
 
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlPTHICKREF : public FFlAttributeBase
@@ -32,8 +34,7 @@ public:
   FFlField<double> factor;
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPTHICKREF>    FFlPTHICKREFTypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPTHICKREF> FFlPTHICKREFAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

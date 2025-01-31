@@ -19,9 +19,6 @@
 #include "FFlLib/FFlFEParts/FFlPCOMP.H"
 #include "FFlLib/FFlFEParts/FFlPMASS.H"
 #include "FFlLib/FFlFEParts/FFlPMAT.H"
-#include "FFlLib/FFlFEParts/FFlPMAT2D.H"
-#include "FFlLib/FFlFEParts/FFlPMAT3D.H"
-#include "FFlLib/FFlFEParts/FFlPMATSHELL.H"
 #include "FFlLib/FFlFEParts/FFlPNSM.H"
 #include "FFlLib/FFlFEParts/FFlPRGD.H"
 #include "FFlLib/FFlFEParts/FFlPRBAR.H"
@@ -66,6 +63,10 @@
 
 #define CREATE_ATTRIBUTE(type,name,id) \
   dynamic_cast<type*>(AttributeFactory::instance()->create(name,id))
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2479,15 +2480,15 @@ bool FFlNastranReader::process_PCOMP (std::vector<std::string>& entry)
   }
 
   double T_total = 0.0;
-  FFlPCOMP::PlyVec plyVec;
+  FFlPlyVec plyVec;
   plyVec.reserve((entry.size()-8)/4);
   for (size_t idx = 8; idx+2 < entry.size(); idx += 4)
   {
-    FFlPCOMP::Ply ply;
+    FFlPly ply;
     CONVERT_ENTRY ("PCOMP",
 		   fieldValue(entry[idx  ],ply.MID) &&
 		   fieldValue(entry[idx+1],ply.T) &&
-		   fieldValue(entry[idx+2],ply.thetaInDeg));
+		   fieldValue(entry[idx+2],ply.theta));
     T_total += ply.T;
     plyVec.push_back(ply);
   }
@@ -3960,3 +3961,7 @@ bool FFlNastranReader::insertBeamPropMat (const char* bulk, int PID, int MID)
 
   return true;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

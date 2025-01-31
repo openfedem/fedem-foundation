@@ -12,11 +12,14 @@
 
 #include "gtest.h"
 #include "FFlLib/FFlLinkHandler.H"
-#include "FFlLib/FFlFEParts/FFlQUAD4.H"
-#include "FFlLib/FFlFEParts/FFlTRI3.H"
+#include "FFlLib/FFlFEParts/FFlShells.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include <array>
+
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
 
 
 /*!
@@ -110,7 +113,7 @@ int main (int argc, char** argv)
   releaseElement<FFlTRI3>();
   releaseElement<FFlQUAD4>();
   ElementFactory::removeInstance();
-  FFlNodeTypeInfoSpec::removeInstance();
+  FFaSingelton<FFlTypeInfoSpec,FFlNode>::removeInstance();
 
   return status;
 }

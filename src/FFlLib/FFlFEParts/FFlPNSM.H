@@ -9,11 +9,12 @@
 #define FFL_PNSM_H
 
 #include "FFlLib/FFlAttributeBase.H"
-#include "FFlLib/FFlFEAttributeSpec.H"
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
 
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlPNSM : public FFlAttributeBase
@@ -28,15 +29,13 @@ public:
   static void init();
 
   FFL_FE_ATTRIBUTE_FACTORY_INIT(FFlPNSM);
-  FFL_FE_ATTRIBUTE_SPEC(FFlPNSM);
   FFL_TYPE_INFO(FFlPNSM);
 
   FFlField<double> NSM;
   FFlField<int> isShell; // used to determine the proper unit conversion
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPNSM>    FFlPNSMTypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPNSM> FFlPNSMAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

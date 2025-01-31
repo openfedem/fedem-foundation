@@ -19,6 +19,10 @@ message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 include_directories ( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFF_NAMESPACE=FTK" )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+
 if ( USE_FORTRAN )
   set ( CMAKE_Fortran_MODULE_DIRECTORY "${PROJECT_BINARY_DIR}/f90_modules" )
 endif ( USE_FORTRAN )

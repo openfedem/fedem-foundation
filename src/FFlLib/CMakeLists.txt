@@ -21,6 +21,10 @@ if ( USE_VTFAPI )
   find_package ( VTFAPI )
 endif ( USE_VTFAPI )
 
+if ( USE_REFCOUNT )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFFL_REFCOUNT" )
+endif ( USE_REFCOUNT )
+
 if ( USE_PROFILER )
   string ( APPEND CMAKE_CXX_FLAGS " -DFFL_TIMER" )
 endif ( USE_PROFILER )

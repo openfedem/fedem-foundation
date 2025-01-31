@@ -17,6 +17,10 @@
 #include <iterator>
 #include <cstring>
 
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
+
 int convertToFtl(const char* fname);
 
 

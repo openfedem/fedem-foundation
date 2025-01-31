@@ -16,6 +16,10 @@
 #include <iomanip>
 #endif
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 const std::string& FFlAttributeBase::getTypeName() const
 {
@@ -56,12 +60,6 @@ bool FFlAttributeBase::isIdentic(const FFlAttributeBase* other) const
 }
 
 
-int FFlAttributeBase::getAttributeTypeID() const
-{
-  return this->getFEAttributeSpec()->getAttributeTypeID(this->getTypeName());
-}
-
-
 void FFlAttributeBase::print(const char* prefix) const
 {
   std::cout << prefix << this->getTypeName()
@@ -69,3 +67,7 @@ void FFlAttributeBase::print(const char* prefix) const
   for (FFlFieldBase* field : myFields) std::cout <<" "<< *field;
   std::cout << std::endl;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

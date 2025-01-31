@@ -7,6 +7,10 @@
 
 #include "FFlPSTRC.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 FFlPSTRC::FFlPSTRC(int id) : FFlAttributeBase(id)
 {
@@ -23,15 +27,22 @@ FFlPSTRC::FFlPSTRC(const FFlPSTRC& obj) : FFlAttributeBase(obj)
 
 void FFlPSTRC::init()
 {
-  FFlPSTRCTypeInfoSpec::instance()->setTypeName("PSTRC");
-  FFlPSTRCTypeInfoSpec::instance()->setDescription("Strain coat properties");
-  FFlPSTRCTypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_PROP);
+  using TypeInfoSpec  = FFaSingelton<FFlTypeInfoSpec,FFlPSTRC>;
+  using AttributeSpec = FFaSingelton<FFlFEAttributeSpec,FFlPSTRC>;
 
-  FFlPSTRCAttributeSpec::instance()->addLegalAttribute("PMAT"     , false);
-  FFlPSTRCAttributeSpec::instance()->addLegalAttribute("PTHICKREF", false);
-  FFlPSTRCAttributeSpec::instance()->addLegalAttribute("PHEIGHT"  , false);
+  TypeInfoSpec::instance()->setTypeName("PSTRC");
+  TypeInfoSpec::instance()->setDescription("Strain coat properties");
+  TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_PROP);
+
+  AttributeSpec::instance()->addLegalAttribute("PMAT",false);
+  AttributeSpec::instance()->addLegalAttribute("PTHICKREF",false);
+  AttributeSpec::instance()->addLegalAttribute("PHEIGHT",false);
 
   AttributeFactory::instance()->registerCreator
-    (FFlPSTRCTypeInfoSpec::instance()->getTypeName(),
+    (TypeInfoSpec::instance()->getTypeName(),
      FFaDynCB2S(FFlPSTRC::create,int,FFlAttributeBase*&));
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

@@ -15,7 +15,10 @@
 #ifdef FT_USE_MEMPOOL
 #include "FFaLib/FFaPatterns/FFaMemPool.H"
 #endif
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlStrainCoatBase : public FFlElementBase
@@ -119,21 +122,7 @@ public:
 #endif
 };
 
-
-typedef FFaSingelton<FFlFEAttributeSpec,FFlSTRCT3>  FFlSTRCT3AttributeSpec;
-typedef FFaSingelton<FFlFEElementTopSpec,FFlSTRCT3> FFlSTRCT3ElementTopSpec;
-typedef FFaSingelton<FFlTypeInfoSpec,FFlSTRCT3>     FFlSTRCT3TypeInfoSpec;
-
-typedef FFaSingelton<FFlFEAttributeSpec,FFlSTRCQ4>  FFlSTRCQ4AttributeSpec;
-typedef FFaSingelton<FFlFEElementTopSpec,FFlSTRCQ4> FFlSTRCQ4ElementTopSpec;
-typedef FFaSingelton<FFlTypeInfoSpec,FFlSTRCQ4>     FFlSTRCQ4TypeInfoSpec;
-
-typedef FFaSingelton<FFlFEAttributeSpec,FFlSTRCT6>  FFlSTRCT6AttributeSpec;
-typedef FFaSingelton<FFlFEElementTopSpec,FFlSTRCT6> FFlSTRCT6ElementTopSpec;
-typedef FFaSingelton<FFlTypeInfoSpec,FFlSTRCT6>     FFlSTRCT6TypeInfoSpec;
-
-typedef FFaSingelton<FFlFEAttributeSpec,FFlSTRCQ8>  FFlSTRCQ8AttributeSpec;
-typedef FFaSingelton<FFlFEElementTopSpec,FFlSTRCQ8> FFlSTRCQ8ElementTopSpec;
-typedef FFaSingelton<FFlTypeInfoSpec,FFlSTRCQ8>     FFlSTRCQ8TypeInfoSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

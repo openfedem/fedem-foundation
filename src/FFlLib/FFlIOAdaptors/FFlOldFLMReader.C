@@ -8,11 +8,11 @@
 #include <cstdarg>
 #include <cstring>
 
-#include "FFlOldFLMReader.H"
-#include "FFlLib/FFlLinkHandler.H"
+#include "FFlLib/FFlIOAdaptors/FFlOldFLMReader.H"
 #include "FFlLib/FFlIOAdaptors/FFlReaders.H"
-#include "FFlLib/FFlFEParts/FFlNode.H"
+#include "FFlLib/FFlLinkHandler.H"
 #include "FFlLib/FFlElementBase.H"
+#include "FFlLib/FFlFEParts/FFlNode.H"
 #include "FFlLib/FFlFEParts/FFlPMAT.H"
 #include "FFlLib/FFlFEParts/FFlPTHICK.H"
 #include "FFlLib/FFlFEParts/FFlPORIENT.H"
@@ -31,6 +31,10 @@
 
 #define CREATE_ATTRIBUTE(type,name,id) \
   dynamic_cast<type*>(AttributeFactory::instance()->create(name,id));
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 FFlOldFLMReader::FFlOldFLMReader(FFlLinkHandler* aLink) : FFlReaderBase(aLink)
@@ -632,3 +636,7 @@ bool FFlOldFLMReader::readElemMat (FILE* fp, int count)
 
   return true;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

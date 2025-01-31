@@ -8,18 +8,21 @@
 #ifndef FFL_PWAVGM_H
 #define FFL_PWAVGM_H
 
+#include <array>
+
 #include "FFlLib/FFlAttributeBase.H"
-#include "FFlLib/FFlFEAttributeSpec.H"
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
 
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
-
-#include <array>
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlPWAVGM : public FFlAttributeBase
 {
+  using DoubleVec = std::vector<double>;
+
 public:
   FFlPWAVGM(int ID);
   FFlPWAVGM(const FFlPWAVGM& obj);
@@ -32,18 +35,14 @@ public:
   FFlAttributeBase* removeWeights(const std::vector<int>& nodes, size_t nNod);
 
   FFL_FE_ATTRIBUTE_FACTORY_INIT(FFlPWAVGM);
-  FFL_FE_ATTRIBUTE_SPEC(FFlPWAVGM);
   FFL_TYPE_INFO(FFlPWAVGM);
-
-  typedef std::vector<double> DoubleVec;
 
   FFlField<int>               refC; // component numbers at the reference point
   std::array<FFlField<int>,6> indC; // indices into the weightMatrix
   FFlField<DoubleVec> weightMatrix; // master DOF weighting factors
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPWAVGM>    FFlPWAVGMTypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPWAVGM> FFlPWAVGMAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

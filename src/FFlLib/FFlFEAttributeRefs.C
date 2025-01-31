@@ -15,6 +15,10 @@
 #include "FFaLib/FFaAlgebra/FFaCheckSum.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 FFlFEAttributeRefs::FFlFEAttributeRefs(const FFlFEAttributeRefs& obj)
 {
@@ -30,8 +34,8 @@ bool FFlFEAttributeRefs::useAttributesFrom(const FFlFEAttributeRefs* obj)
   myAttributes.reserve(obj->myAttributes.size());
   for (const AttribData& aref : obj->myAttributes)
   {
-    const std::string& typeName = obj->getFEAttributeSpec()->getAttributeName(aref.first);
-    if (this->getFEAttributeSpec()->getAttributeTypeID(typeName))
+    const std::string& typeName = obj->getAttributeName(aref.first);
+    if (this->getAttributeTypeID(typeName))
       ok &= this->setAttribute(typeName,aref.second.getID());
   }
 
@@ -42,7 +46,7 @@ bool FFlFEAttributeRefs::useAttributesFrom(const FFlFEAttributeRefs* obj)
 bool FFlFEAttributeRefs::setAttribute(FFlAttributeBase* attrObject)
 {
   const std::string& type = attrObject->getTypeInfoSpec()->getTypeName();
-  unsigned char typeID = this->getFEAttributeSpec()->getAttributeTypeID(type);
+  unsigned char typeID = this->getAttributeTypeID(type);
   if (!typeID)
   {
     std::cerr <<" *** Internal error: \""<< type
@@ -72,7 +76,7 @@ bool FFlFEAttributeRefs::setAttribute(FFlAttributeBase* attrObject)
 
 bool FFlFEAttributeRefs::setAttribute(const std::string& type, int ID)
 {
-  unsigned char typeID = this->getFEAttributeSpec()->getAttributeTypeID(type);
+  unsigned char typeID = this->getAttributeTypeID(type);
   if (!typeID)
   {
     if (FFlFEAttributeSpec::isObsolete(type))
@@ -105,7 +109,7 @@ bool FFlFEAttributeRefs::setAttribute(const std::string& type, int ID)
 
 bool FFlFEAttributeRefs::clearAttribute(const std::string& type)
 {
-  unsigned char typeID = this->getFEAttributeSpec()->getAttributeTypeID(type);
+  unsigned char typeID = this->getAttributeTypeID(type);
   if (typeID)
   {
     std::pair<AttribsVec::iterator,AttribsVec::iterator> p;
@@ -156,14 +160,10 @@ bool FFlFEAttributeRefs::hasAttribute(const std::vector<FFlAttributeBase*>& av) 
 }
 
 
-// typedefs used in the attribute resolving
-typedef std::map<std::string,AttributeMap> AttributeTypeMap;
-typedef AttributeTypeMap::const_iterator   AttributeTypeMapCIter;
-
-bool FFlFEAttributeRefs::resolve(const AttributeTypeMap& possibleReferences,
+bool FFlFEAttributeRefs::resolve(const AttribTypMap& possibleRefs,
                                  bool suppressErrmsg)
 {
-  if (possibleReferences.empty() && !myAttributes.empty())
+  if (possibleRefs.empty() && !myAttributes.empty())
   {
     ListUI <<"\n *** Error: No attributes!\n";
     return false;
@@ -174,15 +174,15 @@ bool FFlFEAttributeRefs::resolve(const AttributeTypeMap& possibleReferences,
   for (AttribData& attr : myAttributes)
   {
     // find correct sub-map in the input argument
-    const std::string& attrName = this->getFEAttributeSpec()->getAttributeName(attr.first);
-    AttributeTypeMapCIter refIt = possibleReferences.find(attrName);
+    const std::string& attrName = this->getAttributeName(attr.first);
+    AttribTypMap::const_iterator refIt = possibleRefs.find(attrName);
 
     // Workaround for conversion of obsolete field names into new name
-    if (refIt == possibleReferences.end())
+    if (refIt == possibleRefs.end())
       if (attrName == "PBEAMORIENT" || attrName == "PBUSHORIENT")
-        refIt = possibleReferences.find("PORIENT");
+        refIt = possibleRefs.find("PORIENT");
 
-    if (refIt != possibleReferences.end())
+    if (refIt != possibleRefs.end())
       if (attr.second.resolve(refIt->second))
         continue;
 
@@ -205,7 +205,7 @@ void FFlFEAttributeRefs::checksum(FFaCheckSum* cs) const
 
 FFlAttributeBase* FFlFEAttributeRefs::getAttribute(const std::string& atType) const
 {
-  unsigned char typeID = this->getFEAttributeSpec()->getAttributeTypeID(atType);
+  unsigned char typeID = this->getAttributeTypeID(atType);
   if (typeID)
   {
     std::pair<AttribsCIter,AttribsCIter> p;
@@ -227,7 +227,7 @@ FFlFEAttributeRefs::getAttributes(const std::string& atType) const
 {
   std::vector<FFlAttributeBase*> retVar;
 
-  unsigned char typeID = this->getFEAttributeSpec()->getAttributeTypeID(atType);
+  unsigned char typeID = this->getAttributeTypeID(atType);
   if (typeID)
   {
     std::pair<AttribsCIter,AttribsCIter> p;
@@ -247,7 +247,7 @@ FFlFEAttributeRefs::getAttributes(const std::string& atType) const
 
 int FFlFEAttributeRefs::getAttributeID(const std::string& atType) const
 {
-  unsigned char typeID = this->getFEAttributeSpec()->getAttributeTypeID(atType);
+  unsigned char typeID = this->getAttributeTypeID(atType);
   if (typeID)
   {
     std::pair<AttribsCIter,AttribsCIter> p;
@@ -260,3 +260,24 @@ int FFlFEAttributeRefs::getAttributeID(const std::string& atType) const
   // No message if no attribute of given type or illegal attribute type
   return 0;
 }
+
+
+const std::string& FFlFEAttributeRefs::getAttributeName(unsigned char typeID) const
+{
+  FFlFEAttributeSpec* spec = this->getFEAttributeSpec();
+  if (spec) return spec->getAttributeName(typeID);
+
+  static std::string empty;
+  return empty;
+}
+
+
+unsigned char FFlFEAttributeRefs::getAttributeTypeID(const std::string& name) const
+{
+  FFlFEAttributeSpec* spec = this->getFEAttributeSpec();
+  return spec ? spec->getAttributeTypeID(name) : 0;
+}
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

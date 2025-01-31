@@ -10,24 +10,32 @@
 #include "FFaLib/FFaAlgebra/FFaMat33.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 void FFlSTRCT3::init()
 {
-  FFlSTRCT3TypeInfoSpec::instance()->setTypeName("STRCT3");
-  FFlSTRCT3TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_ELM);
+  using TypeInfoSpec   = FFaSingelton<FFlTypeInfoSpec,FFlSTRCT3>;
+  using AttributeSpec  = FFaSingelton<FFlFEAttributeSpec,FFlSTRCT3>;
+  using ElementTopSpec = FFaSingelton<FFlFEElementTopSpec,FFlSTRCT3>;
 
-  ElementFactory::instance()->registerCreator(FFlSTRCT3TypeInfoSpec::instance()->getTypeName(),
-					      FFaDynCB2S(FFlSTRCT3::create,int,FFlElementBase*&));
+  TypeInfoSpec::instance()->setTypeName("STRCT3");
+  TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_ELM);
 
-  FFlSTRCT3AttributeSpec::instance()->addLegalAttribute("PSTRC",true,true);
-  FFlSTRCT3AttributeSpec::instance()->addLegalAttribute("PFATIGUE",false);
+  ElementFactory::instance()->registerCreator(TypeInfoSpec::instance()->getTypeName(),
+                                              FFaDynCB2S(FFlSTRCT3::create,int,FFlElementBase*&));
 
-  FFlSTRCT3ElementTopSpec::instance()->setNodeCount(3);
-  FFlSTRCT3ElementTopSpec::instance()->setNodeDOFs(0);
-  FFlSTRCT3ElementTopSpec::instance()->setShellFaces(true);
+  AttributeSpec::instance()->addLegalAttribute("PSTRC",true,true);
+  AttributeSpec::instance()->addLegalAttribute("PFATIGUE",false);
 
-  static int faces[] = { 1, 2, 3,-1 };
-  FFlSTRCT3ElementTopSpec::instance()->setTopology(1,faces);
+  ElementTopSpec::instance()->setNodeCount(3);
+  ElementTopSpec::instance()->setNodeDOFs(0);
+  ElementTopSpec::instance()->setShellFaces(true);
+
+  int faces[] = { 1, 2, 3,-1 };
+  ElementTopSpec::instance()->setTopology(1,faces);
 }
 
 
@@ -42,21 +50,25 @@ FaMat33 FFlSTRCT3::getGlobalizedElmCS() const
 
 void FFlSTRCQ4::init()
 {
-  FFlSTRCQ4TypeInfoSpec::instance()->setTypeName("STRCQ4");
-  FFlSTRCQ4TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_ELM);
+  using TypeInfoSpec   = FFaSingelton<FFlTypeInfoSpec,FFlSTRCQ4>;
+  using AttributeSpec  = FFaSingelton<FFlFEAttributeSpec,FFlSTRCQ4>;
+  using ElementTopSpec = FFaSingelton<FFlFEElementTopSpec,FFlSTRCQ4>;
 
-  ElementFactory::instance()->registerCreator(FFlSTRCQ4TypeInfoSpec::instance()->getTypeName(),
-					      FFaDynCB2S(FFlSTRCQ4::create,int,FFlElementBase*&));
+  TypeInfoSpec::instance()->setTypeName("STRCQ4");
+  TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_ELM);
 
-  FFlSTRCQ4AttributeSpec::instance()->addLegalAttribute("PSTRC",true,true);
-  FFlSTRCQ4AttributeSpec::instance()->addLegalAttribute("PFATIGUE",false);
+  ElementFactory::instance()->registerCreator(TypeInfoSpec::instance()->getTypeName(),
+                                              FFaDynCB2S(FFlSTRCQ4::create,int,FFlElementBase*&));
 
-  FFlSTRCQ4ElementTopSpec::instance()->setNodeCount(4);
-  FFlSTRCQ4ElementTopSpec::instance()->setNodeDOFs(0);
-  FFlSTRCQ4ElementTopSpec::instance()->setShellFaces(true);
+  AttributeSpec::instance()->addLegalAttribute("PSTRC",true,true);
+  AttributeSpec::instance()->addLegalAttribute("PFATIGUE",false);
 
-  static int faces[] = { 1, 2, 3, 4,-1 };
-  FFlSTRCQ4ElementTopSpec::instance()->setTopology(1,faces);
+  ElementTopSpec::instance()->setNodeCount(4);
+  ElementTopSpec::instance()->setNodeDOFs(0);
+  ElementTopSpec::instance()->setShellFaces(true);
+
+  int faces[] = { 1, 2, 3, 4,-1 };
+  ElementTopSpec::instance()->setTopology(1,faces);
 }
 
 
@@ -72,21 +84,25 @@ FaMat33 FFlSTRCQ4::getGlobalizedElmCS() const
 
 void FFlSTRCT6::init()
 {
-  FFlSTRCT6TypeInfoSpec::instance()->setTypeName("STRCT6");
-  FFlSTRCT6TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_ELM);
+  using TypeInfoSpec   = FFaSingelton<FFlTypeInfoSpec,FFlSTRCT6>;
+  using AttributeSpec  = FFaSingelton<FFlFEAttributeSpec,FFlSTRCT6>;
+  using ElementTopSpec = FFaSingelton<FFlFEElementTopSpec,FFlSTRCT6>;
 
-  ElementFactory::instance()->registerCreator(FFlSTRCT6TypeInfoSpec::instance()->getTypeName(),
-					      FFaDynCB2S(FFlSTRCT6::create,int,FFlElementBase*&));
+  TypeInfoSpec::instance()->setTypeName("STRCT6");
+  TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_ELM);
 
-  FFlSTRCT6AttributeSpec::instance()->addLegalAttribute("PSTRC",true,true);
-  FFlSTRCT6AttributeSpec::instance()->addLegalAttribute("PFATIGUE",false);
+  ElementFactory::instance()->registerCreator(TypeInfoSpec::instance()->getTypeName(),
+                                              FFaDynCB2S(FFlSTRCT6::create,int,FFlElementBase*&));
 
-  FFlSTRCT6ElementTopSpec::instance()->setNodeCount(6);
-  FFlSTRCT6ElementTopSpec::instance()->setNodeDOFs(0);
-  FFlSTRCT6ElementTopSpec::instance()->setShellFaces(true);
+  AttributeSpec::instance()->addLegalAttribute("PSTRC",true,true);
+  AttributeSpec::instance()->addLegalAttribute("PFATIGUE",false);
 
-  static int faces[] = { 1, 2, 3, 4, 5, 6,-1 };
-  FFlSTRCT6ElementTopSpec::instance()->setTopology(1,faces);
+  ElementTopSpec::instance()->setNodeCount(6);
+  ElementTopSpec::instance()->setNodeDOFs(0);
+  ElementTopSpec::instance()->setShellFaces(true);
+
+  int faces[] = { 1, 2, 3, 4, 5, 6,-1 };
+  ElementTopSpec::instance()->setTopology(1,faces);
 }
 
 
@@ -101,21 +117,25 @@ FaMat33 FFlSTRCT6::getGlobalizedElmCS() const
 
 void FFlSTRCQ8::init()
 {
-  FFlSTRCQ8TypeInfoSpec::instance()->setTypeName("STRCQ8");
-  FFlSTRCQ8TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_ELM);
+  using TypeInfoSpec   = FFaSingelton<FFlTypeInfoSpec,FFlSTRCQ8>;
+  using AttributeSpec  = FFaSingelton<FFlFEAttributeSpec,FFlSTRCQ8>;
+  using ElementTopSpec = FFaSingelton<FFlFEElementTopSpec,FFlSTRCQ8>;
 
-  ElementFactory::instance()->registerCreator(FFlSTRCQ8TypeInfoSpec::instance()->getTypeName(),
-					      FFaDynCB2S(FFlSTRCQ8::create,int,FFlElementBase*&));
+  TypeInfoSpec::instance()->setTypeName("STRCQ8");
+  TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::STRC_ELM);
 
-  FFlSTRCQ8AttributeSpec::instance()->addLegalAttribute("PSTRC",true,true);
-  FFlSTRCQ8AttributeSpec::instance()->addLegalAttribute("PFATIGUE",false);
+  ElementFactory::instance()->registerCreator(TypeInfoSpec::instance()->getTypeName(),
+                                              FFaDynCB2S(FFlSTRCQ8::create,int,FFlElementBase*&));
 
-  FFlSTRCQ8ElementTopSpec::instance()->setNodeCount(8);
-  FFlSTRCQ8ElementTopSpec::instance()->setNodeDOFs(0);
-  FFlSTRCQ8ElementTopSpec::instance()->setShellFaces(true);
+  AttributeSpec::instance()->addLegalAttribute("PSTRC",true,true);
+  AttributeSpec::instance()->addLegalAttribute("PFATIGUE",false);
 
-  static int faces[] = { 1, 2, 3, 4, 5, 6, 7, 8,-1 };
-  FFlSTRCQ8ElementTopSpec::instance()->setTopology(1,faces);
+  ElementTopSpec::instance()->setNodeCount(8);
+  ElementTopSpec::instance()->setNodeDOFs(0);
+  ElementTopSpec::instance()->setShellFaces(true);
+
+  int faces[] = { 1, 2, 3, 4, 5, 6, 7, 8,-1 };
+  ElementTopSpec::instance()->setTopology(1,faces);
 }
 
 
@@ -153,3 +173,7 @@ FFlElementBase* FFlStrainCoatBase::getFElement() const
   else
     return 0;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

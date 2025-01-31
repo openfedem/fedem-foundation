@@ -13,6 +13,10 @@
 #include <cstring>
 #include <cctype>
 
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
+
 
 /*!
   \brief Simple FEM model to VTF conversion utility.

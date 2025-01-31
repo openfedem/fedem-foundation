@@ -39,6 +39,10 @@
 #define STOPP_TIMER(function)
 #endif
 
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
+
 
 bool FFlFedemReader::ignoreCheckSum = false;
 
@@ -761,3 +765,7 @@ bool FFlFedemReader::getNextField(std::istream& is, ftlField& fl) const
   ++counter;
   return true;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

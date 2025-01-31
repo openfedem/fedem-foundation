@@ -9,11 +9,12 @@
 #define FFL_PRGD_H
 
 #include "FFlLib/FFlAttributeBase.H"
-#include "FFlLib/FFlFEAttributeSpec.H"
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
 
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlPRGD : public FFlAttributeBase
@@ -28,14 +29,12 @@ public:
   static void init();
 
   FFL_FE_ATTRIBUTE_FACTORY_INIT(FFlPRGD);
-  FFL_FE_ATTRIBUTE_SPEC(FFlPRGD);
   FFL_TYPE_INFO(FFlPRGD);
 
   FFlField<int> dependentDofs;
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPRGD>    FFlPRGDTypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPRGD> FFlPRGDAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

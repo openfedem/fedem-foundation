@@ -9,11 +9,12 @@
 #define FFL_PTHICK_H
 
 #include "FFlLib/FFlAttributeBase.H"
-#include "FFlLib/FFlFEAttributeSpec.H"
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
 
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlPTHICK : public FFlAttributeBase
@@ -28,14 +29,12 @@ public:
   static void init();
 
   FFL_FE_ATTRIBUTE_FACTORY_INIT(FFlPTHICK);
-  FFL_FE_ATTRIBUTE_SPEC(FFlPTHICK);
   FFL_TYPE_INFO(FFlPTHICK);
 
   FFlField<double> thickness;
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPTHICK>    FFlPTHICKTypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPTHICK> FFlPTHICKAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

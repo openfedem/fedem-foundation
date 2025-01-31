@@ -8,10 +8,15 @@
 #ifndef FFL_SESAM_READER_H
 #define FFL_SESAM_READER_H
 
-#include "FFlReaderBase.H"
 #include <string>
 #include <vector>
 #include <map>
+
+#include "FFlLib/FFlIOAdaptors/FFlReaderBase.H"
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlSesamReader : public FFlReaderBase
@@ -63,4 +68,7 @@ private:
   LSintMap  myLinearDepDofs;
 };
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

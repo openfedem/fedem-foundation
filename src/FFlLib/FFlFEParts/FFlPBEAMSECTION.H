@@ -9,11 +9,12 @@
 #define FFL_PBEAM_SECTION_H
 
 #include "FFlLib/FFlAttributeBase.H"
-#include "FFlLib/FFlFEAttributeSpec.H"
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
 
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlPBEAMSECTION : public FFlAttributeBase
@@ -28,7 +29,6 @@ public:
   static void init();
 
   FFL_FE_ATTRIBUTE_FACTORY_INIT(FFlPBEAMSECTION);
-  FFL_FE_ATTRIBUTE_SPEC(FFlPBEAMSECTION);
   FFL_TYPE_INFO(FFlPBEAMSECTION);
 
 public:
@@ -46,8 +46,7 @@ private:
   void setupFields();
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPBEAMSECTION>    FFlPBEAMSECTIONTypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPBEAMSECTION> FFlPBEAMSECTIONAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

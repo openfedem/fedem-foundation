@@ -38,6 +38,10 @@
 #include "FFaLib/FFaOS/FFaFortran.H"
 #include "FFaLib/FFaOS/FFaExport.H"
 
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
+
 //! \brief Pointers to all FE parts subjected to recovery during dynamics solve
 static std::vector<FFlLinkHandler*> ourLinks;
 //! \brief Pointer to FE part currently in calculation focus
@@ -778,13 +782,13 @@ SUBROUTINE(ffl_getmat,FFL_GETMAT) (double& E, double& nu, double& rho,
 // Check if an element has a certain attribute
 ////////////////////////////////////////////////////////////////////////////////
 
-SUBROUTINE (ffl_attribute,FFL_ATTRIBUTE) (const char* type,
+SUBROUTINE(ffl_attribute,FFL_ATTRIBUTE) (const char* type,
 #ifdef _NCHAR_AFTER_CHARARG
-                                          const int nchar,
-                                          const int& iel, int& status
+                                         const int nchar,
+                                         const int& iel, int& status
 #else
-                                          const int& iel, int& status,
-                                          const int nchar
+                                         const int& iel, int& status,
+                                         const int nchar
 #endif
 ){
   FFlElementBase* curElm = ffl_getElement(iel);
@@ -856,7 +860,7 @@ SUBROUTINE(ffl_getpcomp,FFL_GETPCOMP) (int& compID, int& nPlys, double& Z0,
   FFlPMAT*      pMat;
   ierr = 0;
 
-  for (const FFlPCOMP::Ply& ply : curComp->plySet.getValue())
+  for (const FFlPly& ply : curComp->plySet.getValue())
   {
     if ((pMatShell = LINK_ATTRIBUTE(PMATSHELL,ply.MID)))
     {
@@ -883,7 +887,7 @@ SUBROUTINE(ffl_getpcomp,FFL_GETPCOMP) (int& compID, int& nPlys, double& Z0,
       ierr--;
     }
 
-    theta[i] = ply.thetaInDeg;
+    theta[i] = ply.theta;
     T[i++]   = ply.T;
   }
 }

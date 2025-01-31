@@ -6,7 +6,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "FFlLib/FFlFEParts/FFlVDetail.H"
-#include "FFaLib/FFaAlgebra/FFaUnitCalculator.H"
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 FFlVDetail::FFlVDetail(int id) : FFlVisualBase(id)
@@ -16,29 +19,24 @@ FFlVDetail::FFlVDetail(int id) : FFlVisualBase(id)
 }
 
 
-FFlVDetail::FFlVDetail(const FFlVDetail& obj)
-  : FFlVisualBase(obj)
+FFlVDetail::FFlVDetail(const FFlVDetail& obj) : FFlVisualBase(obj)
 {
   this->addField(detail);
   detail = obj.detail;
 }
 
 
-FFlVDetail::~FFlVDetail()
-{
-}
-
-void FFlVDetail::convertUnits(const FFaUnitCalculator*)
-{
-}
-
-
 void FFlVDetail::init()
 {
-  FFlVDetailTypeInfoSpec::instance()->setTypeName("VDETAIL");
-  FFlVDetailTypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::VISUAL_PROP);
+  using TypeInfoSpec = FFaSingelton<FFlTypeInfoSpec,FFlVDetail>;
 
-  VisualFactory::instance()->registerCreator(FFlVDetailTypeInfoSpec::instance()->getTypeName(),
-					     FFaDynCB2S(FFlVDetail::create,int,FFlVisualBase*&));
+  TypeInfoSpec::instance()->setTypeName("VDETAIL");
+  TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::VISUAL_PROP);
 
+  VisualFactory::instance()->registerCreator(TypeInfoSpec::instance()->getTypeName(),
+                                             FFaDynCB2S(FFlVDetail::create,int,FFlVisualBase*&));
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

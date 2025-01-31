@@ -5,8 +5,12 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "FFlAllFEParts.H"
+#include "FFlLib/FFlFEParts/FFlAllFEParts.H"
 #include "FFlLib/FFlMemPool.H"
+
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
 
 //! Set to \e true when initialized, to avoid initializing more than once.
 static bool initialized = false;
@@ -104,10 +108,15 @@ template<class T> void releaseAttribute()
 }
 
 
+template<class T> void releaseTypeInfo()
+{
+  FFaSingelton<FFlTypeInfoSpec,T>::removeInstance();
+}
+
+
 void FFl::releaseAllElements()
 {
-  FFlNodeTypeInfoSpec::removeInstance();
-
+  releaseTypeInfo<FFlNode>();
   releaseElement<FFlRGD>();
   releaseElement<FFlRBAR>();
   releaseElement<FFlWAVGM>();
@@ -135,49 +144,49 @@ void FFl::releaseAllElements()
 #endif
   ElementFactory::removeInstance();
 
-  releaseAttribute<FFlCFORCE>();
-  releaseAttribute<FFlCMOMENT>();
+  releaseTypeInfo<FFlCFORCE>();
+  releaseTypeInfo<FFlCMOMENT>();
   releaseAttribute<FFlFACELOAD>();
   releaseAttribute<FFlSURFLOAD>();
   LoadFactory::removeInstance();
 
-  releaseAttribute<FFlPMASS>();
-  releaseAttribute<FFlPSPRING>();
-  releaseAttribute<FFlPBUSHCOEFF>();
-  releaseAttribute<FFlPBUSHECCENT>();
-  releaseAttribute<FFlPORIENT>();
-  releaseAttribute<FFlPORIENT3>();
-  releaseAttribute<FFlPBEAMECCENT>();
-  releaseAttribute<FFlPBEAMSECTION>();
-  releaseAttribute<FFlPBEAMPIN>();
-  releaseAttribute<FFlPEFFLENGTH>();
-  releaseAttribute<FFlPSPRING>();
-  releaseAttribute<FFlPTHICK>();
-  releaseAttribute<FFlPCOMP>();
-  releaseAttribute<FFlPNSM>();
-  releaseAttribute<FFlPRGD>();
-  releaseAttribute<FFlPWAVGM>();
-  releaseAttribute<FFlPRBAR>();
-  releaseAttribute<FFlPMAT>();
-  releaseAttribute<FFlPMAT2D>();
-  releaseAttribute<FFlPMAT3D>();
-  releaseAttribute<FFlPMATSHELL>();
-  releaseAttribute<FFlPCOORDSYS>();
+  releaseTypeInfo<FFlPMASS>();
+  releaseTypeInfo<FFlPSPRING>();
+  releaseTypeInfo<FFlPBUSHCOEFF>();
+  releaseTypeInfo<FFlPBUSHECCENT>();
+  releaseTypeInfo<FFlPORIENT>();
+  releaseTypeInfo<FFlPORIENT3>();
+  releaseTypeInfo<FFlPBEAMECCENT>();
+  releaseTypeInfo<FFlPBEAMSECTION>();
+  releaseTypeInfo<FFlPBEAMPIN>();
+  releaseTypeInfo<FFlPEFFLENGTH>();
+  releaseTypeInfo<FFlPSPRING>();
+  releaseTypeInfo<FFlPTHICK>();
+  releaseTypeInfo<FFlPCOMP>();
+  releaseTypeInfo<FFlPNSM>();
+  releaseTypeInfo<FFlPRGD>();
+  releaseTypeInfo<FFlPWAVGM>();
+  releaseTypeInfo<FFlPRBAR>();
+  releaseTypeInfo<FFlPMAT>();
+  releaseTypeInfo<FFlPMAT2D>();
+  releaseTypeInfo<FFlPMAT3D>();
+  releaseTypeInfo<FFlPMATSHELL>();
+  releaseTypeInfo<FFlPCOORDSYS>();
 #ifdef FT_USE_STRAINCOAT
   releaseAttribute<FFlPSTRC>();
-  releaseAttribute<FFlPHEIGHT>();
   releaseAttribute<FFlPTHICKREF>();
-  releaseAttribute<FFlPFATIGUE>();
+  releaseTypeInfo<FFlPHEIGHT>();
+  releaseTypeInfo<FFlPFATIGUE>();
 #endif
   AttributeFactory::removeInstance();
 
 #ifdef FT_USE_VISUALS
-  FFlVAppearanceTypeInfoSpec::removeInstance();
-  FFlVDetailTypeInfoSpec::removeInstance();
+  releaseTypeInfo<FFlVAppearance>();
+  releaseTypeInfo<FFlVDetail>();
   VisualFactory::removeInstance();
 #endif
 
-  FFlGroupTypeInfoSpec::removeInstance();
+  releaseTypeInfo<FFlGroup>();
 
   FFlMemPool::deleteAllLinkMemPools();
 

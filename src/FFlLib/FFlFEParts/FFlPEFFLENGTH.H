@@ -9,11 +9,12 @@
 #define FFL_PEFF_LENGTH_H_
 
 #include "FFlLib/FFlAttributeBase.H"
-#include "FFlLib/FFlFEAttributeSpec.H"
 #include "FFlLib/FFlTypeInfoSpec.H"
 #include "FFlLib/FFlField.H"
 
-#include "FFaLib/FFaPatterns/FFaSingelton.H"
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlPEFFLENGTH : public FFlAttributeBase
@@ -29,14 +30,12 @@ public:
   static void init();
 
   FFL_FE_ATTRIBUTE_FACTORY_INIT(FFlPEFFLENGTH);
-  FFL_FE_ATTRIBUTE_SPEC(FFlPEFFLENGTH);
   FFL_TYPE_INFO(FFlPEFFLENGTH);
 
   FFlField<double> length;
 };
 
-
-typedef FFaSingelton<FFlTypeInfoSpec,FFlPEFFLENGTH>    FFlPEFFLENGTHTypeInfoSpec;
-typedef FFaSingelton<FFlFEAttributeSpec,FFlPEFFLENGTH> FFlPEFFLENGTHAttributeSpec;
-
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif

@@ -5,8 +5,12 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "FFlPHEIGHT.H"
+#include "FFlLib/FFlFEParts/FFlPHEIGHT.H"
 #include "FFaLib/FFaAlgebra/FFaUnitCalculator.H"
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 FFlPHEIGHT::FFlPHEIGHT(int id) : FFlAttributeBase(id)
@@ -32,12 +36,17 @@ void FFlPHEIGHT::convertUnits(const FFaUnitCalculator* convCal)
 
 void FFlPHEIGHT::init()
 {
-  FFlPHEIGHTTypeInfoSpec::instance()->setTypeName("PHEIGHT");
-  FFlPHEIGHTTypeInfoSpec::instance()->setDescription("Strain coat heights");
-  FFlPHEIGHTTypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::GEOMETRY_PROP);
+  using TypeInfoSpec = FFaSingelton<FFlTypeInfoSpec,FFlPHEIGHT>;
+
+  TypeInfoSpec::instance()->setTypeName("PHEIGHT");
+  TypeInfoSpec::instance()->setDescription("Strain coat heights");
+  TypeInfoSpec::instance()->setCathegory(FFlTypeInfoSpec::GEOMETRY_PROP);
 
   AttributeFactory::instance()->registerCreator
-    (FFlPHEIGHTTypeInfoSpec::instance()->getTypeName(),
+    (TypeInfoSpec::instance()->getTypeName(),
      FFaDynCB2S(FFlPHEIGHT::create,int,FFlAttributeBase*&));
-
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

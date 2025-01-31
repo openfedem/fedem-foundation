@@ -22,6 +22,10 @@
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 
+#ifdef FF_NAMESPACE
+using namespace FF_NAMESPACE;
+#endif
+
 using DoubleVec = std::vector<double>; //!< Convenience alias
 
 static std::string inpdir; //!< Full path of the input file directory

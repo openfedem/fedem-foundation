@@ -6,10 +6,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "Admin/FedemAdmin.H"
+#include "FFlLib/FFlIOAdaptors/FFlVdmReader.H"
 #include "FFlLib/FFlIOAdaptors/FFlReaders.H"
 #include "FFlLib/FFlLinkHandler.H"
-#include "FFlLib/FFlFEParts/FFlNode.H"
 #include "FFlLib/FFlElementBase.H"
+#include "FFlLib/FFlFEParts/FFlNode.H"
 #include "FFlLib/FFlFEParts/FFlPMAT.H"
 #include "FFlLib/FFlFEParts/FFlPTHICK.H"
 #include "FFlLib/FFlFEParts/FFlPBEAMSECTION.H"
@@ -35,14 +36,16 @@
 #include "vdm/vdm.h"
 #endif
 
-#include "FFlVdmReader.H"
-
 #ifdef FFL_TIMER
 #define START_TIMER(function) myProfiler->startTimer(function)
 #define STOPP_TIMER(function) myProfiler->stopTimer(function)
 #else
 #define START_TIMER(function)
 #define STOPP_TIMER(function)
+#endif
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
 #endif
 
 
@@ -1199,3 +1202,7 @@ int FFlVdmReader::getDofFlag(int bitFlag)
 
   return dofFlag;
 }
+
+#ifdef FF_NAMESPACE
+} // namespace
+#endif

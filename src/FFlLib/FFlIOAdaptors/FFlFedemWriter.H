@@ -8,10 +8,15 @@
 #ifndef FFL_FEDEM_WRITER_H
 #define FFL_FEDEM_WRITER_H
 
-#include "FFlWriterBase.H"
 #include <string>
 #include <vector>
 #include <iostream>
+
+#include "FFlLib/FFlIOAdaptors/FFlWriterBase.H"
+
+#ifdef FF_NAMESPACE
+namespace FF_NAMESPACE {
+#endif
 
 
 class FFlFedemWriter : public FFlWriterBase
@@ -35,4 +40,7 @@ protected:
   bool writeVisualData(std::ostream& os) const;
 };
 
+#ifdef FF_NAMESPACE
+} // namespace
+#endif
 #endif
