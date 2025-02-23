@@ -5,8 +5,9 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "FFaReferenceList.H"
 #include <cctype>
+
+#include "FFaLib/FFaContainers/FFaReferenceList.H"
 
 
 FFaReferenceListBase::FFaReferenceListBase() : IAmAutoSizing(true)
@@ -237,8 +238,7 @@ void FFaReferenceListBase::getBasePtrs(std::vector<FFaFieldContainer*>& toFill) 
   Used after reading to translate IDs to actual pointers.
 */
 
-void FFaReferenceListBase::resolve(FFaDynCB4<FFaFieldContainer*&,int,int,
-				   const std::vector<int>&>& findCB)
+void FFaReferenceListBase::resolve(FFaSearcher& findCB)
 {
   for (FFaReferenceBase* ref : myRefs)
     ref->resolve(findCB);
@@ -264,8 +264,7 @@ void FFaReferenceListBase::updateAssemblyRef(int from, int to, size_t ind)
 }
 
 
-void FFaReferenceListBase::updateAssemblyRef(const std::vector<int>& from,
-                                             const std::vector<int>& to)
+void FFaReferenceListBase::updateAssemblyRef(const IntVec& from, const IntVec& to)
 {
   for (FFaReferenceBase* ref : myRefs)
     ref->updateAssemblyRef(from,to);
@@ -323,7 +322,7 @@ void FFaReferenceListBase::read(std::istream& is)
   Method used by FFaReferenceBase to notify this container
   (which the FFaReferenceBase object is a member of), that it has been zeroed
   out due to the death of the FFaFieldContainer object it was referring to.
-  Takes the autoSizing mode into account (\sa setAutoSizing),
+  Takes the auto-sizing mode into account (#IAmAutoSizing),
   it either does nothing, or deletes the reference.
 */
 
