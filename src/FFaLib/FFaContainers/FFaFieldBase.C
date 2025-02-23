@@ -11,37 +11,6 @@
 #include "FFaLib/FFaContainers/FFaFieldBase.H"
 
 
-bool operator== (const FFaFieldBase& lhs, const std::string& rhs)
-{
-  return lhs.equalTo(rhs);
-}
-
-bool operator!= (const FFaFieldBase& lhs, const std::string& rhs)
-{
-  return !lhs.equalTo(rhs);
-}
-
-bool operator>= (const FFaFieldBase& lhs, const std::string& rhs)
-{
-  return !lhs.lessThan(rhs);
-}
-
-bool operator<= (const FFaFieldBase& lhs, const std::string& rhs)
-{
-  return !lhs.greaterThan(rhs);
-}
-
-bool operator> (const FFaFieldBase& lhs, const std::string& rhs)
-{
-  return lhs.greaterThan(rhs);
-}
-
-bool operator< (const FFaFieldBase& lhs, const std::string& rhs)
-{
-  return lhs.lessThan(rhs);
-}
-
-
 std::ostream& operator<< (std::ostream& os, const FFaFieldBase& field)
 {
   field.write(os);
