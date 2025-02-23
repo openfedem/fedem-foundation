@@ -40,19 +40,8 @@ protected:
   virtual void write(std::ostream&) const = 0;
   virtual void read(std::istream&) = 0;
 
-  virtual bool equalTo(const std::string&) const = 0;
-  virtual bool lessThan(const std::string&) const = 0;
-  virtual bool greaterThan(const std::string&) const = 0;
-
   friend std::ostream& operator<<(std::ostream&, const FFaFieldBase&);
   friend std::istream& operator>>(std::istream&, FFaFieldBase&);
-
-  friend bool operator==(const FFaFieldBase&, const std::string&);
-  friend bool operator!=(const FFaFieldBase&, const std::string&);
-  friend bool operator>=(const FFaFieldBase&, const std::string&);
-  friend bool operator<=(const FFaFieldBase&, const std::string&);
-  friend bool operator> (const FFaFieldBase&, const std::string&);
-  friend bool operator< (const FFaFieldBase&, const std::string&);
 
   // Helper methods used by some FFaField::write/read instances.
   // Defined in the C-file to avoid excessive recompilation when modified.
