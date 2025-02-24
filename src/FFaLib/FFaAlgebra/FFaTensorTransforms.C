@@ -45,6 +45,7 @@ double FFaTensorTransforms::vonMises (double s11, double s22, double s33,
 /*!
   \param[in] N Tensor dimension (1, 2 or 3)
   \param[in] S Tensor values, upper triangle of the symmetric tensor
+
   \details The tensor values are assumed laid out as follows
   - N = 1: S = {s11}
   - N = 2: S = {s11, s22, s12}
@@ -146,6 +147,10 @@ int FFaTensorTransforms::principalDirs (int N, const double* S,
   for (i=0; i < N;   i++)    pVal[i] = HUGE_VAL;
   for (i=0; i < N*N; i++)    pDir[i] = 0.0;
   for (i=0; i < N*N; i+=N+1) pDir[i] = 1.0;
+  static int nmsg = 0;
+  if (++nmsg <= 10)
+    std::cerr <<" *** FFaTensorTransforms::principalDirs: Built without LAPACK,"
+                " principal values/directions not available"<< std::endl;
 #endif
   return 0;
 }
