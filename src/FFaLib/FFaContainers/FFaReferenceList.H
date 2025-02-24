@@ -9,7 +9,8 @@
 #define FFA_REFERENCE_LIST_H
 
 #include <list>
-#include "FFaReference.H"
+
+#include "FFaLib/FFaContainers/FFaReference.H"
 
 
 /*!
@@ -83,11 +84,10 @@ private:
 
   void eraseReferenceIfNeeded(FFaReferenceBase* ref);
 
-  void resolve(FFaDynCB4<FFaFieldContainer*&,int,int,const std::vector<int>&>& findCB);
+  void resolve(FFaSearcher& findCB);
   void unresolve();
   void updateAssemblyRef(int from, int to, size_t ind = 0);
-  void updateAssemblyRef(const std::vector<int>& from,
-                         const std::vector<int>& to);
+  void updateAssemblyRef(const IntVec& from, const IntVec& to);
 
   void removePtr (const FFaFieldContainer* ptr, bool notifyContainer);
   void zeroOutPtr(const FFaFieldContainer* ptr, bool notifyContainer);
@@ -207,7 +207,7 @@ public:
   }
 
   //! Replaces the current contents with the provided new references.
-  void setRefs(const std::vector<int>& IDs)
+  void setRefs(const IntVec& IDs)
   {
     this->clear();
     for (int id : IDs)
@@ -307,9 +307,7 @@ private:
 };
 
 
-/*!
-  Specialized methods for FFaField.
-*/
+// Specialized instantiations of FFaField methods.
 
 using FFaRefListPtr = FFaReferenceListBase*;
 
@@ -334,13 +332,13 @@ FFaField<FFaRefListPtr>::isPrintable() const
 template<> inline void
 FFaField<FFaRefListPtr>::write(std::ostream& os) const
 {
-  myData->write(os);
+  if (myData) myData->write(os);
 }
 
 template<> inline void
 FFaField<FFaRefListPtr>::read(std::istream& is, FFaRefListPtr& v) const
 {
-  v->read(is);
+  if (v) v->read(is);
 }
 
 #endif

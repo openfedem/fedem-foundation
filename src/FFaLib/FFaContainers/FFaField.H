@@ -76,33 +76,6 @@ public:
 protected:
   virtual FFaFieldBase* copy(const FFaFieldBase* ref, bool defaultValueToo);
 
-  virtual bool equalTo(const std::string& val) const
-  {
-    ValueT v;
-    this->read(val,v);
-    return myData == v;
-  }
-
-  /* TODO: Implement operator<() for the ValueT class
-  virtual bool lessThan(const std::string& val) const
-  {
-    ValueT v;
-    this->read(val,v);
-    return myData < v;
-  }
-  */
-  virtual bool lessThan(const std::string&) const { return false; }
-
-  /* TODO: Implement operator>() the ValueT class
-  virtual bool greaterThan(const std::string& val) const
-  {
-    ValueT v;
-    this->read(val,v);
-    return myData > v;
-  }
-  */
-  virtual bool greaterThan(const std::string&) const { return false; }
-
   virtual void write(std::ostream& os) const { os << myData; }
   virtual void read(std::istream& is) { this->read(is,myData); }
 

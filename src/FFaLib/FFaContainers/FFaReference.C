@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
-#include <iterator>
 #include <string>
 #include <cstring>
 #include <cctype>
@@ -116,8 +115,7 @@ void FFaReferenceBase::setRef(int objId, int typeId)
   this->setRefTypeID(typeId);
 }
 
-void FFaReferenceBase::setRef(int objId, int typeId,
-                              const std::vector<int>& assID)
+void FFaReferenceBase::setRef(int objId, int typeId, const IntVec& assID)
 {
   this->setRefID(objId);
   this->setRefTypeID(typeId);
@@ -159,7 +157,7 @@ FFaFieldContainer* FFaReferenceBase::getRef() const
     return myPtr;
 
   if (myPtr && IAmResolved)
-    std::cerr <<"FFaReferenceBase::getRef returning NULL because I am not bound ("
+    std::cerr <<"FFaReferenceBase::getRef returns NULL because I am not bound ("
               << myPtr->getTypeIDName() <<" "<< myPtr->getResolvedID()
               <<")"<< std::endl;
 
@@ -251,7 +249,7 @@ int FFaReferenceBase::getRefID() const
   or the read assembly id if not resolved.
 */
 
-void FFaReferenceBase::getRefAssemblyID(std::vector<int>& assID) const
+void FFaReferenceBase::getRefAssemblyID(IntVec& assID) const
 {
   if (!IAmResolved)
     assID.assign(myUnresolvedRef->begin()+2,myUnresolvedRef->end());
@@ -267,8 +265,7 @@ void FFaReferenceBase::getRefAssemblyID(std::vector<int>& assID) const
   what was read from file, and sets up the pointer relation.
 */
 
-void FFaReferenceBase::resolve(FFaDynCB4<FFaFieldContainer*&,int,int,
-                                         const std::vector<int>&>& findCB)
+void FFaReferenceBase::resolve(FFaSearcher& findCB)
 {
   if (IAmResolved)
     return;
@@ -287,7 +284,7 @@ void FFaReferenceBase::resolve(FFaDynCB4<FFaFieldContainer*&,int,int,
     return; // invalid typeID - cannot resolve
 
   FFaFieldContainer* foundObj = NULL;
-  std::vector<int> assID;
+  IntVec assID;
   this->getRefAssemblyID(assID);
   findCB.invoke(foundObj, typeID, this->getRefID(), assID);
 
@@ -311,8 +308,7 @@ void FFaReferenceBase::resolve(FFaDynCB4<FFaFieldContainer*&,int,int,
       owner->getResolvedAssemblyID(assID);
       std::cerr <<")\n                           Referred by "
                 << owner->getTypeIDName() <<" "<< owner->getResolvedID();
-      for (size_t i = 0; i < assID.size(); i++)
-        std::cerr <<","<< assID[i];
+      for (int id : assID) std::cerr <<","<< id;
       std::cerr <<" ("<< this->getContextName();
     }
     std::cerr <<")"<< std::endl;
@@ -388,8 +384,8 @@ void FFaReferenceBase::updateAssemblyRef(int from, int to, size_t ind)
 }
 
 
-void FFaReferenceBase::updateAssemblyRef(const std::vector<int>& from,
-                                         const std::vector<int>& to)
+void FFaReferenceBase::updateAssemblyRef(const IntVec& from,
+                                         const IntVec& to)
 {
   if (IAmResolved || !myUnresolvedRef)
     return;
@@ -410,12 +406,12 @@ void FFaReferenceBase::write(std::ostream& os) const
 {
   if (!this->isNull())
   {
-    std::vector<int> assID;
+    IntVec assID;
     this->getRefAssemblyID(assID);
     if (!assID.empty())
     {
       os <<"aID: ";
-      std::copy(assID.begin(),assID.end(),std::ostream_iterator<int>(os," "));
+      for (int id : assID) os << id <<" ";
       os <<"uID: ";
     }
   }
@@ -456,7 +452,7 @@ void FFaReferenceBase::read(std::istream& is)
     if (is && strcmp(token,"aID") == 0)
     {
       // Read the vector of assembly IDs
-      std::vector<int> assID;
+      IntVec assID;
       is >> id;
       while (is)
       {
@@ -634,7 +630,7 @@ void FFaReferenceBase::setRefTypeID(int id)
   Convenience method used when reading from file.
 */
 
-void FFaReferenceBase::setRefAssemblyID(const std::vector<int>& assID)
+void FFaReferenceBase::setRefAssemblyID(const IntVec& assID)
 {
   this->unresolve();
 
