@@ -34,8 +34,8 @@ bool FFaViewItem::compareDescr(FFaViewItem* i1, FFaViewItem* i2)
   {
     if (i1->getItemID() == 0 && i2->getItemID() == 0)
       return true;
-    else
-      return (i1->getItemID() < i2->getItemID());
+
+    return i1->getItemID() < i2->getItemID();
   }
 
   return stringCompare(s1, s2);
@@ -62,8 +62,8 @@ bool FFaViewItem::compareID(FFaViewItem* i1, FFaViewItem* i2)
 
   if (n1 == n2)
     return stringCompare(i1->getItemDescr(), i2->getItemDescr());
-  else
-    return (n1 < n2);
+
+  return n1 < n2;
 }
 
 
@@ -112,34 +112,10 @@ int FFaViewItem::compareID3w(FFaViewItem* i1, FFaViewItem* i2)
 
   if (id1 < id2)
     return -1;
-  if (id1 > id2)
+  else if (id1 > id2)
     return 1;
-
-  return 0;
-}
-
-
-/*!
-  \brief Case insensitive binary comparison of two characters.
-*/
-
-static bool charCompare(char c1, char c2)
-{
-  int lc1 = tolower(static_cast<unsigned char>(c1));
-  int lc2 = tolower(static_cast<unsigned char>(c2));
-  return lc1 < lc2;
-}
-
-
-/*!
-  \brief Case insensitive three-way comparison of two characters.
-*/
-
-static int charCompare3w(char c1, char c2)
-{
-  int lc1 = tolower(static_cast<unsigned char>(c1));
-  int lc2 = tolower(static_cast<unsigned char>(c2));
-  return lc1 < lc2 ? -1 : (lc1 > lc2 ? 1 : 0);
+  else
+    return 0;
 }
 
 
@@ -149,22 +125,36 @@ static int charCompare3w(char c1, char c2)
 
 static int stringCompare3wImpl(const std::string& s1, const std::string& s2)
 {
-  std::pair<std::string::const_iterator,std::string::const_iterator> p;
-  p = std::mismatch(s1.begin(), s1.end(),
-		    s2.begin(), std::not2(std::ptr_fun(charCompare3w)));
+  // Lambda function doing case-insensitive 3-way comparison of two characters.
+  std::function<int(char,char)> charCompare3w = [](char c1, char c2) -> int
+  {
+    int lc1 = tolower(static_cast<unsigned char>(c1));
+    int lc2 = tolower(static_cast<unsigned char>(c2));
+    return lc1 < lc2 ? -1 : (lc1 > lc2 ? 1 : 0);
+  };
 
+  std::pair<std::string::const_iterator,std::string::const_iterator> p;
+  p = std::mismatch(s1.begin(), s1.end(), s2.begin(), std::not2(charCompare3w));
   if (p.first == s1.end())
     return p.second == s2.end() ? 0 : -1;
-  else
-    return charCompare3w(*p.first,*p.second);
+
+  return charCompare3w(*p.first,*p.second);
 }
 
 
 bool FFaViewItem::stringCompare(const std::string& s1, const std::string& s2)
 {
-  return lexicographical_compare(s1.begin(), s1.end(),
-				 s2.begin(), s2.end(),
-				 std::ptr_fun(charCompare));
+  // Lambda function doing case-insensitive comparison of two characters.
+  std::function<bool(char,char)> charCompare = [](char c1, char c2) -> bool
+  {
+    int lc1 = tolower(static_cast<unsigned char>(c1));
+    int lc2 = tolower(static_cast<unsigned char>(c2));
+    return lc1 < lc2;
+  };
+
+  return std::lexicographical_compare(s1.begin(), s1.end(),
+                                      s2.begin(), s2.end(),
+                                      charCompare);
 }
 
 
