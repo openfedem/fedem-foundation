@@ -17,7 +17,7 @@ jobs:
   build-and-test:
     name: Build and execute unit tests
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Install googletest

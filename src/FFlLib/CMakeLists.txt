@@ -50,7 +50,12 @@ if ( USE_MEMPOOL )
   string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_MEMPOOL" )
 endif ( USE_MEMPOOL )
 
-string ( APPEND CMAKE_CXX_FLAGS_DEBUG " -DFFL_DEBUG=2" )
+if ( FT_DEBUG GREATER 12 )
+  math ( EXPR FFL_DEBUG "${FT_DEBUG} - 10" )
+else ( FT_DEBUG GREATER 12 )
+  set ( FFL_DEBUG 2 )
+endif ( FT_DEBUG GREATER 12 )
+string ( APPEND CMAKE_CXX_FLAGS_DEBUG " -DFFL_DEBUG=${FFL_DEBUG}" )
 
 
 # Subfolder handling

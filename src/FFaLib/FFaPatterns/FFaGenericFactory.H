@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#if FFA_DEBUG
+#ifdef FFA_DEBUG
 #include <iostream>
 #endif
 
@@ -22,8 +22,8 @@
 template <class T, class Key = std::string, class ArgType = int>
 class FFaGenericFactory : public FFaSingelton< FFaGenericFactory<T,Key,ArgType> >
 {
-  typedef FFaDynCB2<ArgType,T*&>  CreatorCB;
-  typedef std::map<Key,CreatorCB> CreatorType;
+  using CreatorCB   = FFaDynCB2<ArgType,T*&>;
+  using CreatorType = std::map<Key,CreatorCB>;
 
 public:
   FFaGenericFactory() {}
@@ -31,16 +31,16 @@ public:
 
   bool registerCreator(const Key& key, const CreatorCB& creator)
   {
-    return myCreatorMap.insert(std::make_pair(key,creator)).second;
+    return myCreatorMap.insert({ key, creator }).second;
   }
 
   T* create(const Key& key, ArgType id)
   {
-    T* retVal = 0;
+    T* retVal = NULL;
     typename CreatorType::iterator creator = myCreatorMap.find(key);
     if (creator != myCreatorMap.end())
       creator->second.invoke(id,retVal);
-#if FFA_DEBUG
+#ifdef FFA_DEBUG
     else
       std::cerr <<"\n *** FFaGenericFactory: No creator defined for "
                 << key << std::endl;

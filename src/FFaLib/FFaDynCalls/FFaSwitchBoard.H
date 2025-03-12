@@ -17,8 +17,6 @@
 #include <list>
 #include <cstddef>
 
-#include "FFaLib/FFaPatterns/FFaInitialisation.H"
-
 class FFaSlotBase;
 class FFaSwitchBoardConnector;
 
@@ -35,45 +33,40 @@ typedef void(FFaSwitchBoardConnector::*anyMethodType)(...);
 typedef void(*anyFunctionType)(...);
 
 
+////////////////////////////////////////////////////////////////////////////////
 //
 // Static switchboard that holds the connection information
 //
 
-class FFaSwitchBoard
+namespace FFaSwitchBoard
 {
-public:
   // External interface
-  static void connect(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot);
-  static void disConnect(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot);
-  static void removeAllOwnerConnections(FFaSwitchBoardConnector* owner);
+  void connect(FFaSwitchBoardConnector* sender, int subject,
+               FFaSlotBase* slot);
+  void disConnect(FFaSwitchBoardConnector* sender, int subject,
+                  FFaSlotBase* slot);
+  void removeAllOwnerConnections(FFaSwitchBoardConnector* owner);
 
-  // Used internally in SwitchBoard mechanism classes
-  static FFaSlotList& getSlots(FFaSwitchBoardConnector* sender, int subject, unsigned int typeID);
-  static FFaSlotList::iterator nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
-                                             FFaSwitchBoardConnector* sender, int subject);
+  // Used internally in switchboard mechanism classes
+  FFaSlotList& getSlots(FFaSwitchBoardConnector* sender, int subject,
+                        unsigned int typeID);
+  FFaSlotList::iterator nextValidSlot(FFaSlotList::iterator it,
+                                      FFaSlotList& slots,
+                                      FFaSwitchBoardConnector* sender,
+                                      int subject);
   // Used by FFaSlotBase only
-  static void removeSlotReference(FFaSwitchBoardConnector* sender, int subject, FFaSlotBase* slot);
+  void removeSlotReference(FFaSwitchBoardConnector* sender, int subject,
+                           FFaSlotBase* slot);
 
   // Used by FFaSwitchBoardConnector only
-  static void removeAllSenderConnections(FFaSwitchBoardConnector* sender);
+  void removeAllSenderConnections(FFaSwitchBoardConnector* sender);
 
-  static void init();
-  static void removeInstance();
-
-private:
-  static void cleanUpAfterSlot(FFaSwitchBoardConnector* sender, int subject);
-
-  typedef std::map<unsigned int,FFaSlotList>         SlotContainer;
-  typedef std::map<int,SlotContainer>                SlotMap;
-  typedef std::map<FFaSwitchBoardConnector*,SlotMap> SwitchBoardConnection;
-
-  // (Sender, Subject, SlotTypeId) --> List of slots
-  static SwitchBoardConnection* ourConnections;
+  // To clean up the heap-allocated switchboard container
+  void removeInstance();
 };
 
-static FFaInitialisation<FFaSwitchBoard> FFaSwitchBoard_Init;
 
-
+////////////////////////////////////////////////////////////////////////////////
 //
 // Base class for every class that want to send or recieve
 //
@@ -81,7 +74,7 @@ static FFaInitialisation<FFaSwitchBoard> FFaSwitchBoard_Init;
 class FFaSwitchBoardConnector
 {
 public:
-  FFaSwitchBoardConnector(const char* s = NULL) : IAmDeletingMe(false), label(s) {}
+  FFaSwitchBoardConnector(const char* s = NULL);
   virtual ~FFaSwitchBoardConnector();
 
   // Must only be used by FFaSlotN<*>
@@ -108,6 +101,7 @@ private:
 };
 
 
+////////////////////////////////////////////////////////////////////////////////
 //
 // The most basic slot class
 //
@@ -126,8 +120,8 @@ public:
   unsigned int getTypeID() const { return myTypeID; }
 
   // These methods must ONLY be used from FFaSwitchBoard
-  void addConnection(FFaSwitchBoardConnector* sender, int subject);
-  void removeConnection(FFaSwitchBoardConnector* sender, int subject);
+  bool addConnection(FFaSwitchBoardConnector* sender, int subject);
+  bool removeConnection(FFaSwitchBoardConnector* sender, int subject);
 
   // Should be protected, used only by operator==
   virtual FFaSwitchBoardConnector* getObject() = 0;
@@ -146,6 +140,7 @@ private:
 };
 
 
+////////////////////////////////////////////////////////////////////////////////
 //
 // Defines for macro arguments
 //
@@ -199,6 +194,7 @@ private:
 #define FFASWB_PARAM_LIST4 p1, p2, p3, p4
 
 
+////////////////////////////////////////////////////////////////////////////////
 //
 // Macro that defines the different slotBaseN templates.
 // One macro call for each number of arguments we want to support.
@@ -227,6 +223,7 @@ FFASWB_MAKE_SLOTBASE_TEMPLATE(3, FFASWB_TEMPLATE3, FFASWB_ARGUMENT_LIST3, FFASWB
 FFASWB_MAKE_SLOTBASE_TEMPLATE(4, FFASWB_TEMPLATE4, FFASWB_ARGUMENT_LIST4, FFASWB_TYPE_LIST4)
 
 
+////////////////////////////////////////////////////////////////////////////////
 //
 // Macro that defines the different slotN templates
 //
@@ -316,7 +313,7 @@ FFASWB_MAKE_STATIC_SLOT_TEMPLATE(3, FFASWB_TEMPLATE3, FFASWB_ARGUMENT_LIST3, FFA
 FFASWB_MAKE_STATIC_SLOT_TEMPLATE(4, FFASWB_TEMPLATE4, FFASWB_ARGUMENT_LIST4, FFASWB_PARAM_LIST4, FFASWB_TYPE_LIST4)
 
 
-/*!
+/*
   Function to call all the slots connected to a signal.
   Kind of "emit" from the Qt world.
   Loops trough all the slots connected to this signal and invokes them.
