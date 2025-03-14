@@ -48,7 +48,7 @@ class FiDeviceFunctionFactory : public FFaSingelton<FiDeviceFunctionFactory>
 {
 protected:
   //! \brief Default constructor.
-  FiDeviceFunctionFactory() : myExtFnFile(0) { myNumExtFun = 0; }
+  FiDeviceFunctionFactory() : myExtFnFile(0) { myExtFnStep = myNumExtFun = 0; }
   //! \brief The destructor closes all opened files.
   virtual ~FiDeviceFunctionFactory();
 
@@ -106,7 +106,7 @@ public:
   void getAxisUnit(int fileIndex, int axis, char* unitText, size_t n) const;
 
   //! \brief Sets an argument/value pair for an indexed function.
-  bool setValue(int fileIndex, double xVal, double yVal);
+  int setValue(int fileIndex, double xVal, double yVal);
 
   //! \brief Sets the constant argument increment of the indexed function.
   void setStep(int fileIndex, double step) const;
@@ -142,7 +142,8 @@ public:
                            const std::string& labels = "");
   //! \brief Updates the external function values from file.
   //! \param[in] nstep Number of steps to read
-  bool updateExtFuncFromFile(int nstep = 1);
+  //! \param[in] doCount If \e true, count the steps actually read
+  bool updateExtFuncFromFile(int nstep = 1, bool doCount = true);
   //! \brief Evaluates an indexed external function.
   //! \param[in] idx External function index
   //! \param[in] stat Integration flag
@@ -193,6 +194,7 @@ private:
   std::vector<double> myExtValues; //!< Function values for external functions
   std::vector<int>    myExtIndex;  //!< Associated file column indices
   FT_FILE             myExtFnFile; //!< External function value file handle
+  int                 myExtFnStep; //!< Step counter for external functions file
 
   friend class FFaSingelton<FiDeviceFunctionFactory>;
 };

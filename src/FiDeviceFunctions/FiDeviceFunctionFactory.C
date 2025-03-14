@@ -26,9 +26,11 @@ int FiDeviceFunctionFactory::myNumExtFun = 0;
 
 FiDeviceFunctionFactory::~FiDeviceFunctionFactory()
 {
-  for (FiDeviceFunctionBase* ds : myDevices) delete ds;
+  for (FiDeviceFunctionBase* ds : myDevices)
+    delete ds;
 
-  if (myExtFnFile) FT_close(myExtFnFile);
+  if (myExtFnFile)
+    FT_close(myExtFnFile);
 }
 
 
@@ -84,7 +86,7 @@ void FiDeviceFunctionFactory::close(int fileIndex)
     myDevices[fileIndex-1] = NULL;
     myFileToIndexMap.erase(fileName);
     for (const FileChnMap::value_type& fileChn : myFileChannelMap)
-      if (fileChn.second == (size_t)fileIndex)
+      if (static_cast<int>(fileChn.second) == fileIndex)
       {
         myFileChannelMap.erase(fileChn.first);
         break;
@@ -181,13 +183,12 @@ FiDevFormat FiDeviceFunctionFactory::identify(const std::string& fileName,
 					      const std::string& path,
 					      FiStatus status)
 {
-  if (fileName.empty() && status == IO_READ) return EXT_FUNC;
-
-  FiDevFormat format = UNKNOWN_FILE;
+  if (fileName.empty() && status == IO_READ)
+    return EXT_FUNC;
 
   // Check if the file name has an extension
-  if (fileName.find('.') == std::string::npos) return format;
-  FFaUpperCaseString ending(FFaFilePath::getExtension(fileName));
+  if (fileName.find('.') == std::string::npos)
+    return UNKNOWN_FILE;
 
   // Check if the file exists
   FT_FILE fd = 0;
@@ -203,6 +204,8 @@ FiDevFormat FiDeviceFunctionFactory::identify(const std::string& fileName,
     }
   }
 
+  FiDevFormat format = UNKNOWN_FILE;
+  FFaUpperCaseString ending(FFaFilePath::getExtension(fileName));
   if (ending == "ASC" || ending == "CSV" || ending == "TXT")
   {
     if (status == IO_READ && FiASCFile::isMultiChannel(fd,fullName.c_str()))
@@ -233,13 +236,13 @@ double FiDeviceFunctionFactory::getValue(int fileIndex, double arg, int& stat,
   {
     // This is an external function, just return its current value
     if (stat > 0)
-      std::cerr <<" *** FiDeviceFunctionFactory::getValue: Integration of"
+      std::cerr <<" *** FiDeviceFunctionFactory::getValue(): Integration of"
                 <<" external functions is not available."<< std::endl;
     else if (channel < 1 || channel > myNumExtFun)
-      std::cerr <<" *** FiDeviceFunctionFactory::getValue: Channel index "
+      std::cerr <<" *** FiDeviceFunctionFactory::getValue(): Channel index "
                 << channel <<" is out of range [1,"<< myNumExtFun <<"]."
                 << std::endl;
-    else if (--channel < (int)myExtValues.size())
+    else if (--channel < static_cast<int>(myExtValues.size()))
       return vertShift + scale*myExtValues[channel];
   }
   else if ((ds = this->getDevice(fileIndex)))
@@ -273,38 +276,58 @@ bool FiDeviceFunctionFactory::getValues(int fileIndex, double x0, double x1,
 // Set values
 //
 
-bool FiDeviceFunctionFactory::setValue(int fileIndex, double x, double y)
+int FiDeviceFunctionFactory::setValue(int fileIndex, double x, double y)
 {
-  if (fileIndex < 0)
-  {
-    // A negative fileIndex indicates an external function index
-    size_t funcIdx = -fileIndex-1;
-    if (funcIdx < myExtValues.size())
-      myExtValues[funcIdx] = y;
-    else if (myExtValues.empty())
-    {
-      std::cerr <<" *** FiDeviceFunctionFactory::setValue("<< funcIdx
-                <<"): No external functions."<< std::endl;
-      return false;
-    }
-    else
-    {
-      std::cerr <<" *** FiDeviceFunctionFactory::setValue("<< funcIdx
-                <<"): Function index out of range [0,"<< myExtValues.size()
-                <<">."<< std::endl;
-      return false;
-    }
-  }
-  else
+  if (fileIndex >= 0)
   {
     FiDeviceFunctionBase* ds = this->getDevice(fileIndex);
-    if (ds)
-      ds->setValue(x,y);
-    else
-      return false;
+    if (!ds) return -1;
+
+    ds->setValue(x,y);
+    return 0;
   }
 
-  return true;
+  // Negative fileIndex indicates an external function index
+  if (myExtValues.empty())
+  {
+    std::cerr <<" *** FiDeviceFunctionFactory::setValue():"
+              <<" No external functions."<< std::endl;
+    return -2;
+  }
+
+  size_t funcIdx = -fileIndex;
+  if (funcIdx > myExtValues.size())
+  {
+    std::cerr <<" *** FiDeviceFunctionFactory::setValue(): Function index"
+              << funcIdx <<" is out of range [1,"<< myExtValues.size()
+              <<"]."<< std::endl;
+    return -1;
+  }
+
+  if (myExtFnFile)
+  {
+    // An external function value file was provided.
+    // Need to close it such that the function values provided here
+    // will override the values from that file.
+    if (myExtFnStep > 0)
+    {
+      std::cerr <<" *** FiDeviceFunctionFactory::setValue(): Trying to"
+                <<" assign external function values when "<< myExtFnStep
+                <<" steps already have been read from file."<< std::endl;
+      return -3;
+    }
+    else
+    {
+      std::cout <<"   * Closing the external function value file,\n"
+                <<"     assuming values will be provided by"
+                <<" FiDeviceFunctionFactory::setValue()."<< std::endl;
+      FT_close(myExtFnFile);
+      myExtFnFile = 0;
+    }
+  }
+
+  myExtValues[--funcIdx] = y;
+  return 0;
 }
 
 
@@ -330,7 +353,7 @@ void FiDeviceFunctionFactory::setAxisUnit(int fileIndex, int axis,
 
 
 void FiDeviceFunctionFactory::getAxisTitle(int fileIndex, int axis,
-					   char* axisText, size_t  n) const
+					   char* axisText, size_t n) const
 {
   FiDeviceFunctionBase* ds = this->getDevice(fileIndex);
   if (ds)
@@ -451,9 +474,9 @@ FiDeviceFunctionBase* FiDeviceFunctionFactory::getDevice(size_t fileIndex) const
 {
   if (fileIndex < 1 || fileIndex > myDevices.size())
   {
-    std::cerr <<" *** FiDeviceFunctionFactory::getDevice: File index "
-              << fileIndex  <<" is out of range [1,"<< myDevices.size()
-              <<"]"<< std::endl;
+    std::cerr <<" *** FiDeviceFunctionFactory::getDevice(): File index "
+              << fileIndex <<" is out of range [1,"<< myDevices.size()
+              <<"]."<< std::endl;
     return NULL;
   }
 
@@ -471,7 +494,10 @@ FiDeviceFunctionBase* FiDeviceFunctionFactory::getDevice(size_t fileIndex) const
 bool FiDeviceFunctionFactory::initExtFuncFromFile(const std::string& fileName,
                                                   const std::string& labels)
 {
-  if (myExtFnFile) FT_close(myExtFnFile);
+  if (myExtFnFile)
+    FT_close(myExtFnFile);
+
+  myExtFnStep = 0;
   myExtFnFile = FT_open(fileName.c_str(),FT_rb);
   if (!myExtFnFile)
   {
@@ -484,7 +510,7 @@ bool FiDeviceFunctionFactory::initExtFuncFromFile(const std::string& fileName,
   int nlab = FiASCFile::readHeader(myExtFnFile,head);
   if (nlab < 0)
   {
-    std::cout <<" *** Failed to read header from "<< fileName << std::endl;
+    std::cerr <<" *** Failed to read header from "<< fileName << std::endl;
     return false;
   }
 
@@ -500,10 +526,10 @@ bool FiDeviceFunctionFactory::initExtFuncFromFile(const std::string& fileName,
         myExtIndex[i] = 1 + i;
       else
       {
-        std::cout <<" *** The tag \""<< chName[i]
+        std::cerr <<" *** The tag \""<< chName[i]
                   <<"\" is not found among the column labels { ";
         for (const std::string& h : head) std::cout <<"\""<< h <<"\" ";
-        std::cout <<"}"<< std::endl;
+        std::cerr <<"}."<< std::endl;
         nerr++;
       }
   }
@@ -529,13 +555,16 @@ bool FiDeviceFunctionFactory::initExtFuncFromFile(const std::string& fileName,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool FiDeviceFunctionFactory::updateExtFuncFromFile(int nstep)
+bool FiDeviceFunctionFactory::updateExtFuncFromFile(int nstep, bool doCount)
 {
-  if (!myExtFnFile) return false;
+  if (!myExtFnFile)
+    return false;
 
   for (int i = 0; i < nstep; i++)
     if (!FiASCFile::readNext(myExtFnFile,myExtIndex,myExtValues))
       return false;
+    else if (doCount)
+      ++myExtFnStep;
 
   return true;
 }
