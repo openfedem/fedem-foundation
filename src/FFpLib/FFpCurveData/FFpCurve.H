@@ -69,7 +69,7 @@ public:
   const std::pair<double,double>& getTimeRange() const { return timeRange; }
 
   bool notReadThisFar (double& lastStep) const;
-  bool findVarRefsAndOpers (FFrExtractor* extractor, std::string& errMsg);
+  bool findVarRefsAndOpers (FFrExtractor* extr, std::string& errMsg);
   void printPosition (std::ostream& os) const;
 
   bool loadTemporalData (double currentTime);

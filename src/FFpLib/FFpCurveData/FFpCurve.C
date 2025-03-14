@@ -283,56 +283,49 @@ bool FFpCurve::notReadThisFar (double& lastTimeStep) const
 }
 
 
-bool FFpCurve::findVarRefsAndOpers (FFrExtractor* extractor,
-				    std::string& errMsg)
+bool FFpCurve::findVarRefsAndOpers (FFrExtractor* extr, std::string& errMsg)
 {
-  // Check if curve is completely defined
-  size_t nVar;
+  // Check if curve is completely defined and find its variable references
+  size_t nVar = 0;
+  FFrEntryBase* entry = NULL;
   int axis, fstAxis = rdOper[X] ? X : Y;
-  for (nVar = 0, axis = fstAxis; axis < N_AXES; axis++)
-    for (const PointData& read : reader[axis])
+  for (axis = fstAxis; axis < N_AXES; axis++)
+    for (PointData& read : reader[axis])
       if (read.rDescr && !read.rDescr->empty())
       {
-        if (FFaOpUtils::hasOpers(read.rDescr->varRefType))
+        if (read.rDescr->varRefType.empty())
+          errMsg += "\nError: Result item \"" + read.rDescr->getText()
+            + "\" has no variable type definition.";
+        else if (!FFaOpUtils::hasOpers(read.rDescr->varRefType))
+          errMsg += "\nError: No unary operations defined for variable type "
+            + read.rDescr->varRefType + "\n       of result item \""
+            + read.rDescr->getText() + "\".";
+        else if (!(entry = extr->search(*read.rDescr)))
+        {
+          errMsg += "\nError: Could not find result item \""
+            + read.rDescr->getText() + "\".";
+          // If the X-axis plots physical time and this is a temporal curve,
+          // then clear the Y-axis reader such that it will be identically zero
+          if (axis == Y && reader[X].size() == 1 && reader[Y].size() == 1)
+            if (reader[X].front().rDescr->isTime())
+              reader[Y].clear();
+        }
+        else if (entry->isVarRef())
+        {
           nVar++;
+          read.varRef = static_cast<FFrVariableReference*>(entry);
+        }
         else
-          errMsg += "\nError: No unary operations defined for "
-            + read.rDescr->varRefType;
-      }
-
-  if (nVar < reader[X].size() + reader[Y].size()) return false;
-
-  // Find the variable references for the curve
-  FFrEntryBase* entry;
-  for (nVar = 0, axis = fstAxis; axis < N_AXES; axis++)
-    for (PointData& read : reader[axis])
-      if ((entry = extractor->search(*read.rDescr)))
-      {
-	if (entry->isVarRef())
-	{
-	  nVar++;
-	  read.varRef = (FFrVariableReference*)entry;
-	}
-	else
-	  errMsg += "\nError: Result item " + read.rDescr->getText()
-	    + " is not a variable reference.";
-      }
-      else
-      {
-	errMsg += "\nError: Could not find result item: "
-	  + read.rDescr->getText();
-	// If the X-axis is plotting physical time and this is a temporal curve,
-	// then clear the Y-axis reader such that it will be identically zero
-	if (axis == Y && reader[X].size() == 1 && reader[Y].size() == 1)
-	  if (reader[X].front().rDescr->isTime())
-	    reader[Y].clear();
+          errMsg += "\nError: Result item \"" + read.rDescr->getText()
+            + "\" is not a variable reference.";
       }
 
   if (nVar < reader[X].size() + reader[Y].size())
   {
+    // Nullify all variable references, unless found for all curve points
     for (axis = fstAxis; axis < N_AXES; axis++)
       for (PointData& read : reader[axis])
-        read.varRef = (FFrVariableReference*)NULL;
+        read.varRef = NULL;
     return false;
   }
 
@@ -347,8 +340,9 @@ bool FFpCurve::findVarRefsAndOpers (FFrExtractor* extractor,
                                         scalarOper))
         nVar++;
       else
-        errMsg += "\nError: Cannot read data for result item: "
-               + read.rDescr->getText() + ", " + *rdOper[axis];
+        errMsg += "\nError: Cannot read data for result item \""
+               + read.rDescr->getText() + "\" with operation " + *rdOper[axis]
+               + ".";
   }
 
   timeSamples = 0;
@@ -523,7 +517,7 @@ void FFpCurve::finalizeTimeOp ()
       for (double& val : points[axis])
       {
         val /= (double)timeSamples;
-	if (timeOper == RMS)
+        if (timeOper == RMS)
           val = sqrt(val);
       }
 
