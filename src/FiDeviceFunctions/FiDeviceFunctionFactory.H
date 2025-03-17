@@ -142,7 +142,8 @@ public:
                            const std::string& labels = "");
   //! \brief Updates the external function values from file.
   //! \param[in] nstep Number of steps to read
-  bool updateExtFuncFromFile(int nstep = 1);
+  //! \param[in] doCount If \e true, count the steps actually read
+  bool updateExtFuncFromFile(int nstep = 1, bool doCount = true);
   //! \brief Evaluates an indexed external function.
   //! \param[in] idx External function index
   //! \param[in] stat Integration flag

@@ -19,6 +19,7 @@
 #define FIDF FiDeviceFunctionFactory::instance()
 //! \endcond
 
+
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief Opens a function device for reading.
 //!
@@ -121,6 +122,7 @@ DOUBLE_FUNCTION(fidf_getvalue,FIDF_GETVALUE) (const int& fileIndex,
   return FIDF->getValue(fileIndex,arg,err,channel,zeroAdjust,vertShift,scale);
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief Sets a value pair to the device.
 //!
@@ -195,6 +197,7 @@ SUBROUTINE(fidf_getxaxis,FIDF_GETXAXIS) (const int& fileIndex, char* title,
   if (nc < ncharU) memset(unit+nc,' ',ncharU-nc);
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief Returns Y-axis info for the device.
 //!
@@ -240,6 +243,7 @@ SUBROUTINE(fidf_setxaxis,FIDF_SETXAXIS) (const int& fileIndex,
   FIDF->setAxisTitle(fileIndex,FiDeviceFunctionBase::X,t.c_str());
   FIDF->setAxisUnit (fileIndex,FiDeviceFunctionBase::X,u.c_str());
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief Sets Y-axis info for the device.
@@ -294,15 +298,16 @@ SUBROUTINE(fidf_extfunc,FIDF_EXTFUNC) (int& error, char* fname,
   error = FIDF->initExtFuncFromFile(fileName,channels) ? 0 : -1;
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
-//! \brief Updates the external function values from file.
+//! \brief Updates the external function values from file without step counting.
 //!
 //! \arg nstep - Number of steps to read
 ////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_extfunc_ff,FIDF_EXTFUNC_FF) (const int& nstep)
 {
-  FIDF->updateExtFuncFromFile(nstep);
+  FIDF->updateExtFuncFromFile(nstep,false);
 }
 
 
@@ -328,7 +333,7 @@ SUBROUTINE(fidf_storeextfunc,FIDF_STOREEXTFUNC) (double* data, const int& ndat,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//! \brief Initializes external function values either from file or state array.
+//! \brief Initializes external function values either from state array or file.
 //!
 //! \arg data - The state array
 //! \arg ndat - Length of the state array
@@ -339,6 +344,8 @@ SUBROUTINE(fidf_initextfunc,FIDF_INITEXTFUNC) (double* data, const int& ndat,
                                                int& istat)
 {
   istat = 0;
-  if (!FIDF->updateExtFuncFromFile(1) && ndat > 0)
+  if (ndat > 0)
     FIDF->storeExtFuncValues(data,ndat,1,istat);
+  else
+    FIDF->updateExtFuncFromFile(1);
 }

@@ -326,7 +326,7 @@ int FiDeviceFunctionFactory::setValue(int fileIndex, double x, double y)
     }
   }
 
-  myExtValues[funcIdx] = y;
+  myExtValues[--funcIdx] = y;
   return 0;
 }
 
@@ -555,16 +555,16 @@ bool FiDeviceFunctionFactory::initExtFuncFromFile(const std::string& fileName,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool FiDeviceFunctionFactory::updateExtFuncFromFile(int nstep)
+bool FiDeviceFunctionFactory::updateExtFuncFromFile(int nstep, bool doCount)
 {
   if (!myExtFnFile)
     return false;
 
   for (int i = 0; i < nstep; i++)
-    if (FiASCFile::readNext(myExtFnFile,myExtIndex,myExtValues))
-      ++myExtFnStep;
-    else
+    if (!FiASCFile::readNext(myExtFnFile,myExtIndex,myExtValues))
       return false;
+    else if (doCount)
+      ++myExtFnStep;
 
   return true;
 }
