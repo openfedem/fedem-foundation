@@ -1190,49 +1190,13 @@ SUBROUTINE(ffl_getspring,FFL_GETSPRING) (double* ek, int& nedof,
 SUBROUTINE(ffl_getelcoorsys,FFL_GETELCOORSYS) (double* T, const int& iel,
 					       int& ierr)
 {
-  ierr = -1;
   FFlElementBase* curElm = ffl_getElement(iel);
-  if (!curElm) return;
-
-  ierr = 0;
-  FaMat34 Tmat;
-
-  FFlPCOORDSYS* sys = GET_ATTRIBUTE(curElm,PCOORDSYS);
-  if (sys)
-    Tmat.makeCS_Z_XZ(sys->Origo.getValue(),
-		     sys->Zaxis.getValue(),
-		     sys->XZpnt.getValue());
+  if (!curElm)
+    ierr = -1;
+  else if (!curElm->getLocalSystem(T))
+    ierr = -3;
   else
-  {
-    FFlPORIENT* po = GET_ATTRIBUTE(curElm,PORIENT);
-    if (!po) // If no PORIENT, try the equivalent old name also
-      po = dynamic_cast<FFlPORIENT*>(curElm->getAttribute("PBUSHORIENT"));
-
-    if (po && !po->directionVector.getValue().isZero())
-    {
-      std::array<FaVec3,2> X;
-      NodeCIter nit = curElm->nodesBegin();
-      for (int i = 0; i < 2 && nit != curElm->nodesEnd(); ++nit)
-	if (nit->isResolved())
-	  X[i++] = (*nit)->getPos();
-	else
-	{
-	  ListUI <<" *** Error: Element node "<< nit->getID()
-		 <<" not resolved\n";
-	  ierr -= 3;
-	}
-
-      if (ierr == 0)
-	Tmat.makeCS_X_XZ(X[0],X[1],X[0]+po->directionVector.getValue());
-    }
-  }
-
-  for (int i = 0; i < 3; i++)
-  {
-    T[i  ] = Tmat[0][i];
-    T[i+3] = Tmat[1][i];
-    T[i+6] = Tmat[2][i];
-  }
+    ierr = 0;
 }
 
 
