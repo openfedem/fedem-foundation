@@ -16,6 +16,7 @@ option ( USE_FORTRAN "Build with Fortran code included" OFF )
 option ( USE_VTFAPI "Build with VTF API included" OFF )
 option ( USE_MEMPOOL "Use memory pool for heap allocation in FE library" OFF )
 option ( USE_PROFILER "Use CPU and Memory profiler" OFF )
+option ( USE_REFCOUNT "Use reference counting in FFlLib" OFF )
 mark_as_advanced ( USE_FORTRAN USE_MEMPOOL USE_PROFILER )
 
 if ( USE_FORTRAN)
