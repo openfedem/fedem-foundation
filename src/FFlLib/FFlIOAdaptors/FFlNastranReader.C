@@ -113,6 +113,7 @@ FFlNastranReader::FFlNastranReader (FFlLinkHandler* link, const int startHere)
   gridDefault = NULL;
   barDefault  = NULL;
   beamDefault = NULL;
+  lastGroup   = NULL;
   sizeOK      = true;
 }
 
@@ -467,8 +468,11 @@ bool FFlNastranReader::getNextEntry (std::istream& is, BulkEntry& entry)
   }
 
 #if FFL_DEBUG > 3
-  std::cout <<"FFlNastranReader: entry=\""<< field <<"\" format="<< entry.ffmt
-	    << std::endl;
+  std::cout <<"FFlNastranReader: entry=\""<< field <<"\" format="<< entry.ffmt;
+  if (lastComment.first)
+    std::cout <<"\nActive comment (line "
+              << lastComment.first <<"):\n" << lastComment.second;
+  std::cout << std::endl;
 #endif
 
   // Lambda function with hacks needed to deal with non-standard continuations
@@ -836,6 +840,17 @@ int FFlNastranReader::getNextField (std::istream& is, std::string& field,
 
 bool FFlNastranReader::processThisEntry (BulkEntry& entry)
 {
+  if (lastGroup && lastComment.first &&
+      extractNameFromComment(lastComment.second,true))
+  {
+#if FFL_DEBUG > 2
+    std::cout <<"Element group "<< lastGroup->getID()
+              <<" is named \""<< lastComment.second <<"\""<< std::endl;
+#endif
+    lastGroup->setName(lastComment.second);
+  }
+  lastGroup = NULL;
+
   START_TIMER("processThisEntry")
 #if FFL_DEBUG > 2
   std::cout <<"Entry: \""<< entry.name <<"\"\nField:";
@@ -898,8 +913,7 @@ bool FFlNastranReader::processAllSets (std::istream& fs, const int startBulk)
         else
         {
           // Check if the group was named after the group definition itself
-          if (lastComment.first > 0 &&
-              extractNameFromComment(lastComment.second))
+          if (lastComment.first && extractNameFromComment(lastComment.second))
             aGroup->setName(lastComment.second);
           myLink->addGroup(aGroup); // Add element group to the FE model
         }
@@ -957,8 +971,7 @@ bool FFlNastranReader::processAllSets (std::istream& fs, const int startBulk)
     else
     {
       // Check if the group was named after the group definition itself
-      if (lastComment.first > 0 &&
-          extractNameFromComment(lastComment.second))
+      if (lastComment.first && extractNameFromComment(lastComment.second))
         aGroup->setName(lastComment.second);
       myLink->addGroup(aGroup);
     }
@@ -1019,7 +1032,7 @@ FFlGroup* FFlNastranReader::processThisSet (std::string& setLine,
       if (high == 0)
       {
         ListUI <<"\n *** Syntax Error in Nastran SET definition: \""
-               << setLine <<" ...\" (ignored)\n";
+               << setLine <<" ...\" (ignored).\n";
         delete aGroup;
         STOPP_TIMER("processThisSet")
         return NULL;
@@ -1035,7 +1048,7 @@ FFlGroup* FFlNastranReader::processThisSet (std::string& setLine,
           if (excludedFromSet == 0)
           {
             ListUI <<"\n *** Syntax Error in Nastran SET definition: \""
-                   << setLine <<" ...\" (ignored)\n";
+                   << setLine <<" ...\" (ignored).\n";
             delete aGroup;
             STOPP_TIMER("processThisSet")
             return NULL;
@@ -1054,7 +1067,7 @@ FFlGroup* FFlNastranReader::processThisSet (std::string& setLine,
             if (excludedFromSet == 0)
             {
               ListUI <<"\n *** Syntax Error in Nastran SET definition: \""
-                     << setLine <<" ...\" (ignored)\n";
+                     << setLine <<" ...\" (ignored).\n";
               delete aGroup;
               STOPP_TIMER("processThisSet")
               return NULL;
@@ -1066,7 +1079,7 @@ FFlGroup* FFlNastranReader::processThisSet (std::string& setLine,
           aGroup->addElement(j);
         else if (nNotes++ < oldNotes+10)
           ListUI <<"\n   * Note: Ignoring non-existing element "<< j
-                 <<" in Nastran SET "<< setId <<"\n";
+                 <<" in Nastran SET "<< setId;
 
       if (excludedFromSet > 0)
       {
@@ -1075,7 +1088,7 @@ FFlGroup* FFlNastranReader::processThisSet (std::string& setLine,
           aGroup->addElement(excludedFromSet);
         else if (nNotes++ < oldNotes+10)
           ListUI <<"\n   * Note: Ignoring non-existing element "
-                 << excludedFromSet <<" in Nastran SET "<< setId <<"\n";
+                 << excludedFromSet <<" in Nastran SET "<< setId;
       }
     }
     else
@@ -1084,7 +1097,7 @@ FFlGroup* FFlNastranReader::processThisSet (std::string& setLine,
       if (currNumb == 0)
       {
         ListUI <<"\n *** Syntax Error in Nastran SET definition: \""
-               << setLine <<" ...\" (ignored)\n";
+               << setLine <<" ...\" (ignored).\n";
         delete aGroup;
         STOPP_TIMER("processThisSet")
         return NULL;
@@ -1095,7 +1108,7 @@ FFlGroup* FFlNastranReader::processThisSet (std::string& setLine,
         aGroup->addElement(currNumb);
       else if (nNotes++ < oldNotes+10)
         ListUI <<"\n   * Note: Ignoring non-existing element "<< currNumb
-               <<" in Nastran SET "<< setId <<"\n";
+               <<" in Nastran SET "<< setId;
     }
   }
 
@@ -1107,6 +1120,8 @@ FFlGroup* FFlNastranReader::processThisSet (std::string& setLine,
            <<".\n              Only the 10 first are reported."
            <<"\n              Please verify that the model is consistent.\n";
   }
+  else if (nNotes > oldNotes)
+    ListUI <<"\n";
 
   aGroup->sortElements(true);
   STOPP_TIMER("processThisSet")
@@ -1195,9 +1210,17 @@ bool FFlNastranReader::extractNameFromComment (std::string& commentLine,
   }
 
   // Check for HyperMesh syntax
-  pos = first ? commentLine.find("$HMNAME") : commentLine.rfind("$HMNAME");
-  if (pos == std::string::npos)
-    pos = first ? commentLine.find("$HMSET") : commentLine.rfind("$HMSET");
+  if (first) // If both HMNAME and HMSET are found, choose the first occurence
+    pos = std::min(commentLine.find("$HMNAME "),commentLine.find("$HMSET "));
+  else if ((pos = commentLine.rfind("$HMNAME ")) == std::string::npos)
+    pos = commentLine.rfind("$HMSET ");
+  else
+  {
+    // If both HMNAME and HMSET are found, choose the last occurence
+    size_t pos2 = commentLine.rfind("$HMSET ");
+    if (pos2 > pos && pos2 < commentLine.size())
+      pos = pos2;
+  }
   if (pos < commentLine.size())
   {
     // Erase everything outside the last ""-pair
