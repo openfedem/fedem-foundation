@@ -58,7 +58,7 @@ int main (int argc, char** argv)
   std::cout <<"\n# Vertices: "<< body->getNoVertices()
             <<"\n# Faces   : "<< body->getNoFaces() << std::endl;
 
-  FFl::initAllElements();
+  FFlInit initializer;
   FFlLinkHandler link;
   for (size_t v = 0; v < body->getNoVertices(); v++)
     link.addNode(new FFlNode(v+1,body->getVertex(v)));
