@@ -65,13 +65,13 @@ void FFlGroupPartCreator::deleteShapeIndexes()
 {
   for (GroupPartMap::value_type& gp : myLinkParts)
   {
-    std::vector< std::vector<int> > emptyVec;
+    std::vector<IntVec> emptyVec;
     gp.second->shapeIndexes.swap(emptyVec);
   }
 
   for (GroupPartMap::value_type& gp : mySpecialLines)
   {
-    std::vector< std::vector<int> > emptyVec;
+    std::vector<IntVec> emptyVec;
     gp.second->shapeIndexes.swap(emptyVec);
   }
 }
@@ -202,10 +202,10 @@ void FFlGroupPartCreator::createLinkFullFaces(FFlGroupPartData& internalFaces,
       if (face->isVisible())
       {
 	surfaceFaces.nVisiblePrimitiveVertexes += face->getNumVertices();
-	surfaceFaces.facePointers.push_back(std::make_pair(face,-1));
+	surfaceFaces.facePointers.emplace_back(face,-1);
       }
       else
-	surfaceFaces.hiddenFaces.push_back(std::make_pair(face,-1));
+	surfaceFaces.hiddenFaces.emplace_back(face,-1);
     }
     else
     {
@@ -213,10 +213,10 @@ void FFlGroupPartCreator::createLinkFullFaces(FFlGroupPartData& internalFaces,
       if (face->isVisible())
       {
 	internalFaces.nVisiblePrimitiveVertexes += face->getNumVertices();
-	internalFaces.facePointers.push_back(std::make_pair(face,-1));
+	internalFaces.facePointers.emplace_back(face,-1);
       }
       else
-	internalFaces.hiddenFaces.push_back(std::make_pair(face,-1));
+	internalFaces.hiddenFaces.emplace_back(face,-1);
     }
 }
 
@@ -322,10 +322,9 @@ void FFlGroupPartCreator::createLinkReducedFaces(FFlGroupPartData& redInternalFa
   for (FFlVisFace* face : myVisFaces)
     if (!face->isVisited())
     {
-      FaVec3 normal;
+      IntList polygon;
+      FaVec3  normal;
       face->getElmFaceNormal(normal);
-
-      std::list<int> polygon;
       this->expandPolygon(polygon,*face,normal);
 
       // Tesselate the reduced polygon, and add triangles to shape indices in group parts
@@ -335,12 +334,10 @@ void FFlGroupPartCreator::createLinkReducedFaces(FFlGroupPartData& redInternalFa
 }
 
 
-void FFlGroupPartCreator::expandPolygon( std::list<int>& polygon,
-                                         FFlVisFace    & f,
-                                         const FaVec3  & normal )
+void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
+                                        const FaVec3& normal)
 {
-  std::list<int> facePolygon;
-
+  IntList facePolygon;
   polygon.clear();
   f.setVisited();
 
@@ -355,15 +352,15 @@ void FFlGroupPartCreator::expandPolygon( std::list<int>& polygon,
   if (faceIsPositive)
     this->getPolygonFromFace(facePolygon, f, f.edgesBegin(), faceIsPositive);
   else
-    {
-      VisEdgeRefVecCIter splEdge = f.edgesEnd(); --splEdge;
-      this->getPolygonFromFace(facePolygon, f, splEdge, faceIsPositive);
-    }
+  {
+    VisEdgeRefVecCIter splEdge = f.edgesEnd(); --splEdge;
+    this->getPolygonFromFace(facePolygon, f, splEdge, faceIsPositive);
+  }
 
   polygon.splice(polygon.begin(), facePolygon);
   polygon.push_front(polygon.back());
 
-#ifdef FFL_DEBUG
+#if FFL_DEBUG > 2
   std::cout <<"New Polygon:";
   for (int pol : polygon) std::cout <<" "<< pol;
   std::cout <<"\nNormal :"<< normal << std::endl;
@@ -374,7 +371,7 @@ void FFlGroupPartCreator::expandPolygon( std::list<int>& polygon,
   // (joinFacesFromEdge->joinFacesFromEdge ...)
 
   VisEdgeRefVecCIter edgeIt;
-  std::list<int>::iterator nextSplEdgEndPolyIt = polygon.begin();
+  IntList::iterator nextSplEdgEndPolyIt = polygon.begin();
   nextSplEdgEndPolyIt++;
   IAmIncludingInOpsDir = false;
 
@@ -407,7 +404,7 @@ void FFlGroupPartCreator::expandPolygon( std::list<int>& polygon,
   }
   polygon.pop_back();
 
-#ifdef FFL_DEBUG
+#if FFL_DEBUG > 2
   std::cout <<"Before Removing Dead Ends:";
   for (int pol : polygon) std::cout <<" "<< pol;
   std::cout << std::endl;
@@ -415,7 +412,7 @@ void FFlGroupPartCreator::expandPolygon( std::list<int>& polygon,
 
   // Remove Dead ends :
 
-  std::list<int>::iterator it1, it2, tmpIt, tmpIt2;
+  IntList::iterator it1, it2, tmpIt, tmpIt2;
 
   // Initialize It1 and It2 to be separated by one, It1 first:
 
@@ -465,7 +462,7 @@ void FFlGroupPartCreator::expandPolygon( std::list<int>& polygon,
     }
   }
 
-#ifdef FFL_DEBUG
+#if FFL_DEBUG > 2
   std::cout <<"After Removing Dead Ends:";
   for (int pol : polygon) std::cout <<" "<< pol;
   std::cout << std::endl;
@@ -481,7 +478,7 @@ void FFlGroupPartCreator::expandPolygon( std::list<int>& polygon,
   // Initialize it1, it2, i3 to point on the tree first polygon indices
   it1 = tmpIt;
   it2 = polygon.begin();
-  std::list<int>::iterator it3 = it2++;
+  IntList::iterator it3 = it2++;
 
   bool start = true;
   while ((it1 != tmpIt || start) && it1 != it2 && it1 != it3)
@@ -512,7 +509,7 @@ void FFlGroupPartCreator::expandPolygon( std::list<int>& polygon,
       if (++it3 == polygon.end()) it3 = polygon.begin();
     }
   }
-#ifdef FFL_DEBUG
+#if FFL_DEBUG > 2
   std::cout <<"After Simplifying Straight Lines:";
   for (int idx : polygon) std::cout <<" "<< idx;
   std::cout << std::endl;
@@ -533,9 +530,9 @@ void FFlGroupPartCreator::expandPolygon( std::list<int>& polygon,
   to include all the faces around the edges of the face.
 */
 
-void FFlGroupPartCreator::joinFacesFromEdge(std::list<int>           & polygon,
-					    const std::list<int>::iterator & splEdgEndPolyIt,
-					    const FFlVisEdgeRef& prevSplEdge,
+void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
+					    const IntList::iterator  & splEdgEndPolyIt,
+					    const FFlVisEdgeRef      & prevSplEdge,
 					    const FFlVisFace         & previousFace,
 					    const bool               & prevFaceIsPositive,
 					    const bool               & onlySurfaceFaces,
@@ -629,7 +626,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(std::list<int>           & polygon,
 
   // FaceToJoin is joinable :
 
-  std::list<int>::iterator splEdgBeginPolyIt = splEdgEndPolyIt;
+  IntList::iterator splEdgBeginPolyIt = splEdgEndPolyIt;
   --splEdgBeginPolyIt;
 
   this->insertFaceInPolygon(polygon, splEdgEndPolyIt, faceToJoin, splEdgeRIt,faceToJoinIsPositive);
@@ -639,7 +636,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(std::list<int>           & polygon,
   // Start with the edge after or edge before
   // splitting edge dep. on whether including faces in oposite dir.
 
-  std::list<int>::iterator nextSplEdgEndPolyIt;
+  IntList::iterator nextSplEdgEndPolyIt;
   VisEdgeRefVecCIter  edgeIt = splEdgeRIt;
 
   if (!IAmIncludingInOpsDir) // if (true)  // Spiral propagation
@@ -729,13 +726,13 @@ void FFlGroupPartCreator::joinFacesFromEdge(std::list<int>           & polygon,
 }
 
 
-void FFlGroupPartCreator::insertFaceInPolygon(std::list<int>           & polygon,
-					      const std::list<int>::iterator & splEdgEndPolyIt,
+void FFlGroupPartCreator::insertFaceInPolygon(IntList                  & polygon,
+					      const IntList::iterator  & splEdgEndPolyIt,
 					      const FFlVisFace         * faceToJoin,
 					      const VisEdgeRefVecCIter & splEdgeRIt,
 					      const bool               & faceToJoinIsPositive)
 {
-#ifdef FFL_DEBUG
+#if FFL_DEBUG > 2
   std::cout <<"Splitting edge :"<< splEdgeRIt->getFirstVertex()->getRunningID() <<", "
 	    << splEdgeRIt->getSecondVertex()->getRunningID()
 	    <<" PolygonIterator: "<< *splEdgEndPolyIt << std::endl;
@@ -743,13 +740,13 @@ void FFlGroupPartCreator::insertFaceInPolygon(std::list<int>           & polygon
 
   // Get vertex idexes from face and insert them into polygon vxlist
 
-  std::list<int> facePolygon;
+  IntList facePolygon;
   this->getPolygonFromFace(facePolygon, *faceToJoin, splEdgeRIt, faceToJoinIsPositive);
   facePolygon.pop_front();
   facePolygon.pop_back();
   polygon.splice(splEdgEndPolyIt, facePolygon);
 
-#ifdef FFL_DEBUG
+#if FFL_DEBUG > 2
   std::cout <<"Bigger Polygon:";
   for (int pol : polygon) std::cout <<" "<< pol;
   std::cout << std::endl;
@@ -762,7 +759,7 @@ void FFlGroupPartCreator::insertFaceInPolygon(std::list<int>           & polygon
   that starts on the end of the splitting edge.
 */
 
-void FFlGroupPartCreator::getPolygonFromFace(std::list<int>   & polygon,
+void FFlGroupPartCreator::getPolygonFromFace(IntList & polygon,
 					     const FFlVisFace & f,
 					     const VisEdgeRefVecCIter & splEdgeRIt,
 					     const bool       & faceIsPositive)
@@ -792,7 +789,7 @@ void FFlGroupPartCreator::getPolygonFromFace(std::list<int>   & polygon,
       while (edgeIt != splEdgeRIt);
     }
 
-#ifdef FFL_DEBUG
+#if FFL_DEBUG > 2
   std::cout <<"Creating face polygon:";
   for (int pol : polygon) std::cout <<" "<< pol;
   std::cout << std::endl;
@@ -819,15 +816,15 @@ void FFlGroupPartCreator::createLinkFullEdges(FFlGroupPartData& internalLines,
     switch (edge->getRenderData()->edgeStatus)
       {
       case FFlVisEdgeRenderData::SURFACE:
-        surfaceLines.edgePointers.push_back(std::make_pair(edge,-1));
+        surfaceLines.edgePointers.emplace_back(edge,-1);
         surfaceLines.nVisiblePrimitiveVertexes += 2;
         break;
       case FFlVisEdgeRenderData::OUTLINE:
-        outlineParts.edgePointers.push_back(std::make_pair(edge,-1));
+        outlineParts.edgePointers.emplace_back(edge,-1);
         outlineParts.nVisiblePrimitiveVertexes += 2;
         break;
       default:
-        internalLines.edgePointers.push_back(std::make_pair(edge,-1));
+        internalLines.edgePointers.emplace_back(edge,-1);
         internalLines.nVisiblePrimitiveVertexes += 2;
         break;
       }
@@ -850,9 +847,9 @@ void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internalLines
   }
 
   // Recursive lambda function for concatenating nearly co-linear edgdes.
-  std::function<void(FFlVisEdge*,std::vector<int>&,int)> expand =
+  std::function<void(FFlVisEdge*,IntVec&,int)> expand =
     [&expand, this, vertexEdgeRefs]
-    (FFlVisEdge* origEdge, std::vector<int>& simplifiedEdge, int idx) -> void
+    (FFlVisEdge* origEdge, IntVec& simplifiedEdge, int idx) -> void
   {
     int                   endID    = origEdge->getVertex(idx)->getRunningID();
     FaVec3                startVec = origEdge->getVector();
@@ -892,7 +889,7 @@ void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internalLines
   for (FFlVisEdge* edge : myVisEdges)
     if (!edge->getRenderData()->simplified)
     {
-      std::vector<int> simplEdge;
+      IntVec simplEdge;
       edge->getEdgeVertices(simplEdge);
       expand(edge,simplEdge,1);
       expand(edge,simplEdge,0);
@@ -926,13 +923,13 @@ void FFlGroupPartCreator::createSpecialLines(double XZlen)
     if (lit == mySpecialLines.end())
     {
       // Create a new group part for this line pattern
-      lit = mySpecialLines.insert(std::make_pair(linePattern,new FFlGroupPartData())).first;
+      lit = mySpecialLines.emplace(linePattern,new FFlGroupPartData()).first;
       lit->second->isLineShape  = true;
       lit->second->isIndexShape = false;
     }
 
     // Add edge to group part associated with this line pattern
-    lit->second->edgePointers.push_back(std::make_pair(edge,-1));
+    lit->second->edgePointers.emplace_back(edge,-1);
     if (length > 0.0)
     {
       // Adjust the second vertex such that the edge have the given length
@@ -993,7 +990,7 @@ void FFlGroupPartData::getShapeIndexes(int* idx) const
 {
   if (isIndexShape)
 
-    for (const std::vector<int>& shape : shapeIndexes)
+    for (const IntVec& shape : shapeIndexes)
     {
       for (int shapeIndex : shape)
         *(idx++) = shapeIndex;
