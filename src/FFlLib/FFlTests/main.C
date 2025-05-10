@@ -242,9 +242,7 @@ int test4 (FFlLinkHandler& link, int argc, char** argv)
 
 int main (int argc, char** argv)
 {
-  FFl::initAllReaders();
-  FFl::initAllElements();
-
+  FFlInit initializer; // Initialize the FE library
   FFlLinkHandler link; // Container for a FE link
 
   // Read and interpret the link data file

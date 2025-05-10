@@ -84,12 +84,13 @@ private:
 
   struct BEAMOR
   {
-    int PID;
-    int G0;
+    int PID = 0;
+    int G0 = 0;
     FaVec3 X;
     bool isBAR;
+    bool basic = false;
     bool empty[5] = { false, false, false, false, false };
-    BEAMOR(bool b = false) : isBAR(b) { PID = G0 = 0; }
+    BEAMOR(bool b = false) : isBAR(b) {}
   };
 
   using IntPair     = std::pair<int,int>;
@@ -122,6 +123,7 @@ private:
   GRDSET* gridDefault;    // Default options for GRID entries
   BEAMOR* barDefault;     // Default property values for CBAR entries
   BEAMOR* beamDefault;    // Default property values for CBEAM entries
+  FFlGroup* lastGroup;    // Last element group added
   std::set<int> PTHICKs;  // Set of PIDs that are of PTHICK type
   std::set<int> PCOMPs;   // Set of PIDs that are of PCOMP type
 
@@ -277,6 +279,7 @@ protected:
   DEF_PROCESSOR( RBAR   ) // Rigid bar element
   DEF_PROCESSOR( RBE2   ) // Rigid body with any number of dependent nodes
   DEF_PROCESSOR( RBE3   ) // Motion of a reference node as a weighted average
+  DEF_PROCESSOR( SET1   ) // Element groups
   DEF_PROCESSOR( SPC    ) // Single-point constraints
   DEF_PROCESSOR( SPC1   ) // Single-point constraints, alternate form
 };

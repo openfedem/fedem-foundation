@@ -40,9 +40,7 @@ int main (int argc, char** argv)
     case 'B': type = 1; break;
     }
 
-  FFl::initAllReaders();
-  FFl::initAllElements();
-
+  FFlInit initializer;
   FFlLinkHandler link;
   if (FFlReaders::instance()->read(argv[1],&link) > 0)
     std::cout <<"\n   * Read done, found "

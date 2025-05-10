@@ -53,16 +53,11 @@ int main (int argc, char** argv)
       break;
     }
 
-  FFl::initAllReaders();
-  FFl::initAllElements();
+  // Initialize the FE library
+  FFlInit initializer;
 
   // Invoke the google test driver
-  int status = RUN_ALL_TESTS();
-
-  FFl::releaseAllElements();
-  FFl::releaseAllReaders();
-
-  return status;
+  return RUN_ALL_TESTS();
 }
 
 

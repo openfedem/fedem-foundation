@@ -18,8 +18,10 @@
 class FdFEGroupPart;
 class FaVec3;
 
-typedef std::pair<FFlVisFace*,int> FFlVisFaceIdx;
-typedef std::pair<FFlVisEdge*,int> FFlVisEdgeIdx;
+using IntVec        = std::vector<int>;
+using IntList       = std::list<int>;
+using FFlVisFaceIdx = std::pair<FFlVisFace*,int>;
+using FFlVisEdgeIdx = std::pair<FFlVisEdge*,int>;
 
 
 struct FFlGroupPartData
@@ -46,10 +48,10 @@ struct FFlGroupPartData
   int nVisiblePrimitiveVertexes = 0;
 
   //! Faces or line indexes if not using faces or edges
-  std::vector< std::vector<int> > shapeIndexes;
+  std::vector<IntVec> shapeIndexes;
 
   //! Fringe operations for results
-  std::vector< FFaOperation<double>* > colorOps;
+  std::vector<FFaOperation<double>*> colorOps;
 
   //! Extract shape indices for visualization
   void getShapeIndexes(int* idx) const;
@@ -72,7 +74,7 @@ public:
     NUM_TYPES
   };
 
-  typedef std::map<unsigned short int,FFlGroupPartData*> GroupPartMap;
+  using GroupPartMap = std::map<unsigned short int,FFlGroupPartData*>;
 
   // Create internally stored geometry
 
@@ -125,25 +127,23 @@ protected:
 
   // Convenience for face reduction :
 
-  void expandPolygon       ( std::list<int>& polygon,
-                             FFlVisFace&     f,
-                             const FaVec3&   normal );
+  void expandPolygon(IntList& polygon, FFlVisFace& f, const FaVec3& normal);
 
-  void joinFacesFromEdge   ( std::list<int>           & polygon,
-                             const std::list<int>::iterator& splEdgEndPolyIt,
-                             const FFlVisEdgeRef& edgeIt,
+  void joinFacesFromEdge   ( IntList&            polygon,
+                             const IntList::iterator  & splEdgEndPolyIt,
+                             const FFlVisEdgeRef      & edgeIt,
                              const FFlVisFace         & previousFace,
                              const bool               & faceIsPositive,
                              const bool               & onlySurfaceFaces,
                              const FaVec3             & normal );
 
-  void insertFaceInPolygon ( std::list<int>           & polygon,
-                             const std::list<int>::iterator& splEdgEndPolyIt,
+  void insertFaceInPolygon ( IntList                  & polygon,
+                             const IntList::iterator  & splEdgEndPolyIt,
                              const FFlVisFace         * faceToJoin,
                              const VisEdgeRefVecCIter & splEdgeRIt,
                              const bool               & faceToJoinIsPositive );
 
-  void getPolygonFromFace  ( std::list<int>           & polygon,
+  void getPolygonFromFace  ( IntList                  & polygon,
                              const FFlVisFace         & f,
                              const VisEdgeRefVecCIter & splitEdgeIt,
                              const bool               & faceIsPositive );
