@@ -293,7 +293,7 @@ void FFaReferenceBase::resolve(FFaSearcher& findCB)
   else
   {
     FFaFieldContainer* owner = this->getOwnerFieldContainer();
-    std::cerr <<"FFaReferenceBase::resolve: Resolve failure (TypeID="
+    std::cerr <<"FFaReferenceBase::resolve(): Resolve failure (TypeID="
               << typeID <<" "<< FFaTypeCheck::getTypeNameFromID(typeID)
               <<", ID="<< this->getRefID();
     if (!assID.empty())
@@ -317,7 +317,7 @@ void FFaReferenceBase::resolve(FFaSearcher& findCB)
 #if FFA_DEBUG > 1
   FFaFieldContainer* ofc = this->getOwnerFieldContainer();
   if (ofc && this->getRef())
-    std::cout <<"FFaReferenceBase: "<< this->getContextName()
+    std::cout <<"FFaReferenceBase::resolve():  "<< this->getContextName()
               <<" in " << ofc->getTypeIDName() <<" "<< ofc->getResolvedID()
               <<" resolved to "<< foundObj->getTypeIDName()
               <<" "<< foundObj->getResolvedID() << std::endl;
@@ -337,9 +337,9 @@ void FFaReferenceBase::unresolve()
 #ifdef FFA_DEBUG
   FFaFieldContainer* ofc = this->getOwnerFieldContainer();
   if (ofc)
-    std::cout <<"FFaReferenceBase: "<< this->getContextName() <<" in "
-              << ofc->getTypeIDName() <<" "<< ofc->getResolvedID()
-              <<" unresolved"<< std::endl;
+    std::cout <<"FFaReferenceBase::unresolve(): "<< this->getContextName()
+              <<" in " << ofc->getTypeIDName() <<" "<< ofc->getResolvedID()
+              << std::endl;
 #endif
 
   UnResolvedID* uResRef = new UnResolvedID({ myPtr->getTypeID(), myPtr->getResolvedID() });
@@ -585,8 +585,21 @@ void FFaReferenceBase::copy(const FFaReferenceBase& aRef, bool unresolve)
     aRef.getRefAssemblyID(*myUnresolvedRef);
     IAmResolved = false;
   }
+  else if (aRef.isNull())
+    this->setRef(NULL);
   else
+  {
     this->setRef(aRef.getRef());
+#if FFA_DEBUG > 1
+    std::cout <<"FFaReferenceBase::copy(): "
+              << this->getRefTypeName() <<" ["<< this->getRefID() <<"] "
+              << aRef.getContextName() <<" to "<< this->getContextName();
+    FFaFieldContainer* ofc = this->getOwnerFieldContainer();
+    if (ofc)
+      std::cout <<" in "<< ofc->getTypeIDName() <<" "<< ofc->getResolvedID();
+    std::cout << std::endl;
+#endif
+  }
 }
 
 

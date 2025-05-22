@@ -37,14 +37,6 @@ FFaFieldContainer::~FFaFieldContainer()
   // Tell every container that is referring to me that I am no longer here
   for (FFaReferenceBase* ref : myRefBy)
     ref->zeroOutOrRemoveFromList();
-
-  // Delete Dynamic Reference list objects owned by this
-  for (FFaReferenceListBase* ref : myDynamicRefLists)
-    delete ref;
-
-  // Delete Dynamic Reference objects owned by this
-  for (FFaReferenceBase* ref : myDynamicRefs)
-    delete ref;
 }
 
 
@@ -64,11 +56,11 @@ bool FFaFieldContainer::erase()
   \sa FFaReferenceListBase::resolve
 */
 
-void FFaFieldContainer::resolve(FFaDynCB4<FFaFieldContainer*&,int,int,const std::vector<int>&>& findCB)
+void FFaFieldContainer::resolve(FindCB& findCB)
 {
 #ifdef FFA_DEBUG
-  std::cout <<"FFaFieldContainer::resolve: "<< this->getTypeIDName()
-	    <<" "<< this->getResolvedID() << std::endl;
+  std::cout <<"FFaFieldContainer::resolve(): "<< this->getTypeIDName()
+            <<" "<< this->getResolvedID() << std::endl;
 #endif
 
   for (FFaReferenceBase* ref : myRefTo)
@@ -105,8 +97,8 @@ void FFaFieldContainer::updateReferences(int oldAssId, int newAssId)
 }
 
 
-void FFaFieldContainer::updateReferences(const std::vector<int>& oldAssId,
-                                         const std::vector<int>& newAssId)
+void FFaFieldContainer::updateReferences(const IntVec& oldAssId,
+                                         const IntVec& newAssId)
 {
   for (FFaReferenceBase* ref : myRefTo)
     ref->updateAssemblyRef(oldAssId,newAssId);
@@ -121,7 +113,7 @@ void FFaFieldContainer::updateReferences(const std::vector<int>& oldAssId,
   The identifier is the keyword used on file.
 */
 
-void FFaFieldContainer::getFields(std::map<std::string,FFaFieldBase*>& mapToFill) const
+void FFaFieldContainer::getFields(FieldMap& mapToFill) const
 {
   mapToFill.clear();
   for (const FieldContainerMap::value_type& it : myFields)
@@ -146,18 +138,18 @@ FFaFieldBase* FFaFieldContainer::getField(const std::string& fieldName) const
   the references have in this object.
 */
 
-void FFaFieldContainer::getReferredObjs(std::multimap<std::string,FFaFieldContainer*>& mapToFill) const
+void FFaFieldContainer::getReferredObjs(ObjectMap& mapToFill) const
 {
   mapToFill.clear();
   for (FFaReferenceBase* ref : myRefTo)
-    mapToFill.insert(std::make_pair(ref->getContextName(),ref->getRef()));
+    mapToFill.emplace(ref->getContextName(),ref->getRef());
 
   for (FFaReferenceListBase* ref : myRefLists)
   {
-    std::vector<FFaFieldContainer*> objs;
+    ObjectVec objs;
     ref->getBasePtrs(objs);
     for (FFaFieldContainer* obj : objs)
-      mapToFill.insert(std::make_pair(ref->getContextName(),obj));
+      mapToFill.emplace(ref->getContextName(),obj);
   }
 }
 
@@ -168,12 +160,11 @@ void FFaFieldContainer::getReferredObjs(std::multimap<std::string,FFaFieldContai
   the references have in the referring object.
 */
 
-void FFaFieldContainer::getReferringObjs(std::multimap<std::string,FFaFieldContainer*>& mapToFill) const
+void FFaFieldContainer::getReferringObjs(ObjectMap& mapToFill) const
 {
   mapToFill.clear();
   for (FFaReferenceBase* ref : myRefBy)
-    mapToFill.insert(std::make_pair(ref->getContextName(),
-                                    ref->getOwnerFieldContainer()));
+    mapToFill.emplace(ref->getContextName(),ref->getOwnerFieldContainer());
 }
 
 
@@ -184,10 +175,12 @@ void FFaFieldContainer::getReferringObjs(std::multimap<std::string,FFaFieldConta
 inline bool FFaContainerLess(FFaFieldContainer* c1, FFaFieldContainer* c2)
 {
   if (c1 && c2)
+  {
     if (c1->getTypeID() == c2->getTypeID())
       return c1->getResolvedID() < c2->getResolvedID();
     else
       return c1->getTypeID() < c2->getTypeID();
+  }
   else if (c2)
     return true;
   else
@@ -203,7 +196,7 @@ inline bool FFaContainerLess(FFaFieldContainer* c1, FFaFieldContainer* c2)
   the order might be different in two consequtive runs of the same model.
   \note The output vector \a vecToFill is not cleared on entry.
 */
-void FFaFieldContainer::getReferringObjs(std::vector<FFaFieldContainer*>& vecToFill,
+void FFaFieldContainer::getReferringObjs(ObjectVec& vecToFill,
 					 const std::string& contextName,
 					 bool sortOnId) const
 {
@@ -220,8 +213,8 @@ void FFaFieldContainer::getReferringObjs(std::vector<FFaFieldContainer*>& vecToF
   Private helper method used by template functions to loop over myRefBy.
 */
 
-FFaFieldContainer* FFaFieldContainer::getNextReferringObj(const std::string& context,
-							  bool getFirst) const
+FFaFieldContainer* FFaFieldContainer::getNext(const std::string& context,
+                                              bool getFirst) const
 {
   static ReferenceSet::const_iterator it = myRefBy.end();
 
@@ -318,8 +311,6 @@ bool FFaFieldContainer::readField(const std::string& key, std::istream& is,
 
   If \a unresolve is \e true, the references are copied but left unresolved,
   unless the ID is -1.
-
-  This method will currently NOT cope with dynamic fields or references.
 */
 
 bool FFaFieldContainer::copy(const FFaFieldContainer* other,
@@ -327,13 +318,33 @@ bool FFaFieldContainer::copy(const FFaFieldContainer* other,
 {
   if (!other) return false;
 
+#ifdef FFA_DEBUG
+  std::cout <<"\nFFaFieldContainer::copy(): "
+            << other->getTypeIDName() <<" ["<< other->getResolvedID() <<"] --> "
+            << this->getTypeIDName()  <<" ["<< this->getResolvedID()  <<"]";
+#endif
+
   bool foundAll = true;
   FieldContainerMap::iterator it;
   for (const FieldContainerMap::value_type& field : other->myFields)
     if ((it = myFields.find(field.first)) == myFields.end())
+    {
       foundAll = false;
+#ifdef FFA_DEBUG
+      std::cout <<"\n\t"<< *field.first <<" skipped";
+#endif
+    }
     else
+    {
       it->second->copy(field.second,!fieldsOnly);
+#ifdef FFA_DEBUG
+      std::cout <<"\n\t"<< *field.first <<" copied";
+#endif
+    }
+
+#ifdef FFA_DEBUG
+  std::cout << std::endl;
+#endif
 
   if (fieldsOnly) return foundAll;
 
@@ -391,33 +402,27 @@ bool FFaFieldContainer::resetFields(const FFaFieldContainer* other)
 
 /*!
   Adds a reference to the internal book keeping.
-  Dynamic references is not yet completly implemented.
 */
 
-void FFaFieldContainer::addRef(FFaReferenceBase* ref, bool isDynamic)
+void FFaFieldContainer::addRef(FFaReferenceBase* ref)
 {
   if (!ref) return;
 
   ref->setOwnerFieldContainer(this);
   myRefTo.push_back(ref);
-  if (isDynamic)
-    myDynamicRefs.push_back(ref);
 }
 
 
 /*!
   Adds a reference list to the internal book keeping.
-  Dynamic reference lists is not yet completly implemented.
 */
 
-void FFaFieldContainer::addRefList(FFaReferenceListBase* refL, bool isDynamic)
+void FFaFieldContainer::addRefList(FFaReferenceListBase* refL)
 {
   if (!refL) return;
 
   refL->setOwnerFieldContainer(this);
   myRefLists.push_back(refL);
-  if (isDynamic)
-    myDynamicRefLists.push_back(refL);
 }
 
 
@@ -436,8 +441,8 @@ void FFaFieldContainer::insertInRefBy(FFaReferenceBase* ref)
     return;
   }
 
-  std::cerr <<"FFaFieldContainer::insertInRefBy: "
-	    <<"This has already been notified that the reference (";
+  std::cerr <<" *** FFaFieldContainer::insertInRefBy(): "
+            <<"This has already been notified that the reference (";
   ref->write(std::cerr);
   std::cerr <<") is pointing to this."<< std::endl;
 }

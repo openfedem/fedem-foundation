@@ -27,6 +27,11 @@ class FFaFieldContainer : public FFaQueryBase
 {
   Fmd_BASE_HEADER_INIT();
 
+  using IntVec    = std::vector<int>;
+  using FieldMap  = std::map<std::string,FFaFieldBase*>;
+  using ObjectMap = std::multimap<std::string,FFaFieldContainer*>;
+  using ObjectVec = std::vector<FFaFieldContainer*>;
+
 public:
   FFaFieldContainer();
   virtual ~FFaFieldContainer();
@@ -35,14 +40,14 @@ public:
 
   // Field browsing
 
-  void getFields(std::map<std::string,FFaFieldBase*>& mapToFill) const;
+  void getFields(FieldMap& mapToFill) const;
   FFaFieldBase* getField(const std::string& fieldName) const;
 
   // Topology browsing
 
-  void getReferredObjs (std::multimap<std::string,FFaFieldContainer*>& mapToFill) const;
-  void getReferringObjs(std::multimap<std::string,FFaFieldContainer*>& mapToFill) const;
-  void getReferringObjs(std::vector<FFaFieldContainer*>& vecToFill,
+  void getReferredObjs (ObjectMap& mapToFill) const;
+  void getReferringObjs(ObjectMap& mapToFill) const;
+  void getReferringObjs(ObjectVec& vecToFill,
                         const std::string& contextName,
                         bool sortOnId = false) const;
 
@@ -55,7 +60,7 @@ public:
     if (sortOnId)
     {
       // Return the objects in sorted order w.r.t. their user ID
-      std::vector<FFaFieldContainer*> allRefs;
+      ObjectVec allRefs;
       this->getReferringObjs(allRefs,context,sortOnId);
       for (FFaFieldContainer* ref : allRefs)
         if ((ptr = dynamic_cast<T*>(ref)))
@@ -65,8 +70,8 @@ public:
     {
       // Return the objects in arbitrary order
       // (might be different in two runs of the same problem).
-      FFaFieldContainer* ref = this->getNextReferringObj(context,true);
-      for (ptr = NULL; ref; ref = this->getNextReferringObj(context))
+      FFaFieldContainer* ref = this->getNext(context,true);
+      for (ptr = NULL; ref; ref = this->getNext(context))
         if ((ptr = dynamic_cast<T*>(ref)))
           vecToFill.push_back(ptr);
     }
@@ -77,8 +82,8 @@ public:
   template<class T>
   bool hasReferringObjs(T*& ptr, const std::string& context = "") const
   {
-    FFaFieldContainer* ref = this->getNextReferringObj(context,true);
-    for (ptr = NULL; ref; ref = this->getNextReferringObj(context))
+    FFaFieldContainer* ref = this->getNext(context,true);
+    for (ptr = NULL; ref; ref = this->getNext(context))
       if ((ptr = dynamic_cast<T*>(ref)))
         return true;
     return false;
@@ -89,9 +94,11 @@ public:
   void releaseReferencesToMe(const std::string& contextName = "",
                              FFaFieldContainer* replacement = NULL);
 
+  using FindCB = FFaDynCB4<FFaFieldContainer*&,int,int,const IntVec&>;
+
   // Methods for resolving of FFaReference and FFaReferenceList after reading
 
-  void resolve(FFaDynCB4<FFaFieldContainer*&,int,int,const std::vector<int>&>& findCB);
+  void resolve(FindCB& findCB);
   void unresolve();
 
   // Method for initializing fields after resolve
@@ -101,13 +108,12 @@ public:
   // Method returning the ID number and assemblyIDs used in IO and resolving
 
   virtual int getResolvedID() const { return -1; }
-  virtual void getResolvedAssemblyID(std::vector<int>&) const {}
+  virtual void getResolvedAssemblyID(IntVec&) const {}
 
   // Methods updating the assemblyID in references in this object.
 
   void updateReferences(int oldAssId, int newAssId);
-  void updateReferences(const std::vector<int>& oldAssId,
-                        const std::vector<int>& newAssID);
+  void updateReferences(const IntVec& oldAssId, const IntVec& newAssID);
 
   // Method for reading the value of a named field from an input stream
 
@@ -130,8 +136,8 @@ protected:
   // Methods to add guarded pointers to other FFaFieldContainers
   // into the internal book keeping
 
-  void addRef(FFaReferenceBase* ref, bool isDynamic = false);
-  void addRefList(FFaReferenceListBase* list, bool isDynamic = false);
+  void addRef(FFaReferenceBase* ref);
+  void addRefList(FFaReferenceListBase* list);
 
   // Methods to add and remove read/writable fields of "any" type
   // to/from the internal book keeping
@@ -168,8 +174,8 @@ private:
 
   // Helper method to loop over all objects referring to this
 
-  FFaFieldContainer* getNextReferringObj(const std::string& context,
-                                         bool getFirst = false) const;
+  FFaFieldContainer* getNext(const std::string& context,
+                             bool getFirst = false) const;
 
   // The internal book keeping of who is pointing to whom
 
@@ -178,11 +184,6 @@ private:
   ReferenceSet                     myRefBy;
   std::list<FFaReferenceBase*>     myRefTo;
   std::list<FFaReferenceListBase*> myRefLists;
-
-  // Keep track of what to delete when destructing
-
-  std::list<FFaReferenceBase*>     myDynamicRefs;
-  std::list<FFaReferenceListBase*> myDynamicRefLists;
 };
 
 
