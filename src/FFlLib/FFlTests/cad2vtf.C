@@ -5,9 +5,7 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
-#define FFL_INIT_ONLY
-#include "FFlLib/FFlFEParts/FFlAllFEParts.H"
-#undef FFL_INIT_ONLY
+#include "FFlLib/FFlInit.H"
 #include "FFlLib/FFlLinkHandler.H"
 #include "FFlLib/FFlElementBase.H"
 #include "FFlLib/FFlFEParts/FFlNode.H"
