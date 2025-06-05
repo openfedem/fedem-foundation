@@ -27,8 +27,8 @@ class FFlPartBase
 {
 protected:
 #ifdef FFL_REFCOUNT
-  FFlPartBase(int ID) : myID(ID), refCount(0) {}
-  FFlPartBase(const FFlPartBase& other) : myID(other.myID), refCount(0) {}
+  FFlPartBase(int ID) : myID(ID), nref(0) {}
+  FFlPartBase(const FFlPartBase& other) : myID(other.myID), nref(0) {}
 #else
   FFlPartBase(int ID) : myID(ID) {}
   FFlPartBase(const FFlPartBase&) = default;
@@ -44,9 +44,9 @@ public:
   void setID(int newID) { myID = newID; }
 
 #ifdef FFL_REFCOUNT
-  unsigned char getRefCount() const { return refCount; }
-  unsigned char ref() { return ++refCount; }
-  bool unref() { if (refCount) --refCount; return refCount > 0; }
+  unsigned char getRefCount() const { return nref; }
+  unsigned char ref() { if (nref < 255) ++nref; return nref; }
+  bool unref() { if (nref > 0 && nref < 255) --nref; return nref > 0; }
 #else
   unsigned char getRefCount() const { return 1; }
   unsigned char ref() { return 1; }
@@ -59,7 +59,7 @@ protected:
 private:
   int myID;
 #ifdef FFL_REFCOUNT
-  unsigned char refCount;
+  unsigned char nref;
 #endif
 };
 
