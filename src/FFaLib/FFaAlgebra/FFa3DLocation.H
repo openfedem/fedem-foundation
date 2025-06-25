@@ -57,21 +57,24 @@ private:
     FFaEnumEntryEnd;
   };
 
-  bool saveMyNumericalData; //!< If false, only the type enums are saved
+  bool saveNumericalData; //!< If false, only the type enums are saved
 
   FaVec3      myL[3];
   PosTypeEnum myPosTyp;
   RotTypeEnum myRotTyp;
 
 public:
-  FFa3DLocation(bool saveNumericalData = true);
+  //! \brief Default constructor.
+  explicit FFa3DLocation(bool saveNumData = false);
+  //! \brief Constructor definining the orientation from two direction vectors.
   FFa3DLocation(PosType t, const FaVec3& v0,
 		RotType r, const FaVec3& v1, const FaVec3& v2);
+  //! \brief Constructor definining the orientation from rotation angles.
   FFa3DLocation(PosType t, const FaVec3& v0, RotType r, const FaVec3& v1);
-  FFa3DLocation(const FFa3DLocation& m) { *this = m; saveMyNumericalData = true; }
+  //! \brief Constructor defining the location from a position matrix.
   FFa3DLocation(const FaMat34& m);
-
-  void setSaveNumericalData(bool doSave) { saveMyNumericalData = doSave; }
+  //! \brief Copy constructor.
+  FFa3DLocation(const FFa3DLocation& m) { *this = m; saveNumericalData = true; }
 
   // Local operators
 
@@ -80,7 +83,10 @@ public:
 
   bool operator== (const FFa3DLocation& m) const { return  isCoincident(m); }
   bool operator!= (const FFa3DLocation& m) const { return !isCoincident(m); }
-  bool isCoincident (const FFa3DLocation& m, double tolerance = 1.0e-7) const;
+
+private:
+  bool isCoincident(const FFa3DLocation& m) const;
+public:
 
   // Indexing
 
@@ -93,8 +99,8 @@ public:
 
   // Converting and setting
 
-  FFa3DLocation& changePosType(PosType newType);
-  FFa3DLocation& changeRotType(RotType newType);
+  bool changePosType(PosType newType);
+  bool changeRotType(RotType newType);
 
   FFa3DLocation& changePosRefCS(const FaMat34& newRef, const FaMat34& oldRef);
   FFa3DLocation& changeRotRefCS(const FaMat34& newRef, const FaMat34& oldRef);
@@ -106,22 +112,18 @@ public:
   FFa3DLocation& setPos(PosType p, const FaVec3& cartPos);
   FFa3DLocation& setRot(RotType r, const FaMat33& rotMat);
 
-  FaVec3  translation() const;
-  FaMat33 direction  () const;
-  FaMat34 getMatrix  () const;
-  FaMat34 getMatrix  (const FaMat34& posRelMx, const FaMat34& rotRelMx) const;
-
-  FFa3DLocation& setIdentity() { *this = FFa3DLocation(); return *this; }
+  FaVec3 translation() const;
+  FaMat33 direction() const;
+  FaMat34 getMatrix() const;
+  FaMat34 getMatrix(const FaMat34& posRelMx, const FaMat34& rotRelMx) const;
   bool isValid() const;
 
   // Global operators
 
-  friend std::ostream& operator<< ( std::ostream& s, const FFa3DLocation& m);
-  friend std::istream& operator>> ( std::istream& s, FFa3DLocation& m);
+  friend std::ostream& operator<< (std::ostream& s, const FFa3DLocation& m);
+  friend std::istream& operator>> (std::istream& s, FFa3DLocation& m);
 };
 
-
-// --- inline functions ---
 
 inline const FaVec3& FFa3DLocation::operator[] (int i) const
 {

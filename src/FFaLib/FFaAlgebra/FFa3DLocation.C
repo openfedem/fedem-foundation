@@ -13,15 +13,11 @@
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
 
-/*!
-  Constructors.
-*/
-
-FFa3DLocation::FFa3DLocation(bool saveNumericalData)
+FFa3DLocation::FFa3DLocation(bool saveNumData)
 {
   myPosTyp = CART_X_Y_Z;
   myRotTyp = EUL_Z_Y_X;
-  saveMyNumericalData = saveNumericalData;
+  saveNumericalData = saveNumData;
 }
 
 FFa3DLocation::FFa3DLocation(PosType t, const FaVec3& v0,
@@ -32,7 +28,7 @@ FFa3DLocation::FFa3DLocation(PosType t, const FaVec3& v0,
   myL[0] = v0;
   myL[1] = v1;
   myL[2] = v2;
-  saveMyNumericalData = true;
+  saveNumericalData = true;
 }
 
 FFa3DLocation::FFa3DLocation(PosType t, const FaVec3& v0,
@@ -42,7 +38,7 @@ FFa3DLocation::FFa3DLocation(PosType t, const FaVec3& v0,
   myRotTyp = r;
   myL[0] = v0;
   myL[1] = v1;
-  saveMyNumericalData = true;
+  saveNumericalData = true;
 
   if (this->getNumFields() == 9)
     std::cerr <<"FFa3DLocation constructor: Second rotation definition vector "
@@ -56,7 +52,7 @@ FFa3DLocation::FFa3DLocation(const FaMat34& m)
   myL[0] = m[3];
   myL[1] = m[0];
   myL[2] = m[1];
-  saveMyNumericalData = true;
+  saveNumericalData = true;
 }
 
 
@@ -74,7 +70,7 @@ FFa3DLocation& FFa3DLocation::operator= (const FFa3DLocation& m)
   myL[0] = m.myL[0];
   myL[1] = m.myL[1];
   myL[2] = m.myL[2];
-  // JJS: Note that saveMyNumericalData is NOT copied.
+  // JJS: Note that saveNumericalData is NOT copied.
   // That is meta data valid for one particular instance only.
   return *this;
 }
@@ -86,9 +82,9 @@ FFa3DLocation& FFa3DLocation::operator= (const FaMat34& m)
 }
 
 
-bool FFa3DLocation::isCoincident(const FFa3DLocation& m, double tol) const
+bool FFa3DLocation::isCoincident(const FFa3DLocation& m) const
 {
-  return this->getMatrix().isCoincident(m.getMatrix(),tol);
+  return this->getMatrix().isCoincident(m.getMatrix(),1.0e-7);
 }
 
 
@@ -96,12 +92,13 @@ bool FFa3DLocation::isCoincident(const FFa3DLocation& m, double tol) const
   Converts the position representation in \a *this to the provided type.
 */
 
-FFa3DLocation& FFa3DLocation::changePosType(PosType newType)
+bool FFa3DLocation::changePosType(PosType newType)
 {
-  if (newType != myPosTyp)
-    this->setPos(newType, this->translation());
+  if (newType == myPosTyp) return false;
 
-  return *this;
+  this->setPos(newType, this->translation());
+
+  return true;
 }
 
 
@@ -109,12 +106,13 @@ FFa3DLocation& FFa3DLocation::changePosType(PosType newType)
   Converts the rotational representation in \a *this to the provided type.
 */
 
-FFa3DLocation& FFa3DLocation::changeRotType(RotType newType)
+bool FFa3DLocation::changeRotType(RotType newType)
 {
-  if (newType != myRotTyp)
-    this->setRot(newType, this->direction());
+  if (newType == myRotTyp) return false;
 
-  return *this;
+  this->setRot(newType, this->direction());
+
+  return true;
 }
 
 
@@ -467,7 +465,7 @@ bool FFa3DLocation::isValid() const
 
 std::ostream& operator << (std::ostream& s, const FFa3DLocation& m)
 {
-  if (m.saveMyNumericalData)
+  if (m.saveNumericalData)
   {
     // Output everything, using 8 significant digits
     std::ios_base::fmtflags tmpFlag = s.flags(std::ios::fixed);
@@ -491,7 +489,7 @@ std::ostream& operator << (std::ostream& s, const FFa3DLocation& m)
 std::istream& operator >> (std::istream& s, FFa3DLocation& m)
 {
   // Retain the save flag
-  FFa3DLocation m_tmp(m.saveMyNumericalData);
+  FFa3DLocation m_tmp(m.saveNumericalData);
   s >> m_tmp.myPosTyp;
 
   // Check if the numerical data was stored
