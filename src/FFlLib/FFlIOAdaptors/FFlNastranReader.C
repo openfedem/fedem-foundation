@@ -36,11 +36,13 @@
 
 #define MAX_HEADER_LINES 1000
 
+namespace FFlNastran {
+  std::string mainPath;
+}
+
 #ifdef FF_NAMESPACE
 namespace FF_NAMESPACE {
 #endif
-
-static std::string mainPath;
 
 static bool identFoundSet = false;
 static bool procOK        = true; // Set to false if parsing errors detected
@@ -207,10 +209,11 @@ void FFlNastranReader::readerCB (const std::string& fname, FFlLinkHandler* link)
 {
   nWarnings = nNotes = 0;
   FFlNastranReader reader(link,startBulk);
-  mainPath = FFaFilePath::getPath(fname);
+  FFlNastran::mainPath = FFaFilePath::getPath(fname);
 #ifdef FFL_DEBUG
   std::cout <<"FFlNastranReader: fileName = \""<< fname <<"\"\n"
-	    <<"FFlNastranReader: mainPath = \""<< mainPath <<"\""<< std::endl;
+            <<"FFlNastranReader: mainPath = \""<< FFlNastran::mainPath
+            <<"\""<< std::endl;
 #endif
   bool stillOk = reader.read(fname);
   bool setsOk  = true;
@@ -243,8 +246,8 @@ bool FFlNastranReader::read (const std::string& fname, bool includedFile)
   // the given fname is relative to the location of the main bulk data file
   std::string fileName(fname);
   if (includedFile)
-    if (FFaFilePath::isRelativePath(fname) && !mainPath.empty())
-      fileName = FFaFilePath::appendFileNameToPath(mainPath,fname);
+    if (FFaFilePath::isRelativePath(fname) && !FFlNastran::mainPath.empty())
+      fileName = FFaFilePath::appendFileNameToPath(FFlNastran::mainPath,fname);
   FFaFilePath::checkName(fileName);
 
   std::ifstream fs(fileName.c_str());
@@ -281,12 +284,12 @@ bool FFlNastranReader::read (const std::string& fname, bool includedFile)
   {
     nNotes++;
     ListUI <<"\n   * Note: "<< numOP2 <<" OP2-files were detected.\n"
-	   <<"           The FE part is assumed to be externally reduced.\n";
+           <<"           The FE part is assumed to be externally reduced.\n";
   }
 
 #ifdef FFL_DEBUG
   std::cout <<"FFlNastranReader: starting bulk data parsing at line "
-	    << lineCounter+1 << std::endl;
+            << lineCounter+1 << std::endl;
 #endif
   return this->read(fs);
 }
@@ -302,7 +305,13 @@ bool FFlNastranReader::read (std::istream& is)
   bool stillOK = procOK = true;
   while (sizeOK && (stillOK = this->getNextEntry(is,entry)))
     if (entry.name == endOfBulk)
+    {
+      // In case the last bulk data entry in the file is a group definition
+      // we need to check if it is named here, before exiting
+      this->nameFromLastComment(lastGroup,true);
+      lastGroup = NULL;
       break;
+    }
     else if (!entry.cont.empty())
       ucEntries.push_back(entry);
     else if (!this->processThisEntry(entry))
@@ -340,7 +349,7 @@ bool FFlNastranReader::read (std::istream& is)
 
 #ifdef FFL_DEBUG
   std::cout <<"FFlNastranReader: processed "<< lineCounter <<" lines (done)."
-	    << std::endl;
+            << std::endl;
 #endif
   STOPP_TIMER("read")
   return sizeOK && stillOK && procOK;
@@ -662,7 +671,7 @@ bool FFlNastranReader::getFields (std::istream& is, BulkEntry& entry)
 #if FFL_DEBUG > 4
   if (!entry.cont.empty())
     std::cout <<"FFlNastranReader: continuation field=\""<< entry.cont
-	      <<"\""<< std::endl;
+              <<"\""<< std::endl;
 #endif
 
   return true;
@@ -840,15 +849,7 @@ int FFlNastranReader::getNextField (std::istream& is, std::string& field,
 
 bool FFlNastranReader::processThisEntry (BulkEntry& entry)
 {
-  if (lastGroup && lastComment.first &&
-      extractNameFromComment(lastComment.second,true))
-  {
-#if FFL_DEBUG > 2
-    std::cout <<"Element group "<< lastGroup->getID()
-              <<" is named \""<< lastComment.second <<"\""<< std::endl;
-#endif
-    lastGroup->setName(lastComment.second);
-  }
+  this->nameFromLastComment(lastGroup,true);
   lastGroup = NULL;
 
   START_TIMER("processThisEntry")
@@ -913,8 +914,7 @@ bool FFlNastranReader::processAllSets (std::istream& fs, const int startBulk)
         else
         {
           // Check if the group was named after the group definition itself
-          if (lastComment.first && extractNameFromComment(lastComment.second))
-            aGroup->setName(lastComment.second);
+          this->nameFromLastComment(aGroup);
           myLink->addGroup(aGroup); // Add element group to the FE model
         }
         aGroup = NULL;
@@ -951,7 +951,7 @@ bool FFlNastranReader::processAllSets (std::istream& fs, const int startBulk)
 
       // Check if the group is named before the group definition itself
       else if (lastComment.first > 0 && lastComment.first < startLin &&
-               extractNameFromComment(lastComment.second))
+               this->extractNameFromLastComment())
       {
         aGroup->setName(lastComment.second);
         myLink->addGroup(aGroup);
@@ -971,8 +971,7 @@ bool FFlNastranReader::processAllSets (std::istream& fs, const int startBulk)
     else
     {
       // Check if the group was named after the group definition itself
-      if (lastComment.first && extractNameFromComment(lastComment.second))
-        aGroup->setName(lastComment.second);
+      this->nameFromLastComment(aGroup);
       myLink->addGroup(aGroup);
     }
     lastComment = { 0, "" };
@@ -1141,7 +1140,7 @@ void FFlNastranReader::processAssignFile (const std::string& line)
   if (k == std::string::npos || k < j+2) return;
 
   std::string op2file = line.substr(j+1,k-j-1);
-  FFaFilePath::makeItAbsolute(op2file,mainPath);
+  FFaFilePath::makeItAbsolute(op2file,FFlNastran::mainPath);
   myLink->addOP2file(FFaFilePath::checkName(op2file));
 
   nNotes++;
@@ -1149,10 +1148,24 @@ void FFlNastranReader::processAssignFile (const std::string& line)
 }
 
 
-bool FFlNastranReader::extractNameFromComment (std::string& commentLine,
-					       bool first)
+void FFlNastranReader::nameFromLastComment (FFlGroup* group, bool first)
 {
-#if FFL_DEBUG > 1
+  if (group && lastComment.first && this->extractNameFromLastComment(first))
+  {
+#if FFL_DEBUG > 2
+    std::cout <<"Element group "<< group->getID()
+              <<" is named \""<< lastComment.second <<"\""<< std::endl;
+#endif
+    group->setName(lastComment.second);
+  }
+}
+
+
+bool FFlNastranReader::extractNameFromLastComment (bool first,
+                                                   const char* NXkeyword)
+{
+  std::string& commentLine = lastComment.second;
+#if FFL_DEBUG > 2
   std::cout <<"FFlNastranReader: Processing comment\n"<< commentLine;
 #endif
 
@@ -1164,7 +1177,7 @@ bool FFlNastranReader::extractNameFromComment (std::string& commentLine,
     commentLine.erase(0,pos+6);
     pos = commentLine.find_first_of("\r\n");
     if (pos < commentLine.size()) commentLine.erase(pos);
-#if FFL_DEBUG > 1
+#if FFL_DEBUG > 2
     if (!commentLine.empty())
       std::cout <<"\tFound name: "<< commentLine << std::endl;
 #endif
@@ -1172,7 +1185,8 @@ bool FFlNastranReader::extractNameFromComment (std::string& commentLine,
   }
 
   // Check for NX syntax
-  pos = first ? commentLine.find("$*  NX ") : commentLine.rfind("$*  NX ");
+  std::string tag = std::string("$*  ") + NXkeyword;
+  pos = first ? commentLine.find(tag) : commentLine.rfind(tag);
   if (pos < commentLine.size())
   {
     size_t pos2 = commentLine.substr(pos).find(": ");
@@ -1182,7 +1196,7 @@ bool FFlNastranReader::extractNameFromComment (std::string& commentLine,
       commentLine.erase(0,pos+pos2+2);
       pos = commentLine.find_first_of("\r\n");
       if (pos < commentLine.size()) commentLine.erase(pos);
-#if FFL_DEBUG > 1
+#if FFL_DEBUG > 2
       if (!commentLine.empty())
         std::cout <<"\tFound name: "<< commentLine << std::endl;
 #endif
@@ -1201,7 +1215,7 @@ bool FFlNastranReader::extractNameFromComment (std::string& commentLine,
       commentLine.erase(0,pos+pos2+2);
       pos = commentLine.find_first_of("\r\n");
       if (pos < commentLine.size()) commentLine.erase(pos);
-#if FFL_DEBUG > 1
+#if FFL_DEBUG > 2
       if (!commentLine.empty())
         std::cout <<"\tFound name: "<< commentLine << std::endl;
 #endif
@@ -1226,7 +1240,7 @@ bool FFlNastranReader::extractNameFromComment (std::string& commentLine,
     // Erase everything outside the last ""-pair
     commentLine.erase(0,commentLine.find('"',pos)+1);
     commentLine.erase(commentLine.find('"'));
-#if FFL_DEBUG > 1
+#if FFL_DEBUG > 2
     if (!commentLine.empty())
       std::cout <<"\tFound name: "<< commentLine << std::endl;
 #endif
