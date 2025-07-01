@@ -231,11 +231,9 @@ std::istream& operator>>(std::istream& s, FFaEnum<EnumType,ETMapping>& e)
       if (enumMap.empty())
 
 //! \brief Adds one entry to the current enum mapping definition.
-#define FFaEnumEntry(EnumValue,EnumText)			\
-  enumMap.push_back(std::make_pair(EnumValue,EnumText));
+#define FFaEnumEntry(Value,Text) enumMap.emplace_back(Value,Text);
 
 //! \brief Defines the end of an enum mapping definition.
-#define FFaEnumEntryEnd				\
-  } return enumMap; }
+#define FFaEnumEntryEnd } return enumMap; }
 
 #endif

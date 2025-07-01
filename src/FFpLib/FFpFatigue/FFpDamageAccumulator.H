@@ -28,7 +28,7 @@ public:
   double updateDamage();
   double close();
 
-  FFpPoint getTimeRange() const { return std::make_pair(Tmin,Tmax); }
+  FFpPoint getTimeRange() const { return { Tmin, Tmax }; }
   FFpPoint getMaxPoint() const { return myMax; }
 
 private:

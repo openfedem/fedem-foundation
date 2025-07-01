@@ -28,7 +28,7 @@ int FFaTypeCheck::getNewTypeID(const char* typeName)
   if (!typeName) return counter; // Only return the number of types so far
 
   std::map<std::string,int>& typeNameToID = getFFaTypeCheckTypNmToIDMap();
-  if (typeNameToID.insert(std::make_pair(typeName,counter+1)).second)
+  if (typeNameToID.emplace(typeName,counter+1).second)
     ++counter;
   else
     std::cerr <<"FFaTypeCheck: A typeID for class "<< typeName

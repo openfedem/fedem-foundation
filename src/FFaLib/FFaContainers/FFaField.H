@@ -218,7 +218,7 @@ inline FFaField<int>::FFaField()
 template<>
 inline FFaField<Ints>::FFaField()
 {
-  myData = myDefaultValue = std::make_pair(0,0);
+  myData = myDefaultValue = { 0, 0 };
 }
 
 template<>
@@ -236,7 +236,7 @@ inline FFaField<double>::FFaField()
 template<>
 inline FFaField<Doubles>::FFaField()
 {
-  myData = myDefaultValue = std::make_pair(0.0,0.0);
+  myData = myDefaultValue = { 0.0, 0.0 };
 }
 
 template<>
@@ -488,7 +488,7 @@ inline void FFaField<IntDoubles>::read(std::istream& is, IntDoubles& v) const
     {
       is >> d;
       if (is)
-        v.push_back(std::make_pair(i,d));
+        v.emplace_back(i,d);
     }
 
   is.clear();
