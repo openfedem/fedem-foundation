@@ -115,7 +115,7 @@ bool FFlSesamReader::parse (const std::string& filename)
     {
       // This is a new record
       if ((ctmp = strtok(cline," ")))
-        fit = myRecs.insert(std::make_pair(ctmp,Records())).first;
+        fit = myRecs.emplace(ctmp,Records()).first;
       else
         continue; // should never get here, but...
 

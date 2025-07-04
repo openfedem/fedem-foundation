@@ -632,7 +632,7 @@ bool FFlFedemReader::getNextField(std::istream& is, ftlField& fl) const
 #endif
 
 	if (!singleEntry.empty())
-	  currentRefIt = fl.refs.insert(std::make_pair(singleEntry,ftlRefField()));
+	  currentRefIt = fl.refs.emplace(singleEntry,ftlRefField());
 
 	if (c == cmt)
 	{

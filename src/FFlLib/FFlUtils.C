@@ -141,10 +141,8 @@ bool FFl::activateElmGroups (FFlLinkHandler* part, const std::string& elmGroups)
         size_t idStart = token.size()+1;
         while (--idStart > 0 && isdigit(token[idStart-1]));
         if (idStart > 1)
-        {
-          int ID = atoi(token.substr(idStart).c_str());
-          implicitGroups.push_back(std::make_pair(token.substr(0,idStart),ID));
-        }
+          implicitGroups.emplace_back(token.substr(0,idStart),
+                                      atoi(token.substr(idStart).c_str()));
       }
   }
   else

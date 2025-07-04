@@ -22,20 +22,20 @@ void FFaOptionFileCreator::addComment(const std::string& comment,
                                       bool whiteInFront)
 {
   if (whiteInFront)
-    myOptions.push_back(Option("\n",""));
+    myOptions.emplace_back("\n","");
 
   std::string newComment(comment);
   for (size_t i = 0; i < newComment.size(); i++)
     if (newComment[i] == '\n')
       newComment.insert(++i,"\n# ");
 
-  myOptions.push_back(Option("# " + newComment,""));
+  myOptions.emplace_back("# " + newComment,"");
 }
 
 
 void FFaOptionFileCreator::add(const std::string& optionName, bool val)
 {
-  myOptions.push_back(Option(optionName + (val ? "+" : "-"),""));
+  myOptions.emplace_back(optionName + (val ? "+" : "-"),"");
 }
 
 
@@ -43,7 +43,7 @@ void FFaOptionFileCreator::add(const std::string& optionName, int val)
 {
   char cval[16];
   snprintf(cval,16,"%d",val);
-  myOptions.push_back(Option(optionName,cval));
+  myOptions.emplace_back(optionName,cval);
 }
 
 
@@ -51,7 +51,7 @@ void FFaOptionFileCreator::add(const std::string& optionName, double val)
 {
   char cval[32];
   snprintf(cval,32,"%.16g",val);
-  myOptions.push_back(Option(optionName,cval));
+  myOptions.emplace_back(optionName,cval);
 }
 
 
@@ -60,7 +60,7 @@ void FFaOptionFileCreator::add(const std::string& optionName,
 {
   char cval[64];
   snprintf(cval,64,"%.16g %.16g",val.first,val.second);
-  myOptions.push_back(Option(optionName,cval));
+  myOptions.emplace_back(optionName,cval);
 }
 
 
@@ -68,7 +68,7 @@ void FFaOptionFileCreator::add(const std::string& optionName, const FaVec3& val)
 {
   char cval[96];
   snprintf(cval,96,"%.16g %.16g %.16g",val.x(),val.y(),val.z());
-  myOptions.push_back(Option(optionName,cval));
+  myOptions.emplace_back(optionName,cval);
 }
 
 
@@ -79,7 +79,7 @@ void FFaOptionFileCreator::add(const std::string& optionName,
 
   char cval[32];
   snprintf(cval,32,"%.16g",val.front());
-  myOptions.push_back(Option(optionName,cval));
+  myOptions.emplace_back(optionName,cval);
   for (size_t i = 1; i < val.size(); i++)
   {
     snprintf(cval,32," %.16g",val[i]);
@@ -91,7 +91,7 @@ void FFaOptionFileCreator::add(const std::string& optionName,
 void FFaOptionFileCreator::add(const std::string& optionName,
                                const std::string& val, bool addQuotes)
 {
-  myOptions.push_back(Option(optionName,val));
+  myOptions.emplace_back(optionName,val);
   if (addQuotes && !val.empty())
     myOptions.back().second = "\"" + myOptions.back().second + "\"";
 }

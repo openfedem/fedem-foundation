@@ -218,7 +218,7 @@ bool FiRAOTable::applyRAO(const std::string& RAOfile, int direction,
   wave.reserve(nComp);
 
   for (int i = 0; i < nComp*nRw; i += nRw)
-    wave.push_back(WaveComp(waveData[i],waveData[i+1],waveData[i+2]));
+    wave.emplace_back(waveData[i],waveData[i+1],waveData[i+2]);
 
   return applyRAO(RAOfile,direction,wave,motion);
 }

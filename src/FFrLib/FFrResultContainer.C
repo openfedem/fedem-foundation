@@ -832,7 +832,7 @@ bool FFrResultContainer::readTimeStepInformation()
       std::cout << ((i-startStep)%10 ? " " : "\n") << readVal;
 #endif
 #endif
-    myPhysicalTimeMap.insert(myPhysicalTimeMap.end(),std::make_pair(readVal,i));
+    myPhysicalTimeMap.emplace_hint(myPhysicalTimeMap.end(),readVal,i);
 
     newPos = timeStepSize - 8;
     if (FT_seek(myDataFile, newPos, SEEK_CUR) == EOF)

@@ -62,7 +62,7 @@ int FFrVariableReference::traverse(FFrResultContainer* resultCont,
   objToBeMod->setOwner(owner);
   FFrVariableReference* vRef = static_cast<FFrVariableReference*>(objToBeMod);
 
-  vRef->containers.push_back(std::make_pair(resultCont,binPos));
+  vRef->containers.emplace_back(resultCont,binPos);
   binPos += vRef->variableDescr->getTotalDataSize();
 
   return binPos;

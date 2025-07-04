@@ -224,7 +224,7 @@ bool FFrExtractor::updateExtractorHeader(FFrResultContainer* container)
       {
         FFrObjectGroup* ogr = this->getObjectGroup(ogptr->getBaseID());
         if (!ogr)
-          myTopLevelOGs.insert(std::make_pair(ogptr->getBaseID(),ogptr));
+          myTopLevelOGs.emplace(ogptr->getBaseID(),ogptr);
         else if (ogr->merge(ogptr))
           ogptr = NULL;
       }
@@ -323,7 +323,7 @@ bool FFrExtractor::removeFiles(const std::set<std::string>& fileNames)
       for (FFrEntryBase* entry : sog.second->dataFields)
         if ((og = dynamic_cast<FFrObjectGroup*>(entry)))
         {
-          myTopLevelOGs.insert(std::make_pair(og->getBaseID(),og));
+          myTopLevelOGs.emplace(og->getBaseID(),og);
 #if FFR_DEBUG > 1
           std::cout <<"FFrExtractor::removeFiles(): Added "<< og->getType()
                     <<" {"<< og->getBaseID() <<"}"<< std::endl;
