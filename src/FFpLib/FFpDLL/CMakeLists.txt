@@ -18,8 +18,9 @@ file ( GLOB CPP_HEADER_FILES *.h )
 # Build and install
 
 add_library ( ${LIB_ID} SHARED ${CPP_SOURCE_FILES} ${CPP_HEADER_FILES} )
-target_link_libraries ( ${LIB_ID} LINK_PRIVATE FFpFatigue FFpCurveData FFaOperation FFrLib )
+target_link_libraries ( ${LIB_ID} LINK_PRIVATE FFpFatigue FFpCurveData
+                                               FFaOperation FFrLib )
 
 install ( TARGETS ${LIB_ID}
           RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
-          LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" )
+          LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" )
