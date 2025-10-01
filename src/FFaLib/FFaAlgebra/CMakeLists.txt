@@ -11,6 +11,8 @@ set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
+option ( USE_NEW_ROUND "Use new FFaMath::round() implementation" OFF )
+mark_as_advanced ( USE_NEW_ROUND )
 
 ## Files with header and source with same name
 set ( COMPONENT_FILE_LIST FFa3DLocation FFa3PArc FFaAlgebra FFaBody
@@ -37,6 +39,9 @@ foreach ( FILE ${SOURCE_FILE_LIST} )
   list ( APPEND CPP_SOURCE_FILES ${FILE}.C )
 endforeach ( FILE ${SOURCE_FILE_LIST} )
 
+if ( USE_NEW_ROUND )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFFA_USE_ROUND" )
+endif ( USE_NEW_ROUND )
 
 # Dependencies and external libraries
 
