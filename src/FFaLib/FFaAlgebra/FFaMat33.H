@@ -77,6 +77,7 @@ public:
   friend FaMat33  operator*  (const FaMat33& a, double d);
   friend FaMat33  operator*  (double d, const FaMat33& a);
   friend FaVec3   operator*  (const FaMat33& a, const FaVec3&  b);
+  friend FaVec3   operator*  (const FaVec3&  a, const FaMat33& b);
   friend FaMat33  operator/  (const FaMat33& a, double d);
 
   friend int      operator== (const FaMat33& a, const FaMat33& b);

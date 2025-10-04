@@ -525,6 +525,12 @@ FaVec3 operator* (const FaMat33& m, const FaVec3& v1)
 }
 
 
+FaVec3 operator* (const FaVec3& v1, const FaMat33& m)
+{
+  return FaVec3(v1*m.v[0], v1*m.v[1], v1*m.v[2]);
+}
+
+
 FaMat33 operator/ (const FaMat33& a, double d)
 {
   if (fabs(d) < EPS_ZERO)
