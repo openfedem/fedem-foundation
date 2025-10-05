@@ -83,16 +83,13 @@ public:
                        const FaVec3& zpt, const FaVec3& xzpl);
 
   FaVec3 projectOnXY(const FaVec3& x) const;
+
   FaVec3 getEulerZYX() const;
+  FaVec3 getEulerZYX(const FaMat34& from) const;
   double getEulerZYX(int i) const;
   double getEulerZYX(int i, const FaMat34& from) const;
   double getRotation(int i) const;
   double getRotation(int i, const FaMat34& from) const;
-
-  static FaVec3  getEulerZYX  (const FaMat34& from, const FaMat34& to);
-  static FaMat34 makeZrotation(double angle);
-  static FaMat34 makeYrotation(double angle);
-  static FaMat34 makeXrotation(double angle);
 
   // Reading and writing
 
@@ -159,6 +156,4 @@ inline double& FaMat34::operator() (int i, int j)
   return j == 4 ? p[i-1] : r[j-1][i-1];
 }
 
-//TODO: Remove the symbol "makeCS_X_YX", use "makeCS_X_XY" instead
-#define makeCS_X_YX makeCS_X_XY
 #endif

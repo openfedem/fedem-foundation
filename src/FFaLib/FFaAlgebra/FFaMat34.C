@@ -77,8 +77,7 @@ FaMat34& FaMat34::operator/= (double d)
 
 FaMat34 FaMat34::inverse() const
 {
-  FaMat33 dirMat = r.transpose();
-  return FaMat34(dirMat,-(dirMat*p));
+  return FaMat34(r.transpose(),-p*r);
 }
 
 
@@ -171,6 +170,11 @@ FaVec3 FaMat34::getEulerZYX() const
   return r.getEulerZYX();
 }
 
+FaVec3 FaMat34::getEulerZYX(const FaMat34& from) const
+{
+  return (from.r.transpose()*r).getEulerZYX();
+}
+
 
 double FaMat34::getEulerZYX(int i) const
 {
@@ -191,28 +195,6 @@ double FaMat34::getRotation(int i) const
 double FaMat34::getRotation(int i, const FaMat34& from) const
 {
   return (from.r.transpose()*r).getRotation()[i];
-}
-
-
-FaVec3 FaMat34::getEulerZYX(const FaMat34& from, const FaMat34& to)
-{
-  return (from.r.transpose()*to.r).getEulerZYX();
-}
-
-
-FaMat34 FaMat34::makeZrotation(double rot)
-{
-  return FaMat34(FaMat33::makeZrotation(rot),FaVec3());
-}
-
-FaMat34 FaMat34::makeYrotation(double rot)
-{
-  return FaMat34(FaMat33::makeYrotation(rot),FaVec3());
-}
-
-FaMat34 FaMat34::makeXrotation(double rot)
-{
-  return FaMat34(FaMat33::makeXrotation(rot),FaVec3());
 }
 
 
