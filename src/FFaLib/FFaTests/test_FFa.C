@@ -15,10 +15,11 @@
 #include "gtest.h"
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaAlgebra/FFaMath.H"
-#include "FFaLib/FFaAlgebra/FFaVec3.H"
+#include "FFaLib/FFaAlgebra/FFaMat34.H"
 #include "FFaLib/FFaAlgebra/FFaCheckSum.H"
 #include "FFaLib/FFaString/FFaStringExt.H"
 #include <array>
+#include <numeric>
 
 int BodyTest (const std::string& fname, double z0, double z1);
 
@@ -52,7 +53,8 @@ int main (int argc, char** argv)
 
 
 //! \brief Class describing a parameterized unit test instance for FFaBody.
-class TestFFaBody : public testing::Test, public testing::WithParamInterface<const char*> {};
+class TestFFaBody : public testing::Test,
+                    public testing::WithParamInterface<const char*> {};
 
 
 /*!
@@ -128,10 +130,11 @@ TEST(TestFFa,FilePath)
 
 
 //! \brief Data type to instantiate particular unit tests over.
-typedef std::array<double,5> Case;
+using Case = std::array<double,5>;
 
 //! \brief Class describing a parameterized unit test instance for cubicSolve().
-class TestFFaCubic : public testing::Test, public testing::WithParamInterface<Case> {};
+class TestFFaCubic : public testing::Test,
+                     public testing::WithParamInterface<Case> {};
 
 
 /*!
@@ -153,7 +156,7 @@ TEST_P(TestFFaCubic, Solve)
   if (B != 0.0) std::cout << B <<"*x^2 + ";
   if (C != 0.0) std::cout << C <<"*x - ";
   double sol[3];
-  std::cout << D <<" = 0"<< std::endl;
+  std::cout << D <<" = 0\n";
   int nSol = FFa::cubicSolve(A,B,C,-D,sol);
   ASSERT_GT(nSol,0);
   bool found = false;
@@ -184,10 +187,11 @@ INSTANTIATE_TEST_CASE_P(TestSolve, TestFFaCubic,
 
 
 //! \brief Data type to instantiate particular unit tests over.
-typedef std::array<double,8> CaseII;
+using CaseII = std::array<double,8>;
 
 //! \brief Class describing a parameterized unit test instance for bilinearSolve().
-class TestFFaBilin : public testing::Test, public testing::WithParamInterface<CaseII> {};
+class TestFFaBilin : public testing::Test,
+                     public testing::WithParamInterface<CaseII> {};
 
 
 /*!
@@ -292,4 +296,47 @@ TEST(TestFFa,String)
   std::cout <<"FixDof: \""<< FixDof <<"\""<< std::endl;
   EXPECT_FALSE(FFaString("jalla #FixX").hasSubString(FixDof));
   EXPECT_TRUE(FFaString("peder #FixY").hasSubString(FixDof));
+}
+
+
+/*!
+  Creates some Mat33 unit tests.
+*/
+
+TEST(TestFFa,Mat33)
+{
+  double values[9];
+  std::iota(values,values+9,1.0);
+  FaMat33 A(values);
+  FaVec3 b(0.1,0.2,0.3);
+  FaVec3 c = A.transpose()*b;
+  FaVec3 d = b*A;
+  std::cout <<"\nA = "<< A;
+  std::cout <<"\nb = "<< b;
+  std::cout <<"\nA^t*b = "<< c;
+  std::cout <<"\nb * A = "<< d;
+  std::cout << std::endl;
+
+  EXPECT_EQ(c.x(),d.x());
+  EXPECT_EQ(c.y(),d.y());
+  EXPECT_EQ(c.z(),d.z());
+}
+
+
+/*!
+  Creates some Mat34 unit tests.
+*/
+
+TEST(TestFFa,Mat34)
+{
+  FaMat34 A;
+  A.makeCS_X_XY(FaVec3(1.2,3.4,5.6),FaVec3(7.8,9.0,1.2),FaVec3(3.4,5.6,7.8));
+  FaMat34 B = A.inverse()*A;
+
+  std::cout <<"\nA = "<< A;
+  std::cout <<"\nA^-1 = "<< A.inverse();
+  std::cout <<"\nB = "<< B;
+  std::cout << std::endl;
+
+  EXPECT_TRUE(B.isCoincident(FaMat34(),1.0e-16));
 }

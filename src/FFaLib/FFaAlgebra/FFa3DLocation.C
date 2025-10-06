@@ -355,7 +355,7 @@ FaMat33 FFa3DLocation::direction() const
       result.eulerRotateZYX(myL[1]*M_PI/180.0);
       break;
     case PNT_PX_PXY:
-      mx.makeCS_X_YX(this->translation(), myL[1], myL[2]);
+      mx.makeCS_X_XY(this->translation(), myL[1], myL[2]);
       result = mx.direction();
       break;
     case PNT_PZ_PXZ:
@@ -363,7 +363,7 @@ FaMat33 FFa3DLocation::direction() const
       result = mx.direction();
       break;
     case DIR_EX_EXY:
-      mx.makeCS_X_YX(FaVec3(), myL[1], myL[2]);
+      mx.makeCS_X_XY(FaVec3(), myL[1], myL[2]);
       result = mx.direction();
       break;
     }
