@@ -121,11 +121,15 @@ int test2 (FFlLinkHandler& link)
   \details This function traverses the model writing out some key information.
 */
 
-int test3 (const FFlLinkHandler& link)
+int test3 (const FFlLinkHandler& link, const std::vector<int>& elms)
 {
   // Traverse the elements
   for (ElementsCIter eit = link.elementsBegin(); eit != link.elementsEnd(); ++eit)
   {
+    if (!elms.empty()) // Print only the specified elements
+      if (std::find(elms.begin(),elms.end(),(*eit)->getID()) == elms.end())
+        continue;
+
     std::cout <<"Element ID "<< (*eit)->getID()
               <<" is of type "<< (*eit)->getTypeName()
               <<" and has "<< (*eit)->getNodeCount() <<" nodes. (";
@@ -147,7 +151,8 @@ int test3 (const FFlLinkHandler& link)
     FaVec3     Xec;
     FFaTensor3 Ie;
     if ((*eit)->getMassProperties(Me,Xec,Ie))
-      std::cout <<"\tElement mass: "<< Me << std::endl;
+      std::cout <<"\tElement mass: "<< Me
+                <<" CoG = "<< Xec << std::endl;
   }
 
   std::cout <<"Done."<< std::endl;
@@ -244,6 +249,7 @@ int main (int argc, char** argv)
 {
   FFlInit initializer; // Initialize the FE library
   FFlLinkHandler link; // Container for a FE link
+  std::vector<int> el; // List of specific elements to visit
 
   // Read and interpret the link data file
   if (argc > 1)
@@ -268,8 +274,28 @@ int main (int argc, char** argv)
   case 0: return test1(link, FFl::CS_NOGROUPINFO | FFl::CS_NOSTRCINFO | FFl::CS_NOVISUALINFO);
   case 1: return test1(link, 0, argc > 3 ? !strncmp(argv[3],"new",3) : false);
   case 2: return test2(link);
-  case 3: return test3(link);
+  case 3:
+    for (int i = 3; i < argc; i++)
+      el.push_back(atoi(argv[i]));
+    return test3(link,el);
   case 4: return test4(link, argc-3, argv+3);
+  case 5:
+    for (int i = 3; i+2 < argc; i += 3)
+    {
+      FaVec3 X(atof(argv[i]),atof(argv[i+1]),atof(argv[i+2]));
+      std::vector<FFlTypeInfoSpec::Cathegory> shell{FFlTypeInfoSpec::SHELL_ELM};
+      if (FFlElementBase* e = link.findClosestElement(X,shell); e)
+      {
+        std::cout <<"The closest element to point "<< X <<" is\t"<< e->getID();
+        double     Me;
+        FFaTensor3 Ie;
+        FaVec3     Xc;
+        if (e->getMassProperties(Me,Xc,Ie))
+          std::cout <<", CoG = "<< Xc;
+        std::cout << std::endl;
+      }
+    }
+    return 0;
   }
 
   std::cout <<"usage: "<< argv[0] <<" <linkfile> [num] [newCS] [linear|subdivide]\n";
