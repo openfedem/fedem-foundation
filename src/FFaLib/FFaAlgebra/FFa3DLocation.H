@@ -10,6 +10,7 @@
 
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include "FFaLib/FFaString/FFaEnum.H"
+#include <array>
 
 class FaMat33;
 class FaMat34;
@@ -57,45 +58,42 @@ private:
     FFaEnumEntryEnd;
   };
 
-  bool saveNumericalData; //!< If false, only the type enums are saved
+  PosTypeEnum myPosTyp = CART_X_Y_Z;
+  RotTypeEnum myRotTyp = EUL_Z_Y_X;
 
-  FaVec3      myL[3];
-  PosTypeEnum myPosTyp;
-  RotTypeEnum myRotTyp;
+  std::array<FaVec3,3> myL;
+
+  bool saveNumericalData = false; //!< If false, only the type enums are saved
 
 public:
   //! \brief Default constructor.
-  explicit FFa3DLocation(bool saveNumData = false);
-  //! \brief Constructor definining the orientation from two direction vectors.
+  FFa3DLocation() { saveNumericalData = false; }
+  //! \brief Constructor defining the orientation from two direction vectors.
   FFa3DLocation(PosType t, const FaVec3& v0,
 		RotType r, const FaVec3& v1, const FaVec3& v2);
-  //! \brief Constructor definining the orientation from rotation angles.
+  //! \brief Constructor defining the orientation from a rotation angles.
   FFa3DLocation(PosType t, const FaVec3& v0, RotType r, const FaVec3& v1);
   //! \brief Constructor defining the location from a position matrix.
   FFa3DLocation(const FaMat34& m);
   //! \brief Copy constructor.
-  FFa3DLocation(const FFa3DLocation& m) { *this = m; saveNumericalData = true; }
+  FFa3DLocation(const FFa3DLocation& m) { *this = m; }
 
-  // Local operators
+  //! \brief Let this instance save its numerical data.
+  void saveMyNumericalData() { saveNumericalData = true; }
 
-  FFa3DLocation& operator= (const FFa3DLocation& m);
-  FFa3DLocation& operator= (const FaMat34& m);
+  //! \brief Assignment operator.
+  FFa3DLocation& operator=(const FFa3DLocation& m);
+  //! \brief Comparison operator.
+  bool operator==(const FFa3DLocation& m) const;
 
-  bool operator== (const FFa3DLocation& m) const { return  isCoincident(m); }
-  bool operator!= (const FFa3DLocation& m) const { return !isCoincident(m); }
-
-private:
-  bool isCoincident(const FFa3DLocation& m) const;
-public:
-
-  // Indexing
-
-  const FaVec3& operator[] (int i) const;
-  FaVec3&       operator[] (int i);
+  //! \brief Indexing operator.
+  const FaVec3& operator[](int i) const;
+  //! \brief Indexing operator, for assignment.
+  FaVec3& operator[](int i);
 
   PosType getPosType() const { return myPosTyp; }
   RotType getRotType() const { return myRotTyp; }
-  int getNumFields() const;
+  int getNumFields()   const { return myRotTyp == EUL_Z_Y_X ? 6 : 9; }
 
   // Converting and setting
 
@@ -120,8 +118,8 @@ public:
 
   // Global operators
 
-  friend std::ostream& operator<< (std::ostream& s, const FFa3DLocation& m);
-  friend std::istream& operator>> (std::istream& s, FFa3DLocation& m);
+  friend std::ostream& operator<<(std::ostream& s, const FFa3DLocation& m);
+  friend std::istream& operator>>(std::istream& s, FFa3DLocation& m);
 };
 
 

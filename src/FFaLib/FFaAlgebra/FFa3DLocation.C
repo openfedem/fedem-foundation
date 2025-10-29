@@ -13,13 +13,6 @@
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
 
-FFa3DLocation::FFa3DLocation(bool saveNumData)
-{
-  myPosTyp = CART_X_Y_Z;
-  myRotTyp = EUL_Z_Y_X;
-  saveNumericalData = saveNumData;
-}
-
 FFa3DLocation::FFa3DLocation(PosType t, const FaVec3& v0,
 			     RotType r, const FaVec3& v1, const FaVec3& v2)
 {
@@ -56,10 +49,6 @@ FFa3DLocation::FFa3DLocation(const FaMat34& m)
 }
 
 
-/*!
-  Local operators.
-*/
-
 FFa3DLocation& FFa3DLocation::operator= (const FFa3DLocation& m)
 {
   if (this == &m)
@@ -75,14 +64,8 @@ FFa3DLocation& FFa3DLocation::operator= (const FFa3DLocation& m)
   return *this;
 }
 
-FFa3DLocation& FFa3DLocation::operator= (const FaMat34& m)
-{
-  this->set(myPosTyp, myRotTyp, m);
-  return *this;
-}
 
-
-bool FFa3DLocation::isCoincident(const FFa3DLocation& m) const
+bool FFa3DLocation::operator==(const FFa3DLocation& m) const
 {
   return this->getMatrix().isCoincident(m.getMatrix(),1.0e-7);
 }
@@ -377,25 +360,6 @@ FaMat33 FFa3DLocation::direction() const
 
 
 /*!
-  Returns the number of active fields in this 3DLocation.
-  Depends on the rotation type set.
-*/
-
-int FFa3DLocation::getNumFields() const
-{
-  switch (myRotTyp)
-    {
-    case EUL_Z_Y_X:  return 6;
-    case PNT_PX_PXY: return 9;
-    case PNT_PZ_PXZ: return 9;
-    case DIR_EX_EXY: return 9;
-    }
-
-  return 6;
-}
-
-
-/*!
   Get a FaMat34 representation of the 3DLocation.
 */
 
@@ -480,7 +444,7 @@ std::ostream& operator << (std::ostream& s, const FFa3DLocation& m)
     s.precision(tmpPrec);
   }
   else // Output only the type enums
-    s << m.myPosTyp <<"  "<< m.myRotTyp;
+    s << m.myPosTyp <<" "<< m.myRotTyp;
 
   return s;
 }
@@ -488,8 +452,7 @@ std::ostream& operator << (std::ostream& s, const FFa3DLocation& m)
 
 std::istream& operator >> (std::istream& s, FFa3DLocation& m)
 {
-  // Retain the save flag
-  FFa3DLocation m_tmp(m.saveNumericalData);
+  FFa3DLocation m_tmp;
   s >> m_tmp.myPosTyp;
 
   // Check if the numerical data was stored
