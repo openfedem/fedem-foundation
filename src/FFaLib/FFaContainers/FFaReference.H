@@ -34,20 +34,20 @@ public:
 
   // Assigning
 
-  void setRef(FFaFieldContainer* ptr);
+  bool setRef(FFaFieldContainer* ptr);
   void setRef(int objId, int typeId);
   void setRef(int objId, int typeId, const IntVec& assemblyIDs);
-  void setPointerToNull();
+  bool setPointerToNull() { return this->setRef(NULL); }
 
   void copy(const FFaReferenceBase& aReference, bool unresolve = false);
 
   // Access
 
   FFaFieldContainer* getRef() const;
-  bool isResolved() const;
-  bool isNull() const;
+  bool isResolved() const { return IAmResolved; }
+  bool isNull() const { return IAmResolved && IAmBound ? !myPtr : true; }
 
-  void setContextName(const char* name);
+  void setContextName(const char* name) { myContextName = name; }
   const char* getContextName() const;
 
   // Type info access
@@ -57,7 +57,7 @@ public:
   const char* getRefTypeName() const;
   int getRefTypeID() const;
   int getRefID() const;
-  void getRefAssemblyID(IntVec& assID) const;
+  bool getRefAssemblyID(IntVec& assID) const;
 
   // IO
 
@@ -164,25 +164,22 @@ private:
   \sa FFaReferenceBase::setContextName
 */
 
-template<class Type>
-class FFaReference : public FFaReferenceBase
+template<class Type> class FFaReference : public FFaReferenceBase
 {
 public:
-  FFaReference() {}
-  virtual ~FFaReference() {}
 
   // Assigning
 
-  void setPointer(Type* ptr) { this->setRef(ptr); }
+  bool setPointer(Type* ptr) { return this->setRef(ptr); }
 
   FFaReference<Type>& operator=(Type* ptr) { this->setRef(ptr); return *this; }
 
   // Access
 
-  Type* getPointer() const { return   (Type*)this->getRef(); }
-  Type* operator->() const { return   (Type*)this->getRef(); }
-  Type& operator*()  const { return *((Type*)this->getRef()); }
-  operator Type*()   const { return   (Type*)this->getRef();}
+  Type* getPointer() const { return (Type*)this->getRef(); }
+  Type* operator->() const { return  this->getPointer(); }
+  Type& operator*()  const { return *this->getPointer(); }
+  operator Type*()   const { return  this->getPointer(); }
 
   // Equality
 
