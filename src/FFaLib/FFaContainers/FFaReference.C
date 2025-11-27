@@ -70,21 +70,15 @@ FFaReferenceBase::~FFaReferenceBase()
 
 
 /*!
-  Sets the pointer to zero.
-*/
-
-void FFaReferenceBase::setPointerToNull()
-{
-  this->setRef(NULL);
-}
-
-
-/*!
   Sets the pointer value from a FFaFieldContainer pointer directly.
+  Returns \e true if a new pointer value is assigned, otherwise \e false.
 */
 
-void FFaReferenceBase::setRef(FFaFieldContainer* ptr)
+bool FFaReferenceBase::setRef(FFaFieldContainer* ptr)
 {
+  if (ptr == myPtr && IAmResolved && IAmBound)
+    return false; // unchanged
+
   this->clearResolveRef();
   this->unbind();
 
@@ -95,11 +89,14 @@ void FFaReferenceBase::setRef(FFaFieldContainer* ptr)
               <<" ptr = "<< ptr->getTypeID() << "("<< ptr->getTypeIDName()
               <<")"<< std::endl;
     myPtr = NULL;
-    return;
+  }
+  else
+  {
+    myPtr = ptr;
+    this->bind();
   }
 
-  myPtr = ptr;
-  this->bind();
+  return true;
 }
 
 
@@ -124,30 +121,6 @@ void FFaReferenceBase::setRef(int objId, int typeId, const IntVec& assID)
 
 
 /*!
-  Returns whether this reference has resolved its possible read ID.
-  True as long as no myUnresolvedRef exists.
-*/
-
-bool FFaReferenceBase::isResolved() const
-{
-  return IAmResolved;
-}
-
-
-/*!
-  Returns whether the pointer is zero.
-*/
-
-bool FFaReferenceBase::isNull() const
-{
-  if (IAmResolved && IAmBound)
-    return !myPtr;
-
-  return true;
-}
-
-
-/*!
   Returns the FFaFieldContainer pointer contained.
 */
 
@@ -166,26 +139,13 @@ FFaFieldContainer* FFaReferenceBase::getRef() const
 
 
 /*!
-  Sets the context name for this reference. Used when doing topology browsing
-  to know why a reference is referring to a certain FFaFieldContainer.
-  Supposed to be set upon initialization when adding the reference to
-  the book keeping in the FFaFieldContainer it is residing in.
-  \sa FFaReferenceBase::getContextName
-  \sa FFaReferenceListBase::setContextName
-  \sa FFaReferenceListBase::getContextName
-*/
-
-void FFaReferenceBase::setContextName(const char* name)
-{
-  myContextName = name;
-}
-
-
-/*!
-  Returns the contextName used by this reference.
-  If this reference is a member of a FFaReferenceList, this method
-  will return the context name of that FFaReferenceList.
-  \sa FFaReferenceBase::setContextName
+  Returns the context name used by this reference.
+  This is used when doing topology browsing to know why a reference is
+  referring to a certain FFaFieldContainer. Supposed to be set upon
+  initialization when adding the reference to the book keeping in the
+  FFaFieldContainer it is residing in.
+  If this reference is a member of a FFaReferenceList,
+  this method will return the context name of that FFaReferenceList.
   \sa FFaReferenceListBase::setContextName
   \sa FFaReferenceListBase::getContextName
 */
@@ -249,7 +209,7 @@ int FFaReferenceBase::getRefID() const
   or the read assembly id if not resolved.
 */
 
-void FFaReferenceBase::getRefAssemblyID(IntVec& assID) const
+bool FFaReferenceBase::getRefAssemblyID(IntVec& assID) const
 {
   if (!IAmResolved)
     assID.assign(myUnresolvedRef->begin()+2,myUnresolvedRef->end());
@@ -257,6 +217,8 @@ void FFaReferenceBase::getRefAssemblyID(IntVec& assID) const
     myPtr->getResolvedAssemblyID(assID);
   else
     assID.clear();
+
+  return !assID.empty();
 }
 
 
@@ -315,12 +277,12 @@ void FFaReferenceBase::resolve(FFaSearcher& findCB)
   }
 
 #if FFA_DEBUG > 1
-  FFaFieldContainer* ofc = this->getOwnerFieldContainer();
-  if (ofc && this->getRef())
-    std::cout <<"FFaReferenceBase::resolve():  "<< this->getContextName()
-              <<" in " << ofc->getTypeIDName() <<" "<< ofc->getResolvedID()
-              <<" resolved to "<< foundObj->getTypeIDName()
-              <<" "<< foundObj->getResolvedID() << std::endl;
+  if (this->getRef())
+    if (FFaFieldContainer* ofc = this->getOwnerFieldContainer(); ofc)
+      std::cout <<"FFaReferenceBase::resolve():  "<< this->getContextName()
+                <<" in " << ofc->getTypeIDName() <<" "<< ofc->getResolvedID()
+                <<" resolved to "<< foundObj->getTypeIDName()
+                <<" "<< foundObj->getResolvedID() << std::endl;
 #endif
 }
 
@@ -335,8 +297,7 @@ void FFaReferenceBase::unresolve()
     return;
 
 #ifdef FFA_DEBUG
-  FFaFieldContainer* ofc = this->getOwnerFieldContainer();
-  if (ofc)
+  if (FFaFieldContainer* ofc = this->getOwnerFieldContainer(); ofc)
     std::cout <<"FFaReferenceBase::unresolve(): "<< this->getContextName()
               <<" in " << ofc->getTypeIDName() <<" "<< ofc->getResolvedID()
               << std::endl;
@@ -362,8 +323,7 @@ void FFaReferenceBase::updateAssemblyRef(int from, int to, size_t ind)
 #ifdef FFA_DEBUG
     std::cout <<"FFaReferenceBase::updateAssemblyRef("<< from <<","<< to
               <<") for "<< this->getContextName();
-    FFaFieldContainer* ofc = this->getOwnerFieldContainer();
-    if (ofc)
+    if (FFaFieldContainer* ofc = this->getOwnerFieldContainer(); ofc)
       std::cout <<" in "<< ofc->getTypeIDName() <<" "<< ofc->getResolvedID();
     std::cout << std::endl;
 #endif
@@ -405,16 +365,12 @@ void FFaReferenceBase::updateAssemblyRef(const IntVec& from,
 void FFaReferenceBase::write(std::ostream& os) const
 {
   if (!this->isNull())
-  {
-    IntVec assID;
-    this->getRefAssemblyID(assID);
-    if (!assID.empty())
+    if (IntVec assID; this->getRefAssemblyID(assID))
     {
       os <<"aID: ";
       for (int id : assID) os << id <<" ";
       os <<"uID: ";
     }
-  }
 
   os << this->getRefID();
 
@@ -594,8 +550,7 @@ void FFaReferenceBase::copy(const FFaReferenceBase& aRef, bool unresolve)
     std::cout <<"FFaReferenceBase::copy(): "
               << this->getRefTypeName() <<" ["<< this->getRefID() <<"] "
               << aRef.getContextName() <<" to "<< this->getContextName();
-    FFaFieldContainer* ofc = this->getOwnerFieldContainer();
-    if (ofc)
+    if (FFaFieldContainer* ofc = this->getOwnerFieldContainer(); ofc)
       std::cout <<" in "<< ofc->getTypeIDName() <<" "<< ofc->getResolvedID();
     std::cout << std::endl;
 #endif
