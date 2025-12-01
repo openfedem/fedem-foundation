@@ -18,9 +18,9 @@
 #ifndef FFA_OPERATION_H
 #define FFA_OPERATION_H
 
-#include <map>
-#include <vector>
 #include <string>
+#include <vector>
+#include <utility>
 
 #include "FFaLib/FFaDynCalls/FFaDynCB.H"
 #ifdef FT_USE_MEMPOOL
@@ -133,15 +133,15 @@ FFaOperation<double>::FFaOperation() : myCachedValue(0), IAmEvaluated(false) {}
 template <class OperationCB>
 class FFaOperationContainer
 {
-  //! \brief Convenience type definition, name-to-operation mapping.
-  typedef std::map<std::string,OperationCB> OperCBMap;
+  //! \brief Convenience type alias for a named operations
+  using NamedOper = std::pair<std::string,OperationCB>;
 
 public:
   //! \brief Adds a named operation to the \a OperationCB container.
   static void addOperation(const std::string& name, OperationCB operation)
   {
-    static std::map<std::string,OperationCB> ops;
-    ops[name] = operation;
+    static std::vector<NamedOper> ops;
+    ops.emplace_back(name,operation);
     ourOperations = &ops;
   }
 
@@ -152,19 +152,24 @@ public:
     if (ourOperations)
     {
       names.reserve(ourOperations->size());
-      for (const typename OperCBMap::value_type& oper : *ourOperations)
+      for (const NamedOper& oper : *ourOperations)
         names.push_back(oper.first);
     }
   }
 
-  //! \brief Defines the default operation of type \a OperationCB.
-  static void setDefaultOperation(const std::string& o) { ourDefaultOper = o; }
   //! \brief Returns the default operation of type \a OperationCB.
-  static const std::string& getDefaultOperation() { return ourDefaultOper; }
+  static const std::string& getDefaultOperation()
+  {
+    if (ourOperations && !ourOperations->empty())
+      return ourOperations->front().first;
+
+    static const std::string noop;
+    return noop;
+  }
 
 protected:
-  //! \brief The default constructor defines the default operation.
-  FFaOperationContainer() { this->selectOperation(ourDefaultOper); }
+  //! \brief The default constructor selects the default operation.
+  FFaOperationContainer() { this->selectOperation(getDefaultOperation()); }
 
   //! \brief Selects the named operation to use.
   //! \details The given \a name has to be in the \ref ourOperations container.
@@ -173,14 +178,12 @@ protected:
   void selectOperation(const std::string& name)
   {
     if (ourOperations && !name.empty())
-    {
-      typename OperCBMap::const_iterator it = ourOperations->find(name);
-      if (it != ourOperations->end())
-      {
-        myOperationCB = it->second;
-        return;
-      }
-    }
+      for (const NamedOper& oper : *ourOperations)
+	if (oper.first == name)
+        {
+          myOperationCB = oper.second;
+          return;
+        }
 
     // The selected operation is not defined
     myOperationCB.erase();
@@ -190,16 +193,12 @@ protected:
 
 private:
   //! Static container for operations of type \a OperationCB.
-  static std::map<std::string,OperationCB>* ourOperations;
-  //! Name of the default operation type \a OperationCB.
-  static std::string ourDefaultOper;
+  static std::vector<NamedOper>* ourOperations;
 };
 
 template <class OperationCB>
-std::map<std::string,OperationCB>* FFaOperationContainer<OperationCB>::ourOperations = NULL;
-
-template <class OperationCB>
-std::string FFaOperationContainer<OperationCB>::ourDefaultOper;
+std::vector< std::pair<std::string,OperationCB> >*
+FFaOperationContainer<OperationCB>::ourOperations = NULL;
 
 
 /*!
@@ -359,7 +358,7 @@ FFaMemPool FFaNToOneOp<RetType>::ourMemPool = FFaMemPool(sizeof(FFaNToOneOp<RetT
 
 namespace FFa
 {
-  //! \brief Defines a special result \a value and its associated equivalent value.
+  //! \brief Defines a special result value and its associated equivalent value.
   //! \details The special result value is used by some unary operations
   //! transforming result vectors into a double value. When \a value is
   //! encountered among the input values for an operation, it will be
