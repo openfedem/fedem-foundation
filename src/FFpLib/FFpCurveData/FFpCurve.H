@@ -56,7 +56,7 @@ public:
 
   void clear ();
   void resize (size_t nSpatialPoints);
-  void unref (bool clearReadOp = false);
+  bool unref (bool clearReadOp = false);
   bool initAxis (const FFaResultDescription& desc,
 		 const std::string& oper, int axis);
   bool initAxes (const std::vector<FFaResultDescription>& xdesc,
@@ -66,7 +66,7 @@ public:
 		 const std::string& tOper, short int end1);
   int getSpatialXaxisObject (size_t i) const;
 
-  const std::pair<double,double>& getTimeRange() const { return timeRange; }
+  const std::pair<double,double>& getTimeRange () const { return timeRange; }
 
   bool notReadThisFar (double& lastStep) const;
   bool findVarRefsAndOpers (FFrExtractor* extr, std::string& errMsg);
@@ -108,7 +108,7 @@ public:
   void onDataPlotted () { dataChanged = false; }
   void setDataChanged ();
 
-  std::vector<double>& operator[](int axis) { return points[axis]; }
+  std::vector<double>& operator[] (int axis) { return points[axis]; }
   const std::vector<double>& getAxisData (int ax) const { return points[ax]; }
 
   double getValue (double x, bool& monotonX) const;
