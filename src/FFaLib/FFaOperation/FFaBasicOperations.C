@@ -248,10 +248,10 @@ void FFa::initBasicOps()
 
   // FaMat34 -> double
 
-  FFaUnaryOp<double,FaMat34>::addOperation("Position Length"  ,FFaDynCB2S(FaMat34ToLength, double&, const FaMat34&));
   FFaUnaryOp<double,FaMat34>::addOperation("Position X"       ,FFaDynCB2S(FaMat34ToPosX  , double&, const FaMat34&));
   FFaUnaryOp<double,FaMat34>::addOperation("Position Y"       ,FFaDynCB2S(FaMat34ToPosY  , double&, const FaMat34&));
   FFaUnaryOp<double,FaMat34>::addOperation("Position Z"       ,FFaDynCB2S(FaMat34ToPosZ  , double&, const FaMat34&));
+  FFaUnaryOp<double,FaMat34>::addOperation("Position Length"  ,FFaDynCB2S(FaMat34ToLength, double&, const FaMat34&));
   FFaUnaryOp<double,FaMat34>::addOperation("Euler Angle ZYX X",FFaDynCB2S(FaMat34ToAngX  , double&, const FaMat34&));
   FFaUnaryOp<double,FaMat34>::addOperation("Euler Angle ZYX Y",FFaDynCB2S(FaMat34ToAngY  , double&, const FaMat34&));
   FFaUnaryOp<double,FaMat34>::addOperation("Euler Angle ZYX Z",FFaDynCB2S(FaMat34ToAngZ  , double&, const FaMat34&));
@@ -259,17 +259,13 @@ void FFa::initBasicOps()
   FFaUnaryOp<double,FaMat34>::addOperation("Rotation Angle Y" ,FFaDynCB2S(FaMat34ToRotY  , double&, const FaMat34&));
   FFaUnaryOp<double,FaMat34>::addOperation("Rotation Angle Z" ,FFaDynCB2S(FaMat34ToRotZ  , double&, const FaMat34&));
 
-  FFaUnaryOp<double,FaMat34>::setDefaultOperation("Position X");
-
   // FaVec3 -> double
 
+  FFaUnaryOp<double,FaVec3>::addOperation("Length"  ,FFaDynCB2S(FaVec3ToLength  , double&, const FaVec3&));
+  FFaUnaryOp<double,FaVec3>::addOperation("LengthYZ",FFaDynCB2S(FaVec3ToLengthYZ, double&, const FaVec3&));
   FFaUnaryOp<double,FaVec3>::addOperation("X"       ,FFaDynCB2S(FaVec3ToX       , double&, const FaVec3&));
   FFaUnaryOp<double,FaVec3>::addOperation("Y"       ,FFaDynCB2S(FaVec3ToY       , double&, const FaVec3&));
   FFaUnaryOp<double,FaVec3>::addOperation("Z"       ,FFaDynCB2S(FaVec3ToZ       , double&, const FaVec3&));
-  FFaUnaryOp<double,FaVec3>::addOperation("LengthYZ",FFaDynCB2S(FaVec3ToLengthYZ, double&, const FaVec3&));
-  FFaUnaryOp<double,FaVec3>::addOperation("Length"  ,FFaDynCB2S(FaVec3ToLength  , double&, const FaVec3&));
-
-  FFaUnaryOp<double,FaVec3>::setDefaultOperation("Length");
 
   // FFaTensor3 -> double
 
@@ -286,8 +282,6 @@ void FFa::initBasicOps()
   FFaUnaryOp<double,FFaTensor3>::addOperation("Xz"              ,FFaDynCB2S(Xz3            , double&, const FFaTensor3&));
   FFaUnaryOp<double,FFaTensor3>::addOperation("Yz"              ,FFaDynCB2S(Yz3            , double&, const FFaTensor3&));
 
-  FFaUnaryOp<double,FFaTensor3>::setDefaultOperation("Von Mises");
-
   // FFaTensor2 -> double
 
   FFaUnaryOp<double,FFaTensor2>::addOperation("Von Mises"       ,FFaDynCB2S(VonMises2      , double&, const FFaTensor2&));
@@ -299,8 +293,6 @@ void FFa::initBasicOps()
   FFaUnaryOp<double,FFaTensor2>::addOperation("Yy"              ,FFaDynCB2S(Yy2            , double&, const FFaTensor2&));
   FFaUnaryOp<double,FFaTensor2>::addOperation("Xy"              ,FFaDynCB2S(Xy2            , double&, const FFaTensor2&));
 
-  FFaUnaryOp<double,FFaTensor2>::setDefaultOperation("Von Mises");
-
   // FFaTensor1 -> double
 
   FFaUnaryOp<double,FFaTensor1>::addOperation("Von Mises"       ,FFaDynCB2S(Tensor1toDouble, double&, const FFaTensor1&));
@@ -308,27 +300,19 @@ void FFa::initBasicOps()
   FFaUnaryOp<double,FFaTensor1>::addOperation("Min Principal"   ,FFaDynCB2S(Tensor1toDouble, double&, const FFaTensor1&));
   FFaUnaryOp<double,FFaTensor1>::addOperation("Xx"              ,FFaDynCB2S(Tensor1toDouble, double&, const FFaTensor1&));
 
-  FFaUnaryOp<double,FFaTensor1>::setDefaultOperation("Von Mises");
-
   // double -> double
 
   FFaUnaryOp<double,double>::addOperation("None",FFaDynCB2S(DDNoOp, double&, const double&));
   FFaUnaryOp<double,double>::addOperation("Log" ,FFaDynCB2S(DDLog , double&, const double&));
-
-  FFaUnaryOp<double,double>::setDefaultOperation("None");
 
   // float -> double
 
   FFaUnaryOp<double,float>::addOperation("None",FFaDynCB2S(FDNoOp, double&, const float&));
   FFaUnaryOp<double,float>::addOperation("Log" ,FFaDynCB2S(FDLog , double&, const float&));
 
-  FFaUnaryOp<double,float>::setDefaultOperation("None");
-
   // int -> double
 
   FFaUnaryOp<double,int>::addOperation("None",FFaDynCB2S(IDNoOp, double&, const int&));
-
-  FFaUnaryOp<double,int>::setDefaultOperation("None");
 
   // DoubleVec -> double
 
@@ -338,8 +322,6 @@ void FFa::initBasicOps()
   FFaUnaryOp<double,DoubleVec>::addOperation("Absolute Min",  FFaDynCB2S(Absolute_Min,  double&, const DoubleVec&));
   FFaUnaryOp<double,DoubleVec>::addOperation("Average",       FFaDynCB2S(Average,       double&, const DoubleVec&));
   FFaUnaryOp<double,DoubleVec>::addOperation("Max Difference",FFaDynCB2S(Max_Difference,double&, const DoubleVec&));
-
-  FFaUnaryOp<double,DoubleVec>::setDefaultOperation("Max");
 
   // Operation transforming a real color code into an unsigned int
 

@@ -43,7 +43,7 @@ FFpCurve::FFpCurve (const FFpCurve& curve)
   for (int axis = 0; axis < N_AXES; axis++)
   {
     reader[axis].resize(curve.reader[axis].size());
-    rdOper[axis] = (std::string*)NULL;
+    rdOper[axis] = NULL;
     points[axis] = curve.points[axis];
   }
 
@@ -98,8 +98,8 @@ void FFpCurve::resize (size_t nSpatialPoints)
     if (reader[axis].size() > 1)
       for (PointData& read : reader[axis])
         delete read.rDescr;
-    reader[axis].resize(nSpatialPoints == 0 && axis == Y ? 1 : nSpatialPoints);
-    rdOper[axis] = (std::string*)NULL;
+    reader[axis].resize(nSpatialPoints < 1 && axis == Y ? 1 : nSpatialPoints);
+    rdOper[axis] = NULL;
     points[axis].clear();
   }
 
@@ -110,7 +110,7 @@ void FFpCurve::resize (size_t nSpatialPoints)
 }
 
 
-void FFpCurve::unref (bool clearReadOp)
+bool FFpCurve::unref (bool clearReadOp)
 {
   for (int axis = 0; axis < N_AXES; axis++)
     for (PointData& read : reader[axis])
@@ -118,6 +118,8 @@ void FFpCurve::unref (bool clearReadOp)
       if (read.readOp) read.readOp->unref();
       if (clearReadOp) read.readOp = (FFaOperation<double>*)NULL;
     }
+
+  return false;
 }
 
 
@@ -201,7 +203,7 @@ bool FFpCurve::initAxes (const std::vector<FFaResultDescription>& xdesc,
   bool useCurveLength = xOper.find("Length") != std::string::npos;
   std::string xVar(useCurveLength ? "Curve length" : "Position matrix");
   std::string xTyp(useCurveLength ? "SCALAR" : "TMAT34");
-  static std::string NoOp("None");
+  static const std::string NoOp("None");
 
   if (xdesc.size() == 2*ydesc.size() && end1 >= 0)
   {
@@ -287,7 +289,6 @@ bool FFpCurve::findVarRefsAndOpers (FFrExtractor* extr, std::string& errMsg)
 {
   // Check if curve is completely defined and find its variable references
   size_t nVar = 0;
-  FFrEntryBase* entry = NULL;
   int axis, fstAxis = rdOper[X] ? X : Y;
   for (axis = fstAxis; axis < N_AXES; axis++)
     for (PointData& read : reader[axis])
@@ -300,15 +301,18 @@ bool FFpCurve::findVarRefsAndOpers (FFrExtractor* extr, std::string& errMsg)
           errMsg += "\nError: No unary operations defined for variable type "
             + read.rDescr->varRefType + "\n       of result item \""
             + read.rDescr->getText() + "\".";
-        else if (!(entry = extr->search(*read.rDescr)))
+        else if (FFrEntryBase* entry = extr->search(*read.rDescr); !entry)
         {
           errMsg += "\nError: Could not find result item \""
-            + read.rDescr->getText() + "\".";
+            + read.rDescr->getText() + "\" (plotted as zero).";
           // If the X-axis plots physical time and this is a temporal curve,
-          // then clear the Y-axis reader such that it will be identically zero
+          // consider this variable to be identically zero instead
           if (axis == Y && reader[X].size() == 1 && reader[Y].size() == 1)
             if (reader[X].front().rDescr->isTime())
-              reader[Y].clear();
+            {
+              nVar++;
+              read.varRef = NULL;
+            }
         }
         else if (entry->isVarRef())
         {
@@ -335,21 +339,23 @@ bool FFpCurve::findVarRefsAndOpers (FFrExtractor* extr, std::string& errMsg)
     bool initialX = axis == X && useInitialXaxis && *rdOper[axis] != "None";
     std::string scalarOper(initialX ? rdOper[axis]->substr(8) : *rdOper[axis]);
     for (PointData& read : reader[axis])
-      if (FFaOpUtils::getUnaryConvertOp(read.readOp,
-                                        read.varRef->getReadOperation(),
-                                        scalarOper))
+      if (!read.varRef)
+      {
+        nVar++; // non-existing result variable, considered as zero
+        read.readOp = NULL;
+      }
+      else if (FFaOpUtils::getUnaryConvertOp(read.readOp,
+                                             read.varRef->getReadOperation(),
+                                             scalarOper))
         nVar++;
       else
         errMsg += "\nError: Cannot read data for result item \""
-               + read.rDescr->getText() + "\" with operation " + *rdOper[axis]
+               + read.rDescr->getText() + "\" with operation " + scalarOper
                + ".";
   }
 
   timeSamples = 0;
-  if (nVar == reader[X].size() + reader[Y].size()) return true;
-
-  this->unref(true);
-  return false;
+  return nVar == reader[X].size() + reader[Y].size() ? true : this->unref(true);
 }
 
 
@@ -379,7 +385,7 @@ bool FFpCurve::loadTemporalData (double currentTime)
   if (lastKey >= currentTime) return true;
 
   for (int a = 0; a < N_AXES; a++)
-    if (reader[a].size() == 1)
+    if (reader[a].size() == 1 && reader[a].front().varRef)
     {
       if (!reader[a].front().readOp || !reader[a].front().varRef) return false;
       if (!reader[a].front().varRef->hasDataForCurrentKey()) return true;
@@ -398,7 +404,7 @@ bool FFpCurve::loadTemporalData (double currentTime)
       values.reserve(values.capacity()+blockSize);
 
     // Read curve point value
-    if (reader[axis].empty())
+    if (reader[axis].empty() || !reader[axis].front().readOp)
       values.push_back(0.0);
     else
     {
