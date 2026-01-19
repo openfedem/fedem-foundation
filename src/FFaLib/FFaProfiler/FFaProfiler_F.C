@@ -9,7 +9,10 @@
 #include "FFaLib/FFaOS/FFaFortran.H"
 
 
-static FFaProfiler* myProfiler = NULL;
+namespace
+{
+  FFaProfiler* myProfiler = NULL;
+}
 
 
 SUBROUTINE (ffa_newprofiler,FFA_NEWPROFILER) (const char* name, const int n)
@@ -38,24 +41,4 @@ SUBROUTINE (ffa_reporttimer,FFA_REPORTTIMER) ()
     delete myProfiler;
   }
   myProfiler = NULL;
-}
-
-
-SUBROUTINE (ffa_getmemusage,FFA_GETMEMUSAGE) (float* usage)
-{
-  MemoryStruct reporter;
-  FFaMemoryProfiler::getMemoryUsage(reporter);
-
-  usage[0] = reporter.myWorkSize     / 1048576.0f;
-  usage[1] = reporter.myPageSize     / 1048576.0f;
-  usage[2] = reporter.myPeakWorkSize / 1048576.0f;
-  usage[3] = reporter.myPeakPageSize / 1048576.0f;
-}
-
-
-INTEGER_FUNCTION (ffa_getphysmem,FFA_GETPHYSMEM) (const bool& wantTotal)
-{
-  unsigned int totalMem, availableMem;
-  FFaMemoryProfiler::getGlobalMem(totalMem,availableMem);
-  return wantTotal ? totalMem : availableMem;
 }

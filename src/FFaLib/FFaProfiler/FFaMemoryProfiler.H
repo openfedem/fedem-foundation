@@ -8,33 +8,27 @@
 #ifndef FFA_MEMORY_PROFILER_H
 #define FFA_MEMORY_PROFILER_H
 
-#include <string>
+#include <cstddef>
 
 
-struct MemoryStruct
+namespace FFaMemoryProfiler
 {
-  size_t myWorkSize;
-  size_t myPeakWorkSize;
-  size_t myPageSize;
-  size_t myPeakPageSize;
+  struct MemoryStruct
+  {
+    size_t myWorkSize     = 0;
+    size_t myPeakWorkSize = 0;
+    size_t myPageSize     = 0;
+    size_t myPeakPageSize = 0;
 
-  MemoryStruct() : myWorkSize(0), myPeakWorkSize(0),
-		   myPageSize(0), myPeakPageSize(0) {}
-  void fill();
-};
+    void fill();
+  };
 
+  void getMemoryUsage(MemoryStruct& reporter);
+  void nullifyMemoryUsage(const char* id, bool useCurrent = true);
+  void reportMemoryUsage(const char* id);
 
-class FFaMemoryProfiler
-{
-public:
-  static void getGlobalMem(unsigned int& total, unsigned int& avail);
-  static void getMemoryUsage(MemoryStruct& reporter);
-  static void reportMemoryUsage(const std::string& reportIdentifier);
-  static void nullifyMemoryUsage(const std::string& reportIdentifier,
-                                 bool useCurrent = true);
-
-private:
-  static MemoryStruct myBaseMemoryUsage;
-};
+  //! \brief Returns total and available memory in MBytes for current process.
+  void getGlobalMem(unsigned int& total, unsigned int& avail);
+}
 
 #endif

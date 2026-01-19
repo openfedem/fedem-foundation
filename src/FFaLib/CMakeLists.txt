@@ -72,6 +72,10 @@ if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
   target_link_libraries ( ${LIB_ID}_F FFaAlgebra FFaCmdLineArg FFaOS )
   if ( USE_PROFILER )
     target_link_libraries ( ${LIB_ID}_F FFaProfiler )
+  else ( USE_PROFILER )
+    add_library ( FFaMemory FFaProfiler/FFaMemoryProfiler.C
+                            FFaProfiler/FFaMemoryProfiler_F.C )
+    target_link_libraries ( ${LIB_ID}_F FFaMemory)
   endif ( USE_PROFILER )
 
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )

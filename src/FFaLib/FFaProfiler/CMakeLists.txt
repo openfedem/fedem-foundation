@@ -9,6 +9,10 @@
 set ( LIB_ID FFaProfiler )
 set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 
+if ( USE_PROFILER )
+  string ( APPEND CMAKE_CXX_FLAGS " -DFT_USE_MEMORY_PROFILER" )
+endif ( USE_PROFILER )
+
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 
@@ -18,7 +22,7 @@ set ( COMPONENT_FILE_LIST FFaMemoryProfiler FFaProfiler )
 ## Pure implementation files, i.e., source files without corresponding header
 set ( SOURCE_FILE_LIST )
 if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
-  set ( SOURCE_FILE_LIST FFaProfiler_F )
+  set ( SOURCE_FILE_LIST FFaMemoryProfiler_F FFaProfiler_F )
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND USE_FORTRAN )
 
 

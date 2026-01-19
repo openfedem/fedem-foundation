@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "FFaLib/FFaProfiler/FFaProfiler.H"
+#include <cstring>
 #include <cstdio>
 #include <time.h>
 #if defined(win32) || defined(win64)
@@ -36,47 +37,57 @@
 */
 
 
-FFaProfiler::FFaProfiler(const std::string& profilerName, bool report)
+namespace
 {
-  myProfilerName = profilerName;
-  reportOnDestruct = report;
-}
+  unsigned long int WallTime()
+  {
+#if defined(win32) || defined(win64)
+    struct _timeb timebuffer;
+    _ftime(&timebuffer);
+    return 1000000ul*(unsigned long int)timebuffer.time
+      +       1000ul*(unsigned long int)timebuffer.millitm;
+#else
+    struct timeval currenttime;
+    gettimeofday(&currenttime,NULL);
+    return 1000000ul*currenttime.tv_sec + currenttime.tv_usec;
+#endif
+  }
 
-FFaProfiler::~FFaProfiler()
-{
-  if (reportOnDestruct)
-    this->report();
+  unsigned long int CPUTime()
+  {
+    return (unsigned long int)clock();
+  }
 }
 
 
 /*!
-  Start a timer named \a timerName. No other initialization is necessary.
+  Start a named timer. No other initialization is necessary.
 */
 
-void FFaProfiler::startTimer(const std::string& timerName)
+void FFaProfiler::startTimer(const std::string& name)
 {
-  ProfileStruct& prof = myTimers[timerName];
+  ProfileStruct& prof = myTimers[name];
   if (prof.iAmRunning) return;
 
   prof.iAmRunning = true;
-  prof.myWallTime.myLastStartTime = FFaProfiler::WallTime();
-  prof.myCPUTime.myLastStartTime = FFaProfiler::CPUTime();
+  prof.myWallTime.myLastStartTime = WallTime();
+  prof.myCPUTime.myLastStartTime  = CPUTime();
 }
 
 
 /*!
-  Stop the timer named \a timerName.
+  Stop the named timer.
 */
 
-void FFaProfiler::stopTimer(const std::string& timerName)
+void FFaProfiler::stopTimer(const std::string& name)
 {
-  unsigned long tmpCPUSlice = FFaProfiler::CPUTime();
-  unsigned long tmpSlice = FFaProfiler::WallTime();
+  unsigned long int tmpCPUSlice = CPUTime();
+  unsigned long int tmpSlice    = WallTime();
 
-  TimerMapIter it = myTimers.find(timerName);
+  TimerMap::iterator it = myTimers.find(name);
   if (it == myTimers.end())
   {
-    fprintf(stderr,"Mo matching timer for %s\n",timerName.c_str());
+    fprintf(stderr,"Mo matching timer for %s\n",name.c_str());
     return;
   }
 
@@ -87,7 +98,7 @@ void FFaProfiler::stopTimer(const std::string& timerName)
   prof.myInvocations++;
 
   // Wall time calculations
-  unsigned long timeSlice = tmpSlice - prof.myWallTime.myLastStartTime;
+  unsigned long int timeSlice = tmpSlice - prof.myWallTime.myLastStartTime;
   if (prof.myInvocations == 1)
   {
     prof.myWallTime.totalTime = timeSlice;
@@ -112,7 +123,7 @@ void FFaProfiler::stopTimer(const std::string& timerName)
   }
 
   // CPU time calculations
-  unsigned long CPUtimeSlice = tmpCPUSlice - prof.myCPUTime.myLastStartTime;
+  unsigned long int CPUtimeSlice = tmpCPUSlice - prof.myCPUTime.myLastStartTime;
   if (prof.myInvocations == 1)
   {
     prof.myCPUTime.totalTime = CPUtimeSlice;
@@ -146,7 +157,7 @@ void FFaProfiler::report()
 {
   if (myTimers.empty()) return;
 
-  printf("\n%-40s\n", myProfilerName.c_str());
+  printf("\n%-40s\n", myName.c_str());
   printf("--------------------------------------------------+"
 	 "-------------------+-------------------+------------------------\n");
   printf("%-20s%5s%12s%12s |%12s %5s |%12s %5s |%12s%12s\n",
@@ -163,13 +174,14 @@ void FFaProfiler::report()
 
   printf("--------------------------------------------------+"
 	 "-------------------+-------------------+------------------------\n");
-  for (TimerMapIter it = myTimers.begin(); it != myTimers.end(); it++)
-    if (it->second.myInvocations > 0)
+  char name[21]; name[20] = '\0';
+  for (const TimerMap::value_type& timer : myTimers)
+    if (timer.second.myInvocations > 0)
     {
-      ProfileStruct& prof = it->second;
+      const ProfileStruct& prof = timer.second;
+      strncpy(name,timer.first.c_str(),20);
       printf("%-20s%5ld%12.3f%12.3f |%12.3f%6ld |%12.3f%6ld |%12.3f%12.3f\n",
-	     it->first.c_str(),
-	     prof.myInvocations,
+             name, prof.myInvocations,
 	     (float)prof.myWallTime.totalTime/1000000.0f,
 	     (float)prof.myWallTime.totalTime/(float)(prof.myInvocations*1000),
 	     (float)prof.myWallTime.minTime/1000.0f,
@@ -182,25 +194,4 @@ void FFaProfiler::report()
 
   printf("--------------------------------------------------+"
 	 "-------------------+-------------------+------------------------\n");
-}
-
-
-unsigned long FFaProfiler::WallTime()
-{
-#if defined(win32) || defined(win64)
-  struct _timeb timebuffer;
-  _ftime(&timebuffer);
-  return 1000000ul*(unsigned long)timebuffer.time
-    +       1000ul*(unsigned long)timebuffer.millitm;
-#else
-  struct timeval currenttime;
-  gettimeofday(&currenttime,NULL);
-  return 1000000ul*currenttime.tv_sec + currenttime.tv_usec;
-#endif
-}
-
-
-unsigned long FFaProfiler::CPUTime()
-{
-  return (unsigned long)clock();
 }
