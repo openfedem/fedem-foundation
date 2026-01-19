@@ -12,6 +12,8 @@
 #ifdef FT_USE_MEMORY_PROFILER
 #include <psapi.h>
 #endif
+#else
+#include <sys/sysinfo.h>
 #endif
 
 
@@ -52,15 +54,14 @@ Members
 */
 
 
-MemoryStruct FFaMemoryProfiler::myBaseMemoryUsage;
+namespace
+{
+  FFaMemoryProfiler::MemoryStruct myBaseMemoryUsage;
+}
 
 
 #ifdef FT_USE_MEMORY_PROFILER
-void FFaMemoryProfiler::nullifyMemoryUsage(const std::string& reportIdentifier,
-#else
-void FFaMemoryProfiler::nullifyMemoryUsage(const std::string&,
-#endif
-					   bool useCurrent)
+void FFaMemoryProfiler::nullifyMemoryUsage(const char* id, bool useCurrent)
 {
   if (useCurrent)
     myBaseMemoryUsage.fill();
@@ -72,27 +73,31 @@ void FFaMemoryProfiler::nullifyMemoryUsage(const std::string&,
     myBaseMemoryUsage.myPeakPageSize = 0;
   }
 
-#ifdef FT_USE_MEMORY_PROFILER
-  printf("%s: Memory profiler baselined\n",reportIdentifier.c_str());
-#endif
+  printf("%s: Memory profiler baselined\n",id);
 }
+#else
+void FFaMemoryProfiler::nullifyMemoryUsage(const char*, bool) {}
+#endif
 
 
 #ifdef FT_USE_MEMORY_PROFILER
-void FFaMemoryProfiler::reportMemoryUsage(const std::string& reportIdentifier)
+void FFaMemoryProfiler::reportMemoryUsage(const char* id)
 {
   MemoryStruct reporter;
   FFaMemoryProfiler::getMemoryUsage(reporter);
+  if (reporter.myWorkSize + reporter.myPageSize < 512) return;
 
-  printf("%-40s Tot:%10.3f, PTot:%10.3f, PWork:%10.3f, PPage:%10.3f [MB]\n",
-	 reportIdentifier.c_str(),
-	 (reporter.myWorkSize + reporter.myPageSize) / 1048576.0f,
-	 (reporter.myPeakWorkSize + reporter.myPeakPageSize) / 1048576.0f,
-	 (reporter.myPeakWorkSize) / 1048576.0f,
-	 (reporter.myPeakPageSize) / 1048576.0f);
+  // Lambda function converting to MBytes.
+  auto toMB = [](size_t nb) { return static_cast<float>(nb)/1048576.0f; };
+
+  printf("%-40s Tot:%10.3f, PTot:%10.3f, PWork:%10.3f, PPage:%10.3f [MB]\n", id,
+         toMB(reporter.myWorkSize + reporter.myPageSize),
+         toMB(reporter.myPeakWorkSize + reporter.myPeakPageSize),
+         toMB(reporter.myPeakWorkSize),
+         toMB(reporter.myPeakPageSize));
 }
 #else
-void FFaMemoryProfiler::reportMemoryUsage(const std::string&) {}
+void FFaMemoryProfiler::reportMemoryUsage(const char*) {}
 #endif
 
 
@@ -106,7 +111,7 @@ void FFaMemoryProfiler::getMemoryUsage(MemoryStruct& reporter)
 }
 
 
-void MemoryStruct::fill()
+void FFaMemoryProfiler::MemoryStruct::fill()
 {
 #ifdef FT_USE_MEMORY_PROFILER
 #if defined(win32) || defined(win64)
@@ -123,19 +128,25 @@ void MemoryStruct::fill()
 }
 
 
-/*!
-  Returns the total and available memory in MBytes for this process.
-*/
-
 void FFaMemoryProfiler::getGlobalMem(unsigned int& total, unsigned int& avail)
 {
-  total = avail = 0;
-#if _MSC_VER > 1300
+  total = avail = 0u;
+#if defined(win32) || defined(win64)
   MEMORYSTATUSEX statex;
-  DWORDLONG MByte = 1048576;
   statex.dwLength = sizeof(statex);
-  GlobalMemoryStatusEx(&statex);
-  total = (unsigned int)(statex.ullTotalPhys/MByte);
-  avail = (unsigned int)(statex.ullAvailPhys/MByte);
+  if (GlobalMemoryStatusEx(&statex))
+  {
+    const DWORDLONG MByte = 1048576ULL;
+    total = static_cast<unsigned int>(statex.ullTotalPhys/MByte);
+    avail = static_cast<unsigned int>(statex.ullAvailPhys/MByte);
+  }
+#else
+  struct sysinfo info;
+  if (sysinfo(&info) == 0)
+  {
+    const unsigned long int MByte = 1048576ul;
+    total = static_cast<unsigned int>(info.totalram*info.mem_unit/MByte);
+    avail = static_cast<unsigned int>(info.freeram*info.mem_unit/MByte);
+  }
 #endif
 }

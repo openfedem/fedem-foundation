@@ -22,6 +22,7 @@
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #ifdef FT_USE_PROFILER
 #include "FFaLib/FFaProfiler/FFaProfiler.H"
+#include "FFaLib/FFaProfiler/FFaMemoryProfiler.H"
 #endif
 #include <cmath>
 #include <cfloat>
