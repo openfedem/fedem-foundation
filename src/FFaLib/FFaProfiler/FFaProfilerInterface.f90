@@ -9,10 +9,22 @@ module FFaProfilerInterface
 
   implicit none
 
-#ifndef FT_USE_PROFILER
-  contains
-#else
   interface
+
+     subroutine ffa_getmemusage (usage)
+       integer , parameter   :: sp = kind(1.0)
+       real(sp), intent(out) :: usage(4)
+     end subroutine ffa_getmemusage
+
+     function ffa_getphysmem (wantTotal)
+       logical, intent(in) :: wantTotal
+       integer :: ffa_getphysmem
+     end function ffa_getphysmem
+
+#ifndef FT_USE_PROFILER
+  end interface
+
+  contains
 #endif
 
      subroutine ffa_newprofiler (name)
@@ -29,22 +41,6 @@ module FFaProfilerInterface
 
      subroutine ffa_reporttimer ()
      end subroutine ffa_reporttimer
-
-     subroutine ffa_getmemusage (usage)
-       integer , parameter   :: sp = kind(1.0)
-       real(sp), intent(out) :: usage(4)
-#ifndef FT_USE_PROFILER
-       usage = 0.0_sp
-#endif
-     end subroutine ffa_getmemusage
-
-     function ffa_getphysmem (wantTotal)
-       logical, intent(in) :: wantTotal
-       integer :: ffa_getphysmem
-#ifndef FT_USE_PROFILER
-       ffa_getphysmem = 0
-#endif
-     end function ffa_getphysmem
 
 #ifdef FT_USE_PROFILER
   end interface
@@ -72,8 +68,8 @@ contains
     else
        write(lpu,601) ffa_getphysmem(.false.)
     end if
-600 format(11X,'Current available memory:',I5,' MB      Total memory:',I5,' MB')
-601 format(11X,'Current available memory:',I5,' MB')
+600 format(11X,'Current available memory:',I6,' MB    Total memory:',I6,' MB')
+601 format(11X,'Current available memory:',I6,' MB')
   end subroutine ffa_printMemStatus
 
 end module FFaProfilerInterface
