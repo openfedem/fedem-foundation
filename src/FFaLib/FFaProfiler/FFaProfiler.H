@@ -11,49 +11,39 @@
 #include <string>
 #include <map>
 
-#include "FFaMemoryProfiler.H"
-
-
-struct TimeStruct
-{
-  unsigned long myLastStartTime;
-  unsigned long minTime, maxTime, totalTime;
-  unsigned long maxInvNo, minInvNo;
-};
-
-struct ProfileStruct
-{
-  bool          iAmRunning;
-  TimeStruct    myWallTime;
-  TimeStruct    myCPUTime;
-  unsigned long myInvocations;
-
-  ProfileStruct() : iAmRunning(false), myInvocations(0) {}
-};
-
-typedef std::map<std::string,ProfileStruct> TimerMap;
-typedef TimerMap::iterator                  TimerMapIter;
-
 
 class FFaProfiler
 {
-public:
-  FFaProfiler(const std::string& profilerName, bool reportOnDestruct = false);
-  virtual ~FFaProfiler();
+  struct TimeStruct
+  {
+    unsigned long int myLastStartTime = 0;
+    unsigned long int minTime = 0;
+    unsigned long int maxTime = 0;
+    unsigned long int totalTime = 0;
+    unsigned long int maxInvNo = 0;
+    unsigned long int minInvNo = 0;
+  };
 
-  void startTimer(const std::string& timerName);
-  void stopTimer(const std::string& timerName);
+  struct ProfileStruct
+  {
+    TimeStruct myWallTime;
+    TimeStruct myCPUTime;
+    bool iAmRunning = false;
+    unsigned long int myInvocations = 0;
+  };
+
+  using TimerMap = std::map<std::string,ProfileStruct>;
+
+  std::string myName;
+  TimerMap    myTimers;
+
+public:
+  FFaProfiler(const std::string& name) : myName(name) {}
+
+  void startTimer(const std::string& name);
+  void stopTimer(const std::string& name);
 
   void report();
-
-protected:
-  static unsigned long WallTime();
-  static unsigned long CPUTime();
-
-private:
-  TimerMap    myTimers;
-  std::string myProfilerName;
-  bool        reportOnDestruct;
 };
 
 #endif
