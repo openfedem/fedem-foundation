@@ -55,24 +55,34 @@ bool FFlrFringeCreator::getColorData(std::vector<double>& colors,
 }
 
 
-void FFlrFringeCreator::deleteColorsXfs(FFlGroupPartData& visRep)
+void FFlrFringeCreator::deleteColorsXfs(FFlGroupPartData& visRep, bool
+#ifdef FT_USE_PROFILER
+                                        memPoll
+#endif
+                                        )
 {
+#ifdef FT_USE_PROFILER
+  size_t oneQuart = visRep.colorOps.size();
+  if (memPoll) oneQuart /= 4;
+#endif
+
   for (size_t i = 0; i < visRep.colorOps.size(); i++)
   {
     if (visRep.colorOps[i])
       visRep.colorOps[i]->unref();
 #ifdef FT_USE_PROFILER
-    if (i == visRep.colorOps.size()/4)
+    if (i == oneQuart)
       FFaMemoryProfiler::reportMemoryUsage("    Kvartveis");
-    if (i == visRep.colorOps.size()/2)
+    else if (i == 2*oneQuart)
       FFaMemoryProfiler::reportMemoryUsage("    Halveis");
-    if (i == 3*visRep.colorOps.size()/4)
+    else if (i == 3*oneQuart)
       FFaMemoryProfiler::reportMemoryUsage("    Trekvartveis");
 #endif
   }
 
 #ifdef FT_USE_PROFILER
-  FFaMemoryProfiler::reportMemoryUsage("    Helveis");
+  if (memPoll)
+    FFaMemoryProfiler::reportMemoryUsage("    Helveis");
 #endif
 
   FFlrOperations empty;
