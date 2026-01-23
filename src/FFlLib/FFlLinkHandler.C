@@ -2250,13 +2250,13 @@ void FFlLinkHandler::countElements() const
 }
 
 
-void FFlLinkHandler::dump() const
+void FFlLinkHandler::dump(const std::string& heading) const
 {
   if (myNumElements.empty())
     this->countElements();
 
-  std::cout <<"\nFFlLinkHandler::dump()"
-            <<"\n   Elements:        "<< myElements.size();
+  std::cout <<"\nFFlLinkHandler::dump("<< heading
+            <<")\n   Elements:        "<< myElements.size();
   for (const ElmTypeCount::value_type& ec : myNumElements)
     std::cout <<"\n\t"<< ec.first <<"\t"<< ec.second;
 
