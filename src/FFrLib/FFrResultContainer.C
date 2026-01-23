@@ -107,15 +107,16 @@ void FFrResultContainer::clearPreRead()
   Returns an enum telling the new status of the container.
 */
 
-FFrResultContainer::Status FFrResultContainer::updateContainerStatus()
+FFrResultContainer::Status FFrResultContainer::updateStatus(bool memPoll)
 {
 #if FFR_DEBUG > 1
-  std::cout <<"\nFFrResultContainer::updateContainerStatus()"<< std::endl;
+  std::cout <<"\nFFrResultContainer::updateStatus()"<< std::endl;
   std::string fileName(FFaFilePath::getFileName(myFileName));
 #endif
 
 #ifdef FT_USE_PROFILER
-  FFaMemoryProfiler::reportMemoryUsage("> updateContainerStatus");
+  if (memPoll)
+    FFaMemoryProfiler::reportMemoryUsage("> updateContainerStatus");
 #endif
 
   bool stop = false;
@@ -146,9 +147,9 @@ FFrResultContainer::Status FFrResultContainer::updateContainerStatus()
 #endif
 	if (!FFaFilePath::isExtension(myFileName,"frs"))
 	  myStatus = FFR_TEXT_FILE; // this is not an frs-file
-	else if (!this->readFileHeader())
+	else if (!this->readFileHeader(memPoll))
 	  stop = true;
-	else if (!this->buildAndResolveHierarchy())
+	else if (!this->buildAndResolveHierarchy(memPoll))
 	  myStatus = FFR_CONTAINER_INVALID;
 	else if (myModule != "fedem_modes")
 	  myStatus = FFR_DATA_CLOSED;
@@ -221,7 +222,8 @@ FFrResultContainer::Status FFrResultContainer::updateContainerStatus()
       }
 
 #ifdef FT_USE_PROFILER
-  FFaMemoryProfiler::reportMemoryUsage("  updateContainerStatus >");
+  if (memPoll)
+    FFaMemoryProfiler::reportMemoryUsage("  updateContainerStatus >");
 #endif
   return myStatus;
 }
@@ -231,7 +233,7 @@ FFrResultContainer::Status FFrResultContainer::updateContainerStatus()
   Reads the file header and stores the obtained binary position in the object.
 */
 
-bool FFrResultContainer::readFileHeader()
+bool FFrResultContainer::readFileHeader(bool memPoll)
 {
 #if FFR_DEBUG > 1
   std::cout <<"\nFFrResultContainer::readFileHeader() "
@@ -407,14 +409,14 @@ bool FFrResultContainer::readFileHeader()
 #if FFR_DEBUG > 3
 	std::cout <<"FOUND_VARIABLES"<< std::endl;
 #endif
-	mode = this->readVariables(myFile,myCreatorData);
+	mode = this->readVariables(myFile,myCreatorData,false,memPoll);
 	break;
 
       case FOUND_DATABLOCKS:
 #if FFR_DEBUG > 3
 	std::cout <<"FOUND_DATABLOCKS"<< std::endl;
 #endif
-	mode = this->readVariables(myFile,myCreatorData,true);
+	mode = this->readVariables(myFile,myCreatorData,true,memPoll);
 	break;
 
       case FOUND_DATA:
@@ -450,7 +452,11 @@ bool FFrResultContainer::readFileHeader()
 
 FFrStatus FFrResultContainer::readVariables(FILE* fs,
                                             FFrCreatorData& myCreatorData,
-                                            bool dataBlocks)
+                                            bool dataBlocks, bool
+#ifdef FT_USE_PROFILER
+                                            memPoll
+#endif
+                                            )
 {
 #if FFR_DEBUG > 1
   std::cout <<"\nFFrResultContainer::readVariables() "
@@ -459,7 +465,8 @@ FFrStatus FFrResultContainer::readVariables(FILE* fs,
 #endif
 
 #ifdef FT_USE_PROFILER
-  FFaMemoryProfiler::reportMemoryUsage("> readVariables ");
+  if (memPoll)
+    FFaMemoryProfiler::reportMemoryUsage("> readVariables ");
 #endif
 
   int c = 0;
@@ -512,7 +519,8 @@ FFrStatus FFrResultContainer::readVariables(FILE* fs,
       }
 
 #ifdef FT_USE_PROFILER
-  FFaMemoryProfiler::reportMemoryUsage(" readVariables >");
+  if (memPoll)
+    FFaMemoryProfiler::reportMemoryUsage("  readVariables >");
 #endif
   return mode == DONE ? LABEL_SEARCH : mode;
 }
@@ -531,7 +539,11 @@ FFrStatus FFrResultContainer::readVariables(FILE* fs,
      and insert it into the dataField, adding file info and position.
 */
 
-bool FFrResultContainer::buildAndResolveHierarchy()
+bool FFrResultContainer::buildAndResolveHierarchy(bool
+#ifdef FT_USE_PROFILER
+                                                  memPoll
+#endif
+                                                  )
 {
 #if FFR_DEBUG > 1
   std::cout <<"\nFFrResultContainer::buildAndResolveHierarchy() "
@@ -539,7 +551,8 @@ bool FFrResultContainer::buildAndResolveHierarchy()
 #endif
 
 #ifdef FT_USE_PROFILER
-  FFaMemoryProfiler::reportMemoryUsage("> buildAndResolveHierarchy"); //70 Mb
+  if (memPoll)
+    FFaMemoryProfiler::reportMemoryUsage("> buildAndResolveHierarchy");
 #endif
 
   // KMO: Since binPos is a 4-byte integer and measures the time step size in
@@ -563,7 +576,8 @@ bool FFrResultContainer::buildAndResolveHierarchy()
   }
 
 #ifdef FT_USE_PROFILER
-  FFaMemoryProfiler::reportMemoryUsage("  buildAndResolveHierarchy >");//293 Mb
+  if (memPoll)
+    FFaMemoryProfiler::reportMemoryUsage("  buildAndResolveHierarchy >");
 #endif
 
   timeStepSize = binPos >> 3;
@@ -958,7 +972,7 @@ int FFrResultContainer::positionAtKey(double key, bool getNextHigher)
 	    <<" key = "<< key << std::endl;
 #endif
   if (myStatus == FFR_DATA_CLOSED)
-    this->updateContainerStatus();
+    this->updateStatus(false);
 
   if (myPhysicalTimeMap.empty())
   {
@@ -1015,7 +1029,7 @@ void FFrResultContainer::resetPositioning()
 #if FFR_DEBUG > 2
   std::cout <<"FFrResultContainer::resetPositioning()"<< std::endl;
 #endif
-  this->updateContainerStatus();
+  this->updateStatus(false);
 
   if (myStatus == FFR_DATA_PRESENT || myStatus == FFR_NEW_DATA)
   {
