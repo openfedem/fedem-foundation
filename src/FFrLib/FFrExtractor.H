@@ -57,12 +57,14 @@ public:
 
   //! \brief Adds a set of files to the RDB.
   bool addFiles(const std::set<std::string>& fileNames,
-                bool showProgress = false);
+                bool showProgress = false, bool doMemPoll = false);
   //! \brief Adds a list of files to the RDB.
   virtual bool addFiles(const std::vector<std::string>& fileNames,
-                        bool showProgress = false, bool mustExist = false);
+                        bool showProgress = false, bool mustExist = false,
+                        bool doMemPoll = false);
   //! \brief Adds a single file to the RDB.
-  bool addFile(const std::string& fileName, bool mustExist = false);
+  bool addFile(const std::string& fileName, bool mustExist = false,
+               bool doMemPoll = false);
 
   //! \brief Closes all result container files.
   void closeFiles();
@@ -77,7 +79,7 @@ public:
   virtual bool removeFiles(const std::set<std::string>& fileNames);
 
   //! \brief Checks if there is new data on disk.
-  virtual void doResultFilesUpdate();
+  virtual void doResultFilesUpdate(bool doMemPoll = true);
 
   //! \brief Returns a pointer to the variables container of this extractor.
   VariableSet*  getVariables()  { return &myVariables; }
@@ -165,9 +167,9 @@ public:
 
 protected:
   //! \brief Checks if there is new data on disk for the given \a container.
-  virtual int doSingleResultFileUpdate(FFrResultContainer* container);
+  virtual int doResultFileUpdate(FFrResultContainer* container, bool memPoll);
   //! \brief Updates the top-level containers with items from \a container.
-  bool updateExtractorHeader(FFrResultContainer* container);
+  bool updateExtractorHeader(FFrResultContainer* container, bool memPoll);
 
 private:
   std::string myName;       //!< Name of this extractor
@@ -177,7 +179,7 @@ private:
   std::set<std::string> myDict;
 
   //! File name to result container mapping
-  typedef std::map<std::string,FFrResultContainer*> ContainerMap;
+  using ContainerMap = std::map<std::string,FFrResultContainer*>;
 
   ContainerMap myContainers; //!< All result containers in this extractor
   VariableSet  myVariables;  //!< All variables in this extractor

@@ -27,9 +27,9 @@ class FFrVariableReference;
 
 
 //! Physical time to time step mapping
-typedef std::map<double,int>       FFrTimeMap;
+using FFrTimeMap  = std::map<double,int>;
 //! Results entry container
-typedef std::vector<FFrEntryBase*> FFrEntrySet;
+using FFrEntrySet = std::vector<FFrEntryBase*>;
 
 //! \brief Incapsulation of temporary data used during results file parsing.
 struct FFrCreatorData
@@ -98,7 +98,7 @@ public:
   Status close();
 
   //! \brief Updates the container to a new status (used from the system ticks).
-  Status updateContainerStatus();
+  Status updateStatus(bool memPoll);
 
   //! \brief Returns the current status of this results container.
   Status getContainerStatus() const { return myStatus; }
@@ -192,13 +192,13 @@ protected:
   void printSizeParameters(FT_int fileSize) const;
 
   //! \brief Reads the header of the file.
-  bool readFileHeader();
+  bool readFileHeader(bool memPoll);
   //! \brief Reads variable definitions and references.
   FFrStatus readVariables(FILE* fp, FFrCreatorData& cd,
-                          bool dataBlocks = false);
+                          bool dataBlocks, bool memPoll);
 
   //! \brief Builds and resolves the results hierarchy of the file.
-  bool buildAndResolveHierarchy();
+  bool buildAndResolveHierarchy(bool memPoll);
   //! \brief Reads time step information from the file.
   bool readTimeStepInformation();
   //! \brief Reads the file squentially from current file position.
@@ -229,9 +229,9 @@ private:
   unsigned int myDate;     //!< Time stamp of the results file
 
   // extractor info
-  FFrExtractor*  myExtractor;       //!< Result extractor that own this container
-  FFrEntrySet    myTopLevelEntries; //!< List of all top-level entries
-  FFrEntrySet    myGarbage;         //!< Garbage collection container
+  FFrExtractor* myExtractor;     //!< Result extractor that own this container
+  FFrEntrySet myTopLevelEntries; //!< List of all top-level entries
+  FFrEntrySet myGarbage;         //!< Garbage collection container
 
   // information for pre-positioning of the container
   int myPositionedTimeStep; //!< Current file position

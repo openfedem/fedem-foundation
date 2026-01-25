@@ -64,13 +64,13 @@ SUBROUTINE(ffr_init,FFR_INIT) (const char* file,
     {
       for (std::string& file : files)
         ListUI <<"\n   * Reading results file "<< FFaFilePath::checkName(file);
-      ierr = ourRdb->addFiles(files,false,true) ? 0 : 1;
+      ierr = ourRdb->addFiles(files,false,true,true) ? 0 : 1;
     }
   }
   else
   {
     ListUI <<"\n   * Reading results file "<< FFaFilePath::checkName(fnames);
-    ierr = ourRdb->addFile(fnames,true) ? 0 : 1;
+    ierr = ourRdb->addFile(fnames,true,true) ? 0 : 1;
   }
   ListUI <<"\n\n";
 }

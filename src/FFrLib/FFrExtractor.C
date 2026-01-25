@@ -90,7 +90,7 @@ void FFrExtractor::releaseMemoryBlocks(bool readOps)
 */
 
 bool FFrExtractor::addFiles(const std::set<std::string>& fileNames,
-                            bool showProgress)
+                            bool showProgress, bool doMemPoll)
 {
   if (fileNames.empty()) return true;
 
@@ -99,7 +99,7 @@ bool FFrExtractor::addFiles(const std::set<std::string>& fileNames,
   for (const std::string& fileName : fileNames)
     fileVec.push_back(fileName);
 
-  return this->addFiles(fileVec,showProgress);
+  return this->addFiles(fileVec,showProgress,false,doMemPoll);
 }
 
 
@@ -109,7 +109,7 @@ bool FFrExtractor::addFiles(const std::set<std::string>& fileNames,
 */
 
 bool FFrExtractor::addFiles(const std::vector<std::string>& fileNames,
-			    bool showProgress, bool mustExist)
+			    bool showProgress, bool mustExist, bool doMemPoll)
 {
 #if FFR_DEBUG > 1
   std::cout <<"FFrExtractor::addFiles()"<< std::endl;
@@ -128,7 +128,7 @@ bool FFrExtractor::addFiles(const std::vector<std::string>& fileNames,
       FFaMsg::setSubTask(FFaFilePath::getFileName(fileName));
       FFaMsg::setSubStep(++subStep);
     }
-    if (!this->addFile(fileName,mustExist))
+    if (!this->addFile(fileName,mustExist,doMemPoll))
       retval = false;
   }
 
@@ -166,7 +166,8 @@ FFrResultContainer* FFrExtractor::getResultContainer(const std::string& fileName
 }
 
 
-bool FFrExtractor::addFile(const std::string& fileName, bool mustExist)
+bool FFrExtractor::addFile(const std::string& fileName,
+                           bool mustExist, bool doMemPoll)
 {
 #if FFR_DEBUG > 1
   std::cout <<"FFrExtractor::addFile()\n\tfilename: "<< fileName << std::endl;
@@ -177,9 +178,9 @@ bool FFrExtractor::addFile(const std::string& fileName, bool mustExist)
   if (container) return true;
 
   // Create a new result container for the given results file.
-  // The header section of if is then parsed if the file is a valid.
+  // The header section of it is then parsed if the file is a valid.
   container = new FFrResultContainer(this,fileName);
-  switch (this->doSingleResultFileUpdate(container)) {
+  switch (this->doResultFileUpdate(container,doMemPoll)) {
   case FFrResultContainer::FFR_CONTAINER_INVALID:
     FFaMsg::list("   * Note: Ignoring invalid results database file:\n");
     break;
@@ -201,7 +202,11 @@ bool FFrExtractor::addFile(const std::string& fileName, bool mustExist)
 }
 
 
-bool FFrExtractor::updateExtractorHeader(FFrResultContainer* container)
+bool FFrExtractor::updateExtractorHeader(FFrResultContainer* container, bool
+#ifdef FT_USE_PROFILER
+                                         doMemPoll
+#endif
+                                         )
 {
 #if FFR_DEBUG > 1
   std::cout <<"FFrExtractor::updateExtractorHeader()\n\tfilename: "
@@ -210,9 +215,10 @@ bool FFrExtractor::updateExtractorHeader(FFrResultContainer* container)
   if (!container->isHeaderComplete()) return false;
 
 #ifdef FT_USE_PROFILER
-  FFaProfiler timer("ExtractorTimer");
+  FFaProfiler timer("ExtractorTimer: " + container->getFileName());
   timer.startTimer("updateExtractorHeader");
-  FFaMemoryProfiler::reportMemoryUsage("> updateExtractorHeader");
+  if (doMemPoll)
+    FFaMemoryProfiler::reportMemoryUsage("> updateExtractorHeader");
 #endif
 
   for (FFrEntryBase* entry : container->topLevel())
@@ -283,7 +289,8 @@ bool FFrExtractor::updateExtractorHeader(FFrResultContainer* container)
 #endif
 
 #ifdef FT_USE_PROFILER
-  FFaMemoryProfiler::reportMemoryUsage("  updateExtractorHeader >");
+  if (doMemPoll)
+    FFaMemoryProfiler::reportMemoryUsage("  updateExtractorHeader >");
   timer.stopTimer("updateExtractorHeader");
   timer.report();
 #endif
@@ -523,17 +530,18 @@ FFrEntryBase* FFrExtractor::findVar(const std::string& oType, int baseId,
 }
 
 
-void FFrExtractor::doResultFilesUpdate()
+void FFrExtractor::doResultFilesUpdate(bool doMemPoll)
 {
   for (const ContainerMap::value_type& c : myContainers)
-    this->doSingleResultFileUpdate(c.second);
+    this->doResultFileUpdate(c.second,doMemPoll);
 }
 
 
-int FFrExtractor::doSingleResultFileUpdate(FFrResultContainer* container)
+int FFrExtractor::doResultFileUpdate(FFrResultContainer* container,
+                                     bool doMemPoll)
 {
 #if FFR_DEBUG > 2
-  std::cout <<"FFrExtractor::doSingleResultFileUpdate()\n\tfilename: "
+  std::cout <<"FFrExtractor::doResultFileUpdate()\n\tfilename: "
 	    << container->getFileName() << std::endl;
 #endif
 
@@ -541,9 +549,9 @@ int FFrExtractor::doSingleResultFileUpdate(FFrResultContainer* container)
     return FFrResultContainer::FFR_DATA_CLOSED;
 
   bool wasComplete = container->isHeaderComplete();
-  int status = container->updateContainerStatus();
+  int status = container->updateStatus(doMemPoll);
   if (!wasComplete && container->isHeaderComplete())
-    this->updateExtractorHeader(container);
+    this->updateExtractorHeader(container,doMemPoll);
 
   return status;
 }

@@ -21,7 +21,7 @@ namespace FFlrFringeCreator
   bool getColorData(std::vector<double>& colors,
                     const FFlGroupPartData& visRep, bool isPrFace);
 
-  void deleteColorsXfs(FFlGroupPartData& visRep);
+  void deleteColorsXfs(FFlGroupPartData& visRep, bool memPoll = false);
 
   int buildColorXfs(FFlGroupPartData& visRep,
                     FFlLinkHandler* lh, const FapFringeSetup& setup);

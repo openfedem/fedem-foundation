@@ -297,7 +297,7 @@ public:
   const Strings& getOP2files() const { return myOP2files; }
   size_t getNumberOfGenDofs() const { return nGenDofs; }
 
-  void dump() const;
+  void dump(const std::string& heading = "") const;
 
 #ifdef FT_USE_CONNECTORS
   int createConnector(const FFaCompoundGeometry& compound,
