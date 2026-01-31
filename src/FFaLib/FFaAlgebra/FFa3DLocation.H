@@ -116,6 +116,8 @@ public:
   FaMat34 getMatrix(const FaMat34& posRelMx, const FaMat34& rotRelMx) const;
   bool isValid() const;
 
+  std::ostream& print(std::ostream& s, bool includeNumericalData = true) const;
+
   // Global operators
 
   friend std::ostream& operator<<(std::ostream& s, const FFa3DLocation& m);

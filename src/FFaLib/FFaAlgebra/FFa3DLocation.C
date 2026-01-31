@@ -49,7 +49,7 @@ FFa3DLocation::FFa3DLocation(const FaMat34& m)
 }
 
 
-FFa3DLocation& FFa3DLocation::operator= (const FFa3DLocation& m)
+FFa3DLocation& FFa3DLocation::operator=(const FFa3DLocation& m)
 {
   if (this == &m)
     return *this;
@@ -158,7 +158,7 @@ FFa3DLocation& FFa3DLocation::changeRotRefCS(const FaMat34& newRef,
 
 FFa3DLocation& FFa3DLocation::set(PosType p, const FaMat34& posRelMx,
                                   RotType r, const FaMat34& rotRelMx,
-				  const FaMat34& globalPosition)
+                                  const FaMat34& globalPosition)
 {
 #if FFA_DEBUG > 1
   static int count = 0;
@@ -376,11 +376,11 @@ FaMat34 FFa3DLocation::getMatrix() const
   return FaMat34([rotRelMx * 3DLoc.rotation], [posRelMx * 3DLoc.pos])
 */
 
-FaMat34 FFa3DLocation::getMatrix (const FaMat34& posRelMx,
-				  const FaMat34& rotRelMx) const
+FaMat34 FFa3DLocation::getMatrix(const FaMat34& posRelMx,
+                                 const FaMat34& rotRelMx) const
 {
   return FaMat34(rotRelMx.direction() * this->direction(),
-		 posRelMx * this->translation());
+                 posRelMx * this->translation());
 }
 
 
@@ -427,30 +427,37 @@ bool FFa3DLocation::isValid() const
 }
 
 
-std::ostream& operator << (std::ostream& s, const FFa3DLocation& m)
+std::ostream& FFa3DLocation::print(std::ostream& s,
+                                   bool includeNumericalData) const
 {
-  if (m.saveNumericalData)
+  if (includeNumericalData)
   {
     // Output everything, using 8 significant digits
     std::ios_base::fmtflags tmpFlag = s.flags(std::ios::fixed);
     int tmpPrec = s.precision(8);
     s <<"\n"
-      << m.myPosTyp << "\t" << m[0] << "\n"
-      << m.myRotTyp << "\t" << m[1];
-    if (m.getNumFields() == 9)
-      s << "\n\t\t" << m[2];
+      << myPosTyp << "\t" << myL[0] << "\n"
+      << myRotTyp << "\t" << myL[1];
+    if (this->getNumFields() == 9)
+      s << "\n\t\t" << myL[2];
 
     s.flags(tmpFlag);
     s.precision(tmpPrec);
   }
   else // Output only the type enums
-    s << m.myPosTyp <<" "<< m.myRotTyp;
+    s << myPosTyp <<" "<< myRotTyp;
 
   return s;
 }
 
 
-std::istream& operator >> (std::istream& s, FFa3DLocation& m)
+std::ostream& operator<<(std::ostream& s, const FFa3DLocation& m)
+{
+  return m.print(s,m.saveNumericalData);
+}
+
+
+std::istream& operator>>(std::istream& s, FFa3DLocation& m)
 {
   FFa3DLocation m_tmp;
   s >> m_tmp.myPosTyp;
