@@ -50,7 +50,7 @@ public:
 
   FFpCurve (size_t nSpatialPoints = 1) { this->resize(nSpatialPoints); }
   FFpCurve (const FFpCurve& curve);
-  ~FFpCurve ();
+  ~FFpCurve () { this->resizeReader(X); this->resizeReader(Y); }
 
   FFpCurve& operator= (const FFpCurve&) = delete;
 
@@ -130,12 +130,13 @@ private:
 
   bool reversePoints ();
 
+  void resizeReader (int axis, size_t n = 0);
+
   struct PointData
   {
-    FFaResultDescription* rDescr;
-    FFrVariableReference* varRef;
-    FFaOperation<double>* readOp;
-    PointData() { rDescr = NULL; varRef = NULL; readOp = NULL; }
+    FFaResultDescription* rDescr = NULL;
+    FFrVariableReference* varRef = NULL;
+    FFaOperation<double>* readOp = NULL;
   };
 
   friend std::ostream& operator<< (std::ostream& os, const PointData&);

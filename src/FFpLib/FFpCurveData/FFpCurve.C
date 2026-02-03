@@ -54,15 +54,6 @@ FFpCurve::FFpCurve (const FFpCurve& curve)
 }
 
 
-FFpCurve::~FFpCurve ()
-{
-  for (int axis = 0; axis < N_AXES; axis++)
-    if (reader[axis].size() > 1)
-      for (PointData& read : reader[axis])
-        delete read.rDescr;
-}
-
-
 void FFpCurve::clear ()
 {
   needRainflow = false;
@@ -95,18 +86,29 @@ void FFpCurve::resize (size_t nSpatialPoints)
 
   for (int axis = 0; axis < N_AXES; axis++)
   {
-    if (reader[axis].size() > 1)
-      for (PointData& read : reader[axis])
-        delete read.rDescr;
-    reader[axis].resize(nSpatialPoints < 1 && axis == Y ? 1 : nSpatialPoints);
+    this->resizeReader(axis,nSpatialPoints);
+    if (nSpatialPoints == 0) nSpatialPoints = 1;
     rdOper[axis] = NULL;
     points[axis].clear();
   }
 
   Xrange      = 0.0;
   timeSamples = 0;
-  timeRange   = { 0.0, 0.0 };;
+  timeRange   = { 0.0, 0.0 };
   timeOper    = None;
+}
+
+
+void FFpCurve::resizeReader (int axis, size_t n)
+{
+  if (reader[axis].size() > 1)
+    for (PointData& read : reader[axis])
+    {
+      delete read.rDescr;
+      read.rDescr = NULL;
+    }
+
+  reader[axis].resize(n);
 }
 
 
@@ -116,7 +118,7 @@ bool FFpCurve::unref (bool clearReadOp)
     for (PointData& read : reader[axis])
     {
       if (read.readOp) read.readOp->unref();
-      if (clearReadOp) read.readOp = (FFaOperation<double>*)NULL;
+      if (clearReadOp) read.readOp = NULL;
     }
 
   return false;
@@ -183,10 +185,10 @@ bool FFpCurve::initAxis (const FFaResultDescription& desc,
 {
   if (reader[axis].size() != 1) return false;
 
-  reader[axis].front().rDescr = (FFaResultDescription*)&desc;
-  reader[axis].front().varRef = (FFrVariableReference*)NULL;
-  reader[axis].front().readOp = (FFaOperation<double>*)NULL;
-  rdOper[axis] = (std::string*)&oper;
+  reader[axis].front().rDescr = const_cast<FFaResultDescription*>(&desc);
+  reader[axis].front().varRef = NULL;
+  reader[axis].front().readOp = NULL;
+  rdOper[axis] = const_cast<std::string*>(&oper);
   return true;
 }
 
@@ -213,18 +215,18 @@ bool FFpCurve::initAxes (const std::vector<FFaResultDescription>& xdesc,
     for (size_t i = 0; i < reader[X].size() && i < xdesc.size(); i++)
     {
       reader[X][i].rDescr = new FFaResultDescription(xdesc[i]);
-      reader[X][i].rDescr->varDescrPath = {xVar};
+      reader[X][i].rDescr->varDescrPath = { xVar };
       reader[X][i].rDescr->varRefType = xTyp;
       reader[Y][i].rDescr = new FFaResultDescription(ydesc[i/2]);
       size_t endPos = reader[Y][i].rDescr->varDescrPath.front().find("end ");
       if ((short int)(i%2) == end1)
-	reader[Y][i].rDescr->varDescrPath.front().replace(endPos,5,"end 1");
+        reader[Y][i].rDescr->varDescrPath.front().replace(endPos,5,"end 1");
       else // end 2
-	reader[Y][i].rDescr->varDescrPath.front().replace(endPos,5,"end 2");
+        reader[Y][i].rDescr->varDescrPath.front().replace(endPos,5,"end 2");
       for (int axis = 0; axis < N_AXES; axis++)
       {
-        reader[axis][i].varRef = (FFrVariableReference*)NULL;
-        reader[axis][i].readOp = (FFaOperation<double>*)NULL;
+        reader[axis][i].varRef = NULL;
+        reader[axis][i].readOp = NULL;
       }
     }
   }
@@ -235,22 +237,21 @@ bool FFpCurve::initAxes (const std::vector<FFaResultDescription>& xdesc,
       // Note that rDescr here is allocated internally, whereas that is not
       // the case for the temporal curves (mostly for efficiency reasons).
       if (reader[axis][i].rDescr)
-	*reader[axis][i].rDescr = ydesc[i];
+        *reader[axis][i].rDescr = ydesc[i];
       else
-	reader[axis][i].rDescr = new FFaResultDescription(ydesc[i]);
-
+        reader[axis][i].rDescr = new FFaResultDescription(ydesc[i]);
       if (axis == X)
       {
-	reader[X][i].rDescr->varDescrPath = {xVar};
-	reader[X][i].rDescr->varRefType = xTyp;
+        reader[X][i].rDescr->varDescrPath = { xVar };
+        reader[X][i].rDescr->varRefType = xTyp;
       }
-      reader[axis][i].varRef = (FFrVariableReference*)NULL;
-      reader[axis][i].readOp = (FFaOperation<double>*)NULL;
+      reader[axis][i].varRef = NULL;
+      reader[axis][i].readOp = NULL;
     }
 
   useInitialXaxis = xOper.find("Initial ") == 0;
-  rdOper[X] = (std::string*)(useCurveLength ? &NoOp : &xOper);
-  rdOper[Y] = (std::string*)&yOper;
+  rdOper[X] = const_cast<std::string*>(useCurveLength ? &NoOp : &xOper);
+  rdOper[Y] = const_cast<std::string*>(&yOper);
   timeRange = tRange;
   timeOper  = TimeOpEnum(tOper.c_str());
   if (timeOper == None)
@@ -562,7 +563,7 @@ bool FFpCurve::loadFileData (const std::string& filePath,
 
     if (points[X].size() != points[Y].size())
       errMsg += "\nError reading curve file: " + filePath
-	+       "\nThe axes do not have the same size.";
+        +       "\nThe axes do not have the same size.";
     else if (points[X].empty())
       errMsg += "\nCould not find curve data on file: " + filePath;
     else
@@ -594,7 +595,7 @@ bool FFpCurve::combineData (int ID, const std::string& expression,
     {
       const std::vector<double>& xci = compCurves[i]->getAxisData(X);
       if (xci.front() > xci.back() && compCurves[i]->reversePoints())
-	message += "Reversing curve points of curve component " +
+        message += "Reversing curve points of curve component " +
           std::string(compNames[i]) + ".\n";
 
       // Find X-interval that covers all curve components
