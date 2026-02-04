@@ -138,11 +138,14 @@ void FFpCurve::setDataChanged ()
 
 bool FFpCurve::clipX (double Xmin, double Xmax)
 {
-  if (points[X].empty()) return false;
+  if (points[X].empty())
+    return false;
+
   size_t iMin = 0, iMax = points[X].size();
   while (iMin < points[X].size() && points[X][iMin] < Xmin) iMin++;
   while (iMax > iMin && points[X][iMax-1] > Xmax) iMax--;
-  if (iMax-iMin == points[X].size()) return false;
+  if (iMax-iMin == points[X].size())
+    return false;
 
   if (iMax <= iMin)
   {
@@ -183,7 +186,8 @@ bool FFpCurve::checkAxesSize ()
 bool FFpCurve::initAxis (const FFaResultDescription& desc,
 			 const std::string& oper, int axis)
 {
-  if (reader[axis].size() != 1) return false;
+  if (reader[axis].size() != 1)
+    return false;
 
   reader[axis].front().rDescr = const_cast<FFaResultDescription*>(&desc);
   reader[axis].front().varRef = NULL;
@@ -199,36 +203,45 @@ bool FFpCurve::initAxes (const std::vector<FFaResultDescription>& xdesc,
 			 const std::pair<double,double>& tRange,
 			 const std::string& tOper, short int end1)
 {
-  if (reader[X].size() > reader[Y].size()) return false;
+  if (reader[X].size() > reader[Y].size())
+    return false;
 
-  // Special x-axis variables for spatial curves
+  // Special X-axis variables for spatial curves
   bool useCurveLength = xOper.find("Length") != std::string::npos;
   std::string xVar(useCurveLength ? "Curve length" : "Position matrix");
   std::string xTyp(useCurveLength ? "SCALAR" : "TMAT34");
   static const std::string NoOp("None");
 
-  if (xdesc.size() == 2*ydesc.size() && end1 >= 0)
+  if (xdesc.size() >= ydesc.size())
   {
     // Special treatment for element results where the X-axis value
     // is taken from separate objects (typically Triads)
-    beamEndFlag = yOper.size() == 1 ? end1 : -1;
+    bool beamSectionRes = xdesc.size() == 2*ydesc.size() && end1 >= 0;
     for (size_t i = 0; i < reader[X].size() && i < xdesc.size(); i++)
     {
       reader[X][i].rDescr = new FFaResultDescription(xdesc[i]);
       reader[X][i].rDescr->varDescrPath = { xVar };
       reader[X][i].rDescr->varRefType = xTyp;
-      reader[Y][i].rDescr = new FFaResultDescription(ydesc[i/2]);
-      size_t endPos = reader[Y][i].rDescr->varDescrPath.front().find("end ");
-      if ((short int)(i%2) == end1)
-        reader[Y][i].rDescr->varDescrPath.front().replace(endPos,5,"end 1");
-      else // end 2
-        reader[Y][i].rDescr->varDescrPath.front().replace(endPos,5,"end 2");
+      if (beamSectionRes)
+      {
+        // Special for beam cross section results
+        reader[Y][i].rDescr = new FFaResultDescription(ydesc[i/2]);
+        size_t endPos = reader[Y][i].rDescr->varDescrPath.front().find("end ");
+        if (static_cast<short int>(i%2) == end1)
+          reader[Y][i].rDescr->varDescrPath.front().replace(endPos,5,"end 1");
+        else // end 2
+          reader[Y][i].rDescr->varDescrPath.front().replace(endPos,5,"end 2");
+      }
+      else if (i < ydesc.size())
+        reader[Y][i].rDescr = new FFaResultDescription(ydesc[i]);
       for (int axis = 0; axis < N_AXES; axis++)
       {
         reader[axis][i].varRef = NULL;
         reader[axis][i].readOp = NULL;
       }
     }
+    if (beamSectionRes)
+      beamEndFlag = yOper.size() == 1 ? end1 : -1;
   }
   else for (int axis = 0; axis < N_AXES; axis++)
     for (size_t i = 0; i < reader[X].size() && i < ydesc.size(); i++)
@@ -272,7 +285,8 @@ int FFpCurve::getSpatialXaxisObject (size_t i) const
 
 bool FFpCurve::notReadThisFar (double& lastTimeStep) const
 {
-  if (lastTimeStep <= lastKey) return false;
+  if (lastTimeStep <= lastKey)
+    return false;
 
   for (int axis = 0; axis < N_AXES; axis++)
     if (!reader[axis].empty())
@@ -362,10 +376,12 @@ bool FFpCurve::findVarRefsAndOpers (FFrExtractor* extr, std::string& errMsg)
 
 std::ostream& operator<< (std::ostream& os, const FFpCurve::PointData& data)
 {
-  if (!data.varRef) return os;
+  if (!data.varRef)
+    return os;
 
   std::string var = data.rDescr->getText();
-  if (var == "Physical time") return os;
+  if (var == "Physical time")
+    return os;
 
   os <<"\n"<< var <<"\n";
   data.varRef->printPosition(os);
@@ -383,13 +399,16 @@ void FFpCurve::printPosition (std::ostream& os) const
 
 bool FFpCurve::loadTemporalData (double currentTime)
 {
-  if (lastKey >= currentTime) return true;
+  if (lastKey >= currentTime)
+    return true;
 
   for (int a = 0; a < N_AXES; a++)
     if (reader[a].size() == 1 && reader[a].front().varRef)
     {
-      if (!reader[a].front().readOp || !reader[a].front().varRef) return false;
-      if (!reader[a].front().varRef->hasDataForCurrentKey()) return true;
+      if (!reader[a].front().readOp || !reader[a].front().varRef)
+        return false;
+      if (!reader[a].front().varRef->hasDataForCurrentKey())
+        return true;
     }
     else if (reader[a].size() > 1)
       return false;
@@ -425,8 +444,9 @@ bool FFpCurve::loadTemporalData (double currentTime)
 bool FFpCurve::loadSpatialData (double currentTime, const double epsT)
 {
   // Check whether current time step is within the time range of this curve
-  if (currentTime < timeRange.first-epsT) return true;
-  if (currentTime > timeRange.second+epsT) return true;
+  if (currentTime < timeRange.first-epsT ||
+      currentTime > timeRange.second+epsT)
+    return true;
 
 #ifdef FFP_DEBUG
   std::cout <<"FFpCurve::loadSpatialData(): t="<< currentTime
@@ -442,23 +462,25 @@ bool FFpCurve::loadSpatialData (double currentTime, const double epsT)
 
   // Allocate curve points, each point has its own read operation in this method
   for (int axis = useInitialXaxis; axis < N_AXES; axis++)
-  {
-    if (reader[axis].size() < 2) return false;
-    points[axis].resize(reader[axis].size(),value);
-  }
-  if (!useInitialXaxis)
-    if (points[X].size() < points[Y].size()) return false;
+    if (reader[axis].size() > 1)
+      points[axis].resize(reader[axis].size(),value);
+    else
+      return false;
+
+  if (!useInitialXaxis && points[X].size() < points[Y].size())
+    return false;
 
   // Now read the curve data, point-by-point
   for (size_t i = 0; i < points[Y].size(); i++)
     for (int axis = useInitialXaxis; axis < N_AXES; axis++)
     {
-      if (!reader[axis][i].readOp) return false;
-      if (!reader[axis][i].varRef) return false;
+      if (!reader[axis][i].readOp || !reader[axis][i].varRef)
+        return false;
 
       if (reader[axis][i].varRef->hasDataForCurrentKey())
       {
-        double scale = axis == Y && (short int)(i%2) == beamEndFlag ? -1.0 : 1.0;
+        double scale = axis == Y && static_cast<short int>(i%2) == beamEndFlag ?
+          -1.0 : 1.0;
         if (reader[axis][i].readOp->invoke(value))
           switch (timeOper) {
           case Min:
@@ -498,15 +520,19 @@ bool FFpCurve::loadSpatialData (double currentTime, const double epsT)
 
 bool FFpCurve::loadCurrentSpatialX ()
 {
-  if (reader[X].size() < 2) return false;
+  if (reader[X].size() < 2)
+    return false;
+
   points[X].resize(reader[X].size(),0.0);
 
   // Read the X-axis data, point-by-point
   for (size_t i = 0; i < points[X].size(); i++)
   {
-    if (!reader[X][i].readOp) return false;
-    if (!reader[X][i].varRef) return false;
-    if (!reader[X][i].varRef->hasDataForCurrentKey()) return false;
+    if (!reader[X][i].readOp || !reader[X][i].varRef)
+      return false;
+
+    if (!reader[X][i].varRef->hasDataForCurrentKey())
+      return false;
 
     reader[X][i].readOp->invoke(points[X][i]);
     reader[X][i].readOp->invalidate();
@@ -536,7 +562,8 @@ bool FFpCurve::loadFileData (const std::string& filePath,
 			     const std::string& channel, std::string& errMsg,
 			     double minX, double maxX)
 {
-  if (filePath.size() < 1) return false;
+  if (filePath.size() < 1)
+    return false;
 
   FiDeviceFunctionBase* reader;
   switch (FiDeviceFunctionFactory::identify(filePath))
@@ -553,7 +580,8 @@ bool FFpCurve::loadFileData (const std::string& filePath,
     default:
       reader = new FiCurveASCFile(filePath.c_str());
   }
-  if (!reader) return false;
+  if (!reader)
+    return false;
 
   bool success = false;
   if (reader->open())
@@ -632,7 +660,8 @@ bool FFpCurve::combineData (int ID, const std::string& expression,
 	sameX[i] = (points[X] == xci);
     }
 
-  if (!nPoints) return false;
+  if (!nPoints)
+    return false;
 
   // Fetch or create the math expression tree
   if (FFaMathExprFactory::instance()->create(ID,expression,nc,compNames) <= 0)
@@ -655,7 +684,8 @@ bool FFpCurve::combineData (int ID, const std::string& expression,
   points[Y].resize(nPoints,0.0);
   for (j = 0; j < nPoints; j++)
   {
-    if (points[X][j] < minX || points[X][j] > maxX) continue;
+    if (points[X][j] < minX || points[X][j] > maxX)
+      continue;
 
     for (i = 0; i < nc; i++)
       if (!compCurves[i] || compCurves[i]->empty())
@@ -694,7 +724,8 @@ bool FFpCurve::inDomain (double x) const
 {
   double minX = points[X].front();
   double maxX = points[X].back();
-  if (x > minX && x < maxX) return true;
+  if (x > minX && x < maxX)
+    return true;
 
   double epsX = 0.01*(maxX-minX)/(double)points[X].size();
   return x > minX-epsX && x < maxX+epsX;
@@ -729,7 +760,7 @@ double FFpCurve::getValue (double x, bool& monotonicX) const
     return y0 + (x-x0)*(y1-y0)/(x1-x0);
   }
 
-  // The given x-value is within the domain
+  // The given X-value is within the domain
   if (lastX >= n || x < points[X][lastX])
     lastX = 0;
 
@@ -759,8 +790,8 @@ double FFpCurve::getValue (double x, bool& monotonicX) const
 bool FFpCurve::replaceByScaledShifted (const DFTparams& dft)
 {
   // Check that the curve has got data (at least one point)
-  if (points[X].size() < 1) return false;
-  if (points[X].size() != points[Y].size()) return false;
+  if (points[X].size() < 1 || points[X].size() != points[Y].size())
+    return false;
 
   // Get data
   std::vector<double>& x = points[X];
@@ -790,18 +821,24 @@ bool FFpCurve::replaceByDerivative ()
   // Get data
   std::vector<double>& x = points[X];
   std::vector<double>& y = points[Y];
+
   size_t n = x.size();
-  if (n < 2 || y.size() != n) return false;
+  if (n < 2 || y.size() != n)
+    return false;
 
   // Compute the derivatives
   double dy0 = y[1] - y[0];
   double dx0 = x[1] - x[0];
-  if (dx0 <= 0.0) return false;
+  if (dx0 <= 0.0)
+    return false;
+
   y.front() = dy0/dx0;
   for (size_t i = 1; i < n-1; i++) {
     double dy1 = y[i+1] - y[i];
     double dx1 = x[i+1] - x[i];
-    if (dx1 <= 0.0) return false;
+    if (dx1 <= 0.0)
+      return false;
+
     y[i] = 0.5*(dy1/dx1 + dy0/dx0);
     dx0 = dx1;
     dy0 = dy1;
@@ -818,8 +855,10 @@ bool FFpCurve::replaceByIntegral ()
   // Get data
   std::vector<double>& x = points[X];
   std::vector<double>& y = points[Y];
+
   size_t n = x.size();
-  if (n < 1 || y.size() < n) return false;
+  if (n < 1 || y.size() < n)
+    return false;
 
   // Compute the integrated curve
   double y0 = y.front();
@@ -827,7 +866,9 @@ bool FFpCurve::replaceByIntegral ()
   for (size_t i = 1; i < n; i++) {
     double y1 = y[i];
     double dx = x[i] - x[i-1];
-    if (dx < 0.0) return false;
+    if (dx < 0.0)
+      return false;
+
     y[i] = y[i-1] + 0.5*(y0+y1)*dx;
     y0 = y1;
   }
@@ -841,8 +882,8 @@ bool FFpCurve::replaceByDFT (const DFTparams& dft, const std::string& cId,
 			     std::string& errMsg)
 {
   // Check that the curve has got data (at least two points)
-  if (points[X].size() < 2) return false;
-  if (points[X].size() != points[Y].size()) return false;
+  if (points[X].size() < 2 || points[X].size() != points[Y].size())
+    return false;
 
   // Get data
   std::vector<double>& x = points[X];
@@ -940,10 +981,11 @@ bool FFpCurve::replaceByDFT (const DFTparams& dft, const std::string& cId,
 
 int FFpCurve::numberOfSamples (double delta, double start, double stop) const
 {
-  if (delta <= 0 || start >= stop) return 1;
+  if (delta <= 0 || start >= stop)
+    return 1;
 
   int maxPrime = FFpFourier::getMaxPrimeFactor();
-  int nOut = (int)floor((stop-start)/delta);
+  int nOut = static_cast<int>(floor((stop-start)/delta));
   if (nOut == 0 || nOut == 1)
     nOut = 2;
   else if (nOut < maxPrime)
@@ -994,8 +1036,8 @@ bool FFpCurve::sample (double start, double stop, double shift, double scale,
 		       bool subMean, size_t n, std::vector<double>& yOut,
                        std::string& errMsg) const
 {
-  if (points[X].empty()) return false;
-  if (start < points[X].front()) return false;
+  if (points[X].empty() || start < points[X].front())
+    return false;
 
   // Find sample positions, interpolate, shift/scale and add to yOut vector
   double mean = 0.0;
@@ -1195,8 +1237,11 @@ bool FFpCurve::performRainflowCalc (const RFprm& rf, bool doPVXonly)
     while (n > i && points[X][n-1] > rf.stop) n--;
     n -= i;
   }
-  if (n == 0) return !needRainflow;
-  if (n > points[Y].size()) return false;
+
+  if (n == 0)
+    return !needRainflow;
+  else if (n > points[Y].size())
+    return false;
 
   lastRF = rf;
 
@@ -1233,8 +1278,11 @@ bool FFpCurve::performRainflowCalc (const RFprm& rf, bool doPVXonly)
 bool FFpCurve::reversePoints ()
 {
   size_t n = reader[X].size();
-  if (n < 2 || n != reader[Y].size()) return false;
-  if (points[X].size() != n || points[Y].size() != n) return false;
+  if (n < 2 || n != reader[Y].size())
+    return false;
+
+  if (points[X].size() != n || points[Y].size() != n)
+    return false;
 
   for (int axis = 0; axis < N_AXES; axis++)
   {
