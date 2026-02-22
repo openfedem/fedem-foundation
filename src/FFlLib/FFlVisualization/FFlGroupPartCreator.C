@@ -148,24 +148,21 @@ void FFlGroupPartCreator::setEdgeGeomStatus()
       // If face is surface face :
 
       FaVec3 surfNorm;
-      face->getFaceNormal(surfNorm);
-      FFlFaceRef faceRef(face,surfNorm);
+      bool degenerated = !face->getFaceNormal(surfNorm);
 
       // Loop Over the edges of the surface face :
 
-      for (edgeIt  = face->edgesBegin();
-	   edgeIt != face->edgesEnd();
-	   edgeIt++)
+      for (edgeIt = face->edgesBegin(); edgeIt != face->edgesEnd(); ++edgeIt)
       {
 	FFlVisEdgeRenderData* edgeRenderData = (*edgeIt)->getRenderData();
-	edgeRenderData->faceReferences.push_back(faceRef);
+	edgeRenderData->faceReferences.emplace_back(face,surfNorm);
 
-	if ((*edgeIt)->getRefs() == 1)
+	if (degenerated || (*edgeIt)->getRefs() == 1)
 	  edgeRenderData->edgeStatus = FFlVisEdgeRenderData::OUTLINE;
 	else if (edgeRenderData->edgeStatus == FFlVisEdgeRenderData::INTERNAL)
 	  edgeRenderData->edgeStatus = FFlVisEdgeRenderData::SURFACE;
 	else if (edgeRenderData->edgeStatus == FFlVisEdgeRenderData::SURFACE)
-	  // compare surfNorm to the edges existing suface normals.
+	  // compare surfNorm to the edges existing surface normals.
 	  // If some angle > OutlineEdgeMinAngle, upgrade to OUTLINE,
 	  // else add this surface normal to the vector:
           for (const FFlFaceRef& fn : edgeRenderData->faceReferences)
@@ -321,16 +318,15 @@ void FFlGroupPartCreator::createLinkReducedFaces(FFlGroupPartData& redInternalFa
 
   for (FFlVisFace* face : myVisFaces)
     if (!face->isVisited())
-    {
-      IntList polygon;
-      FaVec3  normal;
-      face->getElmFaceNormal(normal);
-      this->expandPolygon(polygon,*face,normal);
+      if (FaVec3 normal; face->getElmFaceNormal(normal))
+      {
+        IntList polygon;
+        this->expandPolygon(polygon,*face,normal);
 
-      // Tesselate the reduced polygon, and add triangles to shape indices in group parts
-      FFlGroupPartData& faces = face->isSurfaceFace() ? redSurfaceFaces : redInternalFaces;
-      FFlTesselator::tesselate(faces.shapeIndexes,polygon,myVertices,normal);
-    }
+        // Tesselate the reduced polygon, and add triangles to shape indices in group parts
+        FFlGroupPartData& faces = face->isSurfaceFace() ? redSurfaceFaces : redInternalFaces;
+        FFlTesselator::tesselate(faces.shapeIndexes,polygon,myVertices,normal);
+      }
 }
 
 
@@ -372,13 +368,13 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
 
   VisEdgeRefVecCIter edgeIt;
   IntList::iterator nextSplEdgEndPolyIt = polygon.begin();
-  nextSplEdgEndPolyIt++;
+  ++nextSplEdgEndPolyIt;
   IAmIncludingInOpsDir = false;
 
   if (faceIsPositive)
     for (edgeIt = f.edgesBegin();
 	 edgeIt != f.edgesEnd();
-	 edgeIt ++, nextSplEdgEndPolyIt++)
+	 ++edgeIt, ++nextSplEdgEndPolyIt)
     {
 #if defined(win32) || defined(win64)
       joinFacesFromEdgeMethodCount = 0;
@@ -646,7 +642,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
 
       if (faceToJoinIsPositive)
         {
-          for (++edgeIt; edgeIt != splEdgeRIt ; ++edgeIt)
+          for (++edgeIt; edgeIt != splEdgeRIt; ++edgeIt)
             {
               if (edgeIt ==  faceToJoin->edgesEnd()){
                 edgeIt = faceToJoin->edgesBegin();
@@ -703,7 +699,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
         }
       else
         {
-          for (++edgeIt; edgeIt != splEdgeRIt ; ++edgeIt)
+          for (++edgeIt; edgeIt != splEdgeRIt; ++edgeIt)
             {
               if (edgeIt ==  faceToJoin->edgesEnd()){
                 edgeIt = faceToJoin->edgesBegin();

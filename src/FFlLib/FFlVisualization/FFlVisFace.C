@@ -50,8 +50,7 @@ void FFlVisFace::setFaceVertices(const std::vector<FFlVertex*>& vertices,
     if (!(*it)->equals(**jt,1.0e-12)) // Avoid adding degenerated edges
     {
       FFlVisEdge* edge = new FFlVisEdge();
-      myEdges.push_back(FFlVisEdgeRef());
-      myEdges.back().setPosDir(edge->setVertices(*it,*jt));
+      myEdges.emplace_back(edge->setVertices(*it,*jt));
       FFlEdgePtBoolPair edgePair = tester.insertEdge(edge);
       myEdges.back() = *edgePair.first;
       if (!edgePair.second)
@@ -169,14 +168,14 @@ void FFlVisFace::getElmFaceTopology(std::vector<int>& topology,
 }
 
 
-void FFlVisFace::getFaceNormal(FaVec3& normal)
+bool FFlVisFace::getFaceNormal(FaVec3& normal)
 {
   static FaVec3 vec2;
   static FaVec3 vec1;
 
   int nEdges = myEdges.size();
   if (nEdges < 3)
-    return; // degenereated face, normal is undefined
+    return false; // degenereated face, normal is undefined
 
   if (nEdges <= 4)
   {
@@ -194,11 +193,15 @@ void FFlVisFace::getFaceNormal(FaVec3& normal)
 
     if (it == myEdges.end())
     {
-      std::cerr <<"Error in surface normal creation\n    Element refs:";
+      std::cout <<"  ** Surface normal creation failed.\n     Element refs:";
       for (const FFlFaceElemRef& ref : myElementRefs)
-        std::cout << ref.myElement->getID() <<" ("<< ref.myElementFaceNumber <<")";
+        std::cout <<" "<< ref.myElement->getID() <<" ("
+                  << static_cast<int>(ref.myElementFaceNumber) <<")";
+      std::cout <<"\n     All face edges are parallel:";
+      for (it = myEdges.begin(); it != myEdges.end(); ++it)
+        std::cout <<"\n\t"<< *it->getFirstVertex() - *it->getSecondVertex();
       std::cout << std::endl;
-      return;
+      return false;
     }
   }
   else
@@ -211,15 +214,20 @@ void FFlVisFace::getFaceNormal(FaVec3& normal)
 
   normal = vec1 ^ vec2;
   normal.normalize();
+  return true;
 }
 
 
-void FFlVisFace::getElmFaceNormal(FaVec3& normal)
+bool FFlVisFace::getElmFaceNormal(FaVec3& normal)
 {
-  this->getFaceNormal(normal);
+  if (!this->getFaceNormal(normal))
+    return false;
+
   if (!myElementRefs.empty())
     if (!myElementRefs.front().elementAndFaceNormalParallel)
       normal = -normal;
+
+  return true;
 }
 
 
