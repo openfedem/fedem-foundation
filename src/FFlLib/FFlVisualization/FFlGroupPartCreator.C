@@ -45,9 +45,7 @@ FFlGroupPartCreator::FFlGroupPartCreator(FFlLinkHandler* lh)
   myFaceReductionAngle = 0.05;
 
   IAmIncludingInOpsDir = false;
-#if defined(win32) || defined(win64)
   joinFacesFromEdgeMethodCount = 0;
-#endif
 }
 
 
@@ -376,9 +374,7 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
 	 edgeIt != f.edgesEnd();
 	 ++edgeIt, ++nextSplEdgEndPolyIt)
     {
-#if defined(win32) || defined(win64)
       joinFacesFromEdgeMethodCount = 0;
-#endif
       this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, f, faceIsPositive,
 			      f.isSurfaceFace(), normal );
     }
@@ -388,9 +384,7 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
     if (edgeIt != f.edgesBegin())
       do {
 	--edgeIt;
-#if defined(win32) || defined(win64)
 	joinFacesFromEdgeMethodCount = 0;
-#endif
 	this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, f,
 				faceIsPositive, f.isSurfaceFace(),  normal);
 
@@ -534,14 +528,18 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
 					    const bool               & onlySurfaceFaces,
 					    const FaVec3             & normal )
 {
-#if defined(win32) || defined(win64)
   // Workaround to reduce recursive stack depth
   // (joinFacesFromEdge <-> recIncludeFace)
-  if (++joinFacesFromEdgeMethodCount > 4500) {
-    joinFacesFromEdgeMethodCount--;
+  if (joinFacesFromEdgeMethodCount < 4500)
+    ++joinFacesFromEdgeMethodCount;
+  else
+  {
+#ifdef FFL_DEBUG
+    std::cout <<"  ** Max recursive depth ("<< joinFacesFromEdgeMethodCount
+              <<") reached during merge of faces, bailing..."<< std::endl;
+#endif
     return;
   }
-#endif
 
   // Find neigbourRef such that : neigbourRef = face joinable to f
 
@@ -612,9 +610,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
     // If the faceToJoin is not joinable to f return
 
     if (!faceToJoin || !isOkToJoin) {
-#if defined(win32) || defined(win64)
-      joinFacesFromEdgeMethodCount--;
-#endif
+      --joinFacesFromEdgeMethodCount;
       return;
     }
 
@@ -625,7 +621,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
   IntList::iterator splEdgBeginPolyIt = splEdgEndPolyIt;
   --splEdgBeginPolyIt;
 
-  this->insertFaceInPolygon(polygon, splEdgEndPolyIt, faceToJoin, splEdgeRIt,faceToJoinIsPositive);
+  this->insertFaceInPolygon(polygon, splEdgEndPolyIt, faceToJoin, splEdgeRIt, faceToJoinIsPositive);
 
   // Loop over the edges of this face in polygon direction and join the
   // jonable faces recursivly to the polygon.
@@ -664,7 +660,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
           while(edgeIt != splEdgeRIt)
             {
               this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, *faceToJoin,
-                          faceToJoinIsPositive, onlySurfaceFaces,  normal );
+                                      faceToJoinIsPositive, onlySurfaceFaces, normal );
 
               ++nextSplEdgEndPolyIt;
 
@@ -687,7 +683,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
 
           while(edgeIt != splEdgeRIt){
             this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, *faceToJoin,
-                        faceToJoinIsPositive, onlySurfaceFaces,  normal );
+                                    faceToJoinIsPositive, onlySurfaceFaces, normal );
 
             nextSplEdgEndPolyIt = splEdgBeginPolyIt;
             --splEdgBeginPolyIt;
@@ -716,9 +712,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
         }
     }
 
-#if defined(win32) || defined(win64)
-  joinFacesFromEdgeMethodCount--;
-#endif
+  --joinFacesFromEdgeMethodCount;
 }
 
 
@@ -762,7 +756,7 @@ void FFlGroupPartCreator::getPolygonFromFace(IntList & polygon,
 {
   VisEdgeRefVecCIter edgeIt = splEdgeRIt;
 
-  // Loop from (and iclusive splEdgeRIt) to and exclusive splEdgeRIt
+  // Loop from (and including) splEdgeRIt to and excluding splEdgeRIt
   // Jumping from end to begin.
   // Looping in the right direction on the face
 
@@ -842,9 +836,9 @@ void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internalLines
     vertexEdgeRefs[edge->getSecondVertex()->getRunningID()].push_back(edge);
   }
 
-  // Recursive lambda function for concatenating nearly co-linear edgdes.
+  // Recursive lambda function for concatenating nearly co-linear edges.
   std::function<void(FFlVisEdge*,IntVec&,int)> expand =
-    [&expand, this, vertexEdgeRefs]
+    [&expand, angleTol=myEdgesParallelAngle, vertexEdgeRefs]
     (FFlVisEdge* origEdge, IntVec& simplifiedEdge, int idx) -> void
   {
     int                   endID    = origEdge->getVertex(idx)->getRunningID();
@@ -866,7 +860,7 @@ void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internalLines
         if (edge->getVertex(1-idx)->getRunningID() != endID)
           endVec = -endVec;
 
-        if (startVec.angle(endVec) < myEdgesParallelAngle)
+        if (startVec.angle(endVec) < angleTol)
         {
           // Extend the simplified edge
           if (edge->getVertex(1-idx)->getRunningID() == endID)
@@ -911,18 +905,14 @@ void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internalLines
 
 void FFlGroupPartCreator::createSpecialLines(double XZlen)
 {
-  // Lambda function for creating a special edge line
-  auto&& createLine = [this](FFlVisEdge* edge, double length = 0.0)
+  // Lambda function for creating a special edge line.
+  std::function<void(FFlVisEdge*,double)> createLine =
+    [&lines=mySpecialLines](FFlVisEdge* edge, double length) -> void
   {
     unsigned short int linePattern = edge->getRenderData()->linePattern;
-    GroupPartMap::iterator lit = mySpecialLines.find(linePattern);
-    if (lit == mySpecialLines.end())
-    {
-      // Create a new group part for this line pattern
-      lit = mySpecialLines.emplace(linePattern,new FFlGroupPartData()).first;
-      lit->second->isLineShape  = true;
-      lit->second->isIndexShape = false;
-    }
+    GroupPartMap::iterator lit = lines.find(linePattern);
+    if (lit == lines.end()) // Create a new group part for this line pattern
+      lit = lines.emplace(linePattern,new FFlGroupPartData()).first;
 
     // Add edge to group part associated with this line pattern
     lit->second->edgePointers.emplace_back(edge,-1);
@@ -936,8 +926,8 @@ void FFlGroupPartCreator::createSpecialLines(double XZlen)
     }
   };
 
-  for (FFlVisEdge* edge : mySpecialEdges) createLine(edge);
-  for (FFlVisEdge* edge : myBeamEccEdges) createLine(edge);
+  for (FFlVisEdge* edge : mySpecialEdges) createLine(edge,0.0);
+  for (FFlVisEdge* edge : myBeamEccEdges) createLine(edge,0.0);
   if (XZlen < 0.0) return; // no local beam system marker
   for (FFlVisEdge* edge : myBeamSysEdges) createLine(edge,XZlen);
 }
