@@ -41,17 +41,20 @@ struct FFlGroupPartData
   //! The visible edges with idx to the start of the results for the edges
   std::vector<FFlVisEdgeIdx> edgePointers;
 
-  //! The hidden  edges with idx to the start of the results for the edges
+  //! The hidden edges with idx to the start of the results for the edges
   std::vector<FFlVisEdgeIdx> hiddenEdges;
-
-  //! Number of vertexes in the visible edge/face set.
-  int nVisiblePrimitiveVertexes = 0;
 
   //! Faces or line indexes if not using faces or edges
   std::vector<IntVec> shapeIndexes;
 
   //! Fringe operations for results
   std::vector<FFaOperation<double>*> colorOps;
+
+  //! Return the number of visible items of this GroupPart
+  size_t getNoItems() const;
+
+  //! Return the total number of visible vertices of this GroupPart
+  size_t getNoVisibleVertices(bool addOnePrItem = false) const;
 
   //! Extract shape indices for visualization
   void getShapeIndexes(int* idx) const;
@@ -92,14 +95,14 @@ public:
 
   // Parameters for the geometrical algorithms
 
-  void   setEdgesParallelAngle(double val)    { myEdgesParallelAngle = val; }
-  double getEdgesParallelAngle() const        { return myEdgesParallelAngle;}
+  void setEdgesParallelAngle(double val)    { myEdgesParallelAngle = val; }
+  double getEdgesParallelAngle() const      { return myEdgesParallelAngle; }
 
-  void   setOutlineAngleThreshold(double val) { myOutlineEdgeMinAngle = val; }
-  double getOutlineAngleThreshold() const     { return myOutlineEdgeMinAngle;}
+  void setOutlineAngleThreshold(double val) { myOutlineEdgeMinAngle = val; }
+  double getOutlineAngleThreshold() const   { return myOutlineEdgeMinAngle; }
 
-  void   setFaceReductionAngle(double val)    { myFaceReductionAngle = val; }
-  double getFaceReductionAngle() const        { return myFaceReductionAngle;}
+  void setFaceReductionAngle(double val)    { myFaceReductionAngle = val; }
+  double getFaceReductionAngle() const      { return myFaceReductionAngle; }
 
   // Debug printing
   virtual void dump() const;
@@ -109,19 +112,19 @@ protected:
 
   // Link part generation :
 
-  void createLinkFullFaces(FFlGroupPartData& internalFaces,
-                           FFlGroupPartData& surfaceFaces);
+  void createLinkFullFaces(FFlGroupPartData& internal,
+                           FFlGroupPartData& surface);
 
-  void createLinkFullEdges(FFlGroupPartData& internalLines,
-                           FFlGroupPartData& surfaceLines,
-                           FFlGroupPartData& outlineLines);
+  void createLinkFullEdges(FFlGroupPartData& internal,
+                           FFlGroupPartData& surface,
+                           FFlGroupPartData& outline);
 
-  void createLinkReducedFaces(FFlGroupPartData& internalFaces,
-                              FFlGroupPartData& surfaceFaces);
+  void createLinkReducedFaces(FFlGroupPartData& internal,
+                              FFlGroupPartData& surface);
 
-  void createLinkReducedEdges(FFlGroupPartData& internalLines,
-                              FFlGroupPartData& surfaceLines,
-                              FFlGroupPartData& outlineLines);
+  void createLinkReducedEdges(FFlGroupPartData& internal,
+                              FFlGroupPartData& surface,
+                              FFlGroupPartData& outline);
 
   void createSpecialLines(double XZscale = 0.0);
 
