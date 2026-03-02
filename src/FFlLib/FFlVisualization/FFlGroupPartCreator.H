@@ -140,16 +140,10 @@ protected:
                              const bool               & onlySurfaceFaces,
                              const FaVec3             & normal );
 
-  void insertFaceInPolygon ( IntList                  & polygon,
-                             const IntList::iterator  & splEdgEndPolyIt,
-                             const FFlVisFace         * faceToJoin,
-                             const VisEdgeRefVecCIter & splEdgeRIt,
-                             const bool               & faceToJoinIsPositive );
-
-  void getPolygonFromFace  ( IntList                  & polygon,
-                             const FFlVisFace         & f,
-                             const VisEdgeRefVecCIter & splitEdgeIt,
-                             const bool               & faceIsPositive );
+  void getPolygonPosFace(IntList& polygon, const FFlVisFace& f,
+                         const VisEdgeRefVecCIter& splEdge);
+  void getPolygonNegFace(IntList& polygon, const FFlVisFace& f,
+                         const VisEdgeRefVecCIter& splEdge);
 
 private:
   GroupPartMap myLinkParts;    //!< Internal container for stored geometry

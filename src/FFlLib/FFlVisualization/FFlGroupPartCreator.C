@@ -313,7 +313,6 @@ void FFlGroupPartCreator::createLinkReducedFaces(FFlGroupPartData& internal,
 void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
                                         const FaVec3& normal)
 {
-  IntList facePolygon;
   polygon.clear();
   f.setVisited();
 
@@ -325,12 +324,13 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
   f.getFaceNormal(fNormal);
   bool faceIsPositive = normal*fNormal > 0.0;
 
+  IntList facePolygon;
   if (faceIsPositive)
-    this->getPolygonFromFace(facePolygon, f, f.edgesBegin(), faceIsPositive);
+    this->getPolygonPosFace(facePolygon, f, f.edgesBegin());
   else
   {
     VisEdgeRefVecCIter splEdge = f.edgesEnd(); --splEdge;
-    this->getPolygonFromFace(facePolygon, f, splEdge, faceIsPositive);
+    this->getPolygonNegFace(facePolygon, f, splEdge);
   }
 
   polygon.splice(polygon.begin(), facePolygon);
@@ -524,6 +524,9 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
     return;
   }
 
+  IntList::iterator splEdgBeginPolyIt = splEdgEndPolyIt;
+  --splEdgBeginPolyIt;
+
   // Find neigbourRef such that : neigbourRef = face joinable to f
 
   bool faceToJoinIsPositive = true;
@@ -597,14 +600,28 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
       return;
     }
 
+#if FFL_DEBUG > 3
+    std::cout <<"Splitting edge: "<< *splEdgeRIt
+              <<" PolygonIterator: "<< *splEdgEndPolyIt << std::endl;
+#endif
+
+    // Get vertex indices from face and insert them into polygon list
+
+    IntList facePolygon;
+    if (faceToJoinIsPositive)
+      this->getPolygonPosFace(facePolygon, *faceToJoin, splEdgeRIt);
+    else
+      this->getPolygonNegFace(facePolygon, *faceToJoin, splEdgeRIt);
+    facePolygon.pop_front();
+    facePolygon.pop_back();
+    polygon.splice(splEdgEndPolyIt, facePolygon);
+
+#if FFL_DEBUG > 3
+    std::cout <<"Bigger Polygon:";
+    for (int idx : polygon) std::cout <<" "<< idx;
+    std::cout << std::endl;
+#endif
   } // End of call stack reducing scope
-
-  // FaceToJoin is joinable :
-
-  IntList::iterator splEdgBeginPolyIt = splEdgEndPolyIt;
-  --splEdgBeginPolyIt;
-
-  this->insertFaceInPolygon(polygon, splEdgEndPolyIt, faceToJoin, splEdgeRIt, faceToJoinIsPositive);
 
   // Loop over the edges of this face in polygon direction and join the
   // jonable faces recursivly to the polygon.
@@ -699,27 +716,29 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
 }
 
 
-void FFlGroupPartCreator::insertFaceInPolygon(IntList                  & polygon,
-					      const IntList::iterator  & splEdgEndPolyIt,
-					      const FFlVisFace         * faceToJoin,
-					      const VisEdgeRefVecCIter & splEdgeRIt,
-					      const bool               & faceToJoinIsPositive)
+/*!
+  Get a list of vertex indices (polygon) from face
+  that starts on the end of the splitting edge.
+
+  Loops from (and including) splEdge to and excluding splEdge.
+  Looping in positive direction for the face and jumping from end to begin.
+*/
+
+void FFlGroupPartCreator::getPolygonPosFace(IntList& polygon,
+                                            const FFlVisFace& f,
+                                            const VisEdgeRefVecCIter& splEdge)
 {
-#if FFL_DEBUG > 3
-  std::cout <<"Splitting edge: "<< *splEdgeRIt
-            <<" PolygonIterator: "<< *splEdgEndPolyIt << std::endl;
-#endif
-
-  // Get vertex idexes from face and insert them into polygon vxlist
-
-  IntList facePolygon;
-  this->getPolygonFromFace(facePolygon, *faceToJoin, splEdgeRIt, faceToJoinIsPositive);
-  facePolygon.pop_front();
-  facePolygon.pop_back();
-  polygon.splice(splEdgEndPolyIt, facePolygon);
+  VisEdgeRefVecCIter edgeIt = splEdge;
+  do
+  {
+    polygon.push_back(edgeIt->getSecondVertex()->getRunningID());
+    ++edgeIt;
+    if (edgeIt == f.edgesEnd()) edgeIt = f.edgesBegin();
+  }
+  while (edgeIt != splEdge);
 
 #if FFL_DEBUG > 3
-  std::cout <<"Bigger Polygon:";
+  std::cout <<"Creating face polygon:";
   for (int idx : polygon) std::cout <<" "<< idx;
   std::cout << std::endl;
 #endif
@@ -727,39 +746,25 @@ void FFlGroupPartCreator::insertFaceInPolygon(IntList                  & polygon
 
 
 /*!
-  Get a list<int> of vertex indexes (polygon) from face,
+  Get a list of vertex indices (polygon) from face
   that starts on the end of the splitting edge.
+
+  Loops from (and including) splEdge to and excluding splEdge.
+  Looping in negative direction for the face and jumping from begin to end.
 */
 
-void FFlGroupPartCreator::getPolygonFromFace(IntList & polygon,
-					     const FFlVisFace & f,
-					     const VisEdgeRefVecCIter & splEdgeRIt,
-					     const bool       & faceIsPositive)
+void FFlGroupPartCreator::getPolygonNegFace(IntList& polygon,
+                                            const FFlVisFace& f,
+                                            const VisEdgeRefVecCIter& splEdge)
 {
-  VisEdgeRefVecCIter edgeIt = splEdgeRIt;
-
-  // Loop from (and including) splEdgeRIt to and excluding splEdgeRIt
-  // Jumping from end to begin.
-  // Looping in the right direction on the face
-
-  if (faceIsPositive)
-    {
-      do {
-	polygon.push_back(edgeIt->getSecondVertex()->getRunningID());
-	++edgeIt;
-	if (edgeIt == f.edgesEnd()) edgeIt = f.edgesBegin();
-      }
-      while (edgeIt != splEdgeRIt);
-    }
-  else
-    {
-      do {
-	polygon.push_back(edgeIt->getFirstVertex()->getRunningID());
-	if (edgeIt == f.edgesBegin()) edgeIt = f.edgesEnd();
-	--edgeIt;
-      }
-      while (edgeIt != splEdgeRIt);
-    }
+  VisEdgeRefVecCIter edgeIt = splEdge;
+  do
+  {
+    polygon.push_back(edgeIt->getFirstVertex()->getRunningID());
+    if (edgeIt == f.edgesBegin()) edgeIt = f.edgesEnd();
+    --edgeIt;
+  }
+  while (edgeIt != splEdge);
 
 #if FFL_DEBUG > 3
   std::cout <<"Creating face polygon:";
