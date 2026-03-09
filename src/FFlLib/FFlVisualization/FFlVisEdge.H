@@ -17,13 +17,11 @@
 
 class FFlVertex;
 class FFlVisFace;
-
-typedef std::pair<FFlVisFace*,FaVec3> FFlFaceRef;
+using FFlFaceRef = std::pair<FFlVisFace*,FaVec3>;
 
 
 /*!
-  Used to store status etc conserning geometry reduction
-  etc. from FFlGroupPartCreator
+  Used to store status concerning geometry reduction from FFlGroupPartCreator.
   \sa FFlGroupPartCreator
 */
 
@@ -31,12 +29,9 @@ struct FFlVisEdgeRenderData
 {
   enum RenderStatus {INTERNAL, SURFACE, OUTLINE};
 
-  FFlVisEdgeRenderData() : linePattern(0xffff), simplified(false),
-                           edgeStatus(INTERNAL) {}
-
-  unsigned short linePattern;
-  bool           simplified;
-  char           edgeStatus; // RenderStatus
+  unsigned short linePattern = 0xffff;
+  bool           simplified = false;
+  char           edgeStatus = INTERNAL; // RenderStatus
 
   std::vector<FFlFaceRef> faceReferences;
 
@@ -60,9 +55,9 @@ public:
   // Vertex access :
 
   bool setVertices(FFlVertex* n1, FFlVertex* n2, bool constructing = false);
-  FFlVertex* getFirstVertex() const { return myFirstVertex; }
-  FFlVertex* getSecondVertex() const { return mySecVertex; }
-  FFlVertex* getVertex(int idx) const { return idx ? mySecVertex : myFirstVertex; }
+  FFlVertex* getFirstVertex() const { return myVertex[0]; }
+  FFlVertex* getSecondVertex() const { return myVertex[1]; }
+  FFlVertex* getVertex(int idx) const { return myVertex[idx]; }
 
   // Get running vertex indices for edge
 
@@ -92,19 +87,18 @@ public:
 
 protected:
   unsigned char         myRefCount;
-  FFlVertex*            myFirstVertex;
-  FFlVertex*            mySecVertex;
+  FFlVertex*            myVertex[2];
   FFlVisEdgeRenderData* myRenderData;
 
 public:
   struct FFlVisEdgeLess
   {
-    bool operator()(const FFlVisEdge* first, const FFlVisEdge* sec) const;
+    bool operator()(const FFlVisEdge* a, const FFlVisEdge* b) const;
   };
 
   struct FFlVisEdgeEqual
   {
-    bool operator()(const FFlVisEdge* first, const FFlVisEdge* sec) const;
+    bool operator()(const FFlVisEdge* a, const FFlVisEdge* b) const;
   };
 
 #ifdef FT_USE_MEMPOOL
@@ -116,7 +110,7 @@ public:
 class FFlVisEdgeRef
 {
 public:
-  FFlVisEdgeRef(FFlVisEdge* edge = NULL);
+  FFlVisEdgeRef(bool pos = true) : iAmPositive(pos), myVisEdge(NULL) {}
   FFlVisEdgeRef(const FFlVisEdgeRef& ref);
 
   ~FFlVisEdgeRef() { if (myVisEdge) myVisEdge->unRef(); }

@@ -20,19 +20,19 @@ class FFlGeomUniqueTester;
 
 struct FFlFaceElemRef
 {
-  FFlElementBase* myElement;
-  char myElementFaceNumber;
-  char elementFaceNodeOffset;
-  bool elementAndFaceNormalParallel;
+  FFlElementBase* myElement = NULL;
+  char myElementFaceNumber = 0;
+  char elementFaceNodeOffset = 0;
+  bool elementAndFaceNormalParallel = false;
 };
 
-// Typedefs to be used with the FFlVisFace Class
+// Type aliases to be used with the FFlVisFace class
 
-typedef std::vector<FFlVisEdgeRef>     VisEdgeRefVec;
-typedef VisEdgeRefVec::const_iterator  VisEdgeRefVecCIter;
+using VisEdgeRefVec  = std::vector<FFlVisEdgeRef>;
+using FaceElemRefVec = std::vector<FFlFaceElemRef>;
 
-typedef std::vector<FFlFaceElemRef>    FaceElemRefVec;
-typedef FaceElemRefVec::const_iterator FaceElemRefVecCIter;
+using VisEdgeRefVecCIter  = VisEdgeRefVec::const_iterator;
+using FaceElemRefVecCIter = FaceElemRefVec::const_iterator;
 
 
 class FFlVisFace
@@ -52,13 +52,14 @@ public:
   void getFaceVertices(std::vector<int>& vertexIdxes) const;
   int  getNumVertices() const { return myEdges.size(); }
 
-  void getElmFaceTopology(std::vector<int>& topology, const FaceElemRefVecCIter& elmRefIt);
+  void getElmFaceTopology(std::vector<int>& topology,
+                          const FaceElemRefVecCIter& elmRefIt);
 
-  // Element face normal or face normal of face
+  // Element face normal or normal of face
   // (Face normal "always" consistent with edge order and directions)
 
-  void getElmFaceNormal(FaVec3& normal);
-  void getFaceNormal   (FaVec3& normal);
+  bool getElmFaceNormal(FaVec3& normal);
+  bool getFaceNormal   (FaVec3& normal);
 
   // Unref all edges around face
 
@@ -66,9 +67,9 @@ public:
 
   // Ref-counting from elements myRefCount = nElms using this face
 
-  int ref()            { return ++myRefCount; }
-  int unRef()          { return --myRefCount; }
-  int getRefs() const  { return   myRefCount; }
+  int ref()           { return ++myRefCount; }
+  int unRef()         { return --myRefCount; }
+  int getRefs() const { return   myRefCount; }
 
   // Mark face as a shell face
 
@@ -99,14 +100,14 @@ public:
 
   // Managing element references
 
-  void addFaceElemRef(const FFlFaceElemRef& ref) { myElementRefs.push_back(ref); }
+  void addFaceElemRef(const FFlFaceElemRef& fe) { myElementRefs.push_back(fe); }
   void deleteFaceElemRef() { FaceElemRefVec empty; myElementRefs.swap(empty); }
 
   // Functor object to make comparing faces possible
 
   struct FFlVisFaceLess
   {
-    bool operator()(const FFlVisFace* first, const FFlVisFace* sec) const;
+    bool operator()(const FFlVisFace* a, const FFlVisFace* b) const;
   };
 
 protected:

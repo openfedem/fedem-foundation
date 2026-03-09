@@ -26,13 +26,9 @@ FFlVisEdge::FFlVisEdge(FFlVertex* n1, FFlVertex* n2)
 
 FFlVisEdge::FFlVisEdge(const FFlVisEdge& edg)
 {
-  myFirstVertex = edg.getFirstVertex();
-  if (myFirstVertex)
-    myFirstVertex->ref();
-
-  mySecVertex = edg.getSecondVertex();
-  if (mySecVertex)
-    mySecVertex->ref();
+  for (int i = 0; i < 2; i++)
+    if ((myVertex[i] = edg.getVertex(i)))
+      myVertex[i]->ref();
 
   myRefCount = edg.myRefCount;
   myRenderData = NULL;
@@ -45,13 +41,9 @@ FFlVisEdge& FFlVisEdge::operator=(const FFlVisEdge& edg)
   {
     this->releaseVertices();
 
-    myFirstVertex = edg.getFirstVertex();
-    if (myFirstVertex)
-      myFirstVertex->ref();
-
-    mySecVertex = edg.getSecondVertex();
-    if (mySecVertex)
-      mySecVertex->ref();
+    for (int i = 0; i < 2; i++)
+      if ((myVertex[i] = edg.getVertex(i)))
+        myVertex[i]->ref();
   }
 
   return *this;
@@ -63,24 +55,17 @@ bool FFlVisEdge::setVertices(FFlVertex* n1, FFlVertex* n2, bool constructing)
   if (!constructing)
     this->releaseVertices();
 
-  bool doSwap = n1 && n2 && n1->getRunningID() > n2->getRunningID();
-  if (doSwap)
-  {
-    myFirstVertex = n2;
-    mySecVertex = n1;
-  }
-  else
-  {
-    myFirstVertex = n1;
-    mySecVertex = n2;
-  }
+  // Check if the edge direction is swapped
+  int i1 = n1 && n2 && n1->getRunningID() > n2->getRunningID() ? 1 : 0;
 
-  if (myFirstVertex)
-    myFirstVertex->ref();
-  if (mySecVertex)
-    mySecVertex->ref();
+  myVertex[i1] = n1;
+  myVertex[1-i1] = n2;
 
-  return !doSwap; // If swapped then negative direction
+  for (int idx = 0; idx < 2; idx++)
+    if (myVertex[idx])
+      myVertex[idx]->ref();
+
+  return i1 == 0; // if swapped then negative direction
 }
 
 
@@ -91,12 +76,9 @@ bool FFlVisEdge::setVertices(FFlVertex* n1, FFlVertex* n2, bool constructing)
 void FFlVisEdge::getEdgeVertices(std::vector<int>& vertexRefs) const
 {
   vertexRefs.reserve(2);
-
-  if (myFirstVertex)
-    vertexRefs.push_back(myFirstVertex->getRunningID());
-
-  if (mySecVertex)
-    vertexRefs.push_back(mySecVertex->getRunningID());
+  for (int idx = 0; idx < 2; idx++)
+    if (myVertex[idx])
+      vertexRefs.push_back(myVertex[idx]->getRunningID());
 }
 
 /*!
@@ -111,33 +93,30 @@ void FFlVisEdge::getEdgeVertices(std::vector<int>& vertexRefs) const
 
 void FFlVisEdge::getEdgeVertices(int*& vertexIdxArrayPtr) const
 {
-  if (myFirstVertex)
-    *(vertexIdxArrayPtr++) = myFirstVertex->getRunningID();
-
-  if (mySecVertex)
-    *(vertexIdxArrayPtr++) = mySecVertex->getRunningID();
+  for (int idx = 0; idx < 2; idx++)
+    if (myVertex[idx])
+      *(vertexIdxArrayPtr++) = myVertex[idx]->getRunningID();
 }
 
 
 int FFlVisEdge::getFirstVxIdx() const
 {
-  return myFirstVertex->getRunningID();
+  return myVertex[0]->getRunningID();
 }
 
 int FFlVisEdge::getSecondVxIdx() const
 {
-  return mySecVertex->getRunningID();
+  return myVertex[1]->getRunningID();
 }
 
 
 void FFlVisEdge::releaseVertices()
 {
-  if (myFirstVertex)
-    myFirstVertex->unRef();
-  if (mySecVertex)
-    mySecVertex->unRef();
+  for (int idx = 0; idx < 2; idx++)
+    if (myVertex[idx])
+      myVertex[idx]->unRef();
 
-  myFirstVertex = mySecVertex = NULL;
+  myVertex[0] = myVertex[1] = NULL;
 }
 
 
@@ -147,8 +126,8 @@ void FFlVisEdge::releaseVertices()
 
 FaVec3 FFlVisEdge::getVector() const
 {
-  if (myFirstVertex && mySecVertex)
-    return *mySecVertex - *myFirstVertex;
+  if (myVertex[0] && myVertex[1])
+    return *myVertex[1] - *myVertex[0];
   else
     return FaVec3();
 }
@@ -168,34 +147,27 @@ void FFlVisEdge::deleteRenderData()
 }
 
 
-bool FFlVisEdge::FFlVisEdgeLess::operator()(const FFlVisEdge* first, const FFlVisEdge* sec) const
+bool FFlVisEdge::FFlVisEdgeLess::operator()(const FFlVisEdge* a,
+                                            const FFlVisEdge* b) const
 {
-  int firstID = first->getFirstVertex()->getRunningID();
-  int secID   = sec->getFirstVertex()->getRunningID();
+  int aID = a->getFirstVertex()->getRunningID();
+  int bID = b->getFirstVertex()->getRunningID();
 
-  if (firstID == secID)
-    return (first->getSecondVertex()->getRunningID() < sec->getSecondVertex()->getRunningID());
+  if (aID == bID)
+    return a->getVertex(1)->getRunningID() < b->getVertex(1)->getRunningID();
   else
-    return (firstID < secID);
+    return aID < bID;
 }
 
-bool FFlVisEdge::FFlVisEdgeEqual::operator()(const FFlVisEdge* first, const FFlVisEdge* sec) const
+bool FFlVisEdge::FFlVisEdgeEqual::operator()(const FFlVisEdge* a,
+                                             const FFlVisEdge* b) const
 {
-  return (first->getFirstVertex()->getRunningID()  == sec->getFirstVertex()->getRunningID() &&
-          first->getSecondVertex()->getRunningID() == sec->getSecondVertex()->getRunningID());
+  return (a->getVertex(0)->getRunningID() == b->getVertex(0)->getRunningID() &&
+          a->getVertex(1)->getRunningID() == b->getVertex(1)->getRunningID());
 }
 
 
 ////////////////////////////////////////////////////////////////////////
-
-FFlVisEdgeRef::FFlVisEdgeRef(FFlVisEdge* edge)
-{
-  iAmPositive = true;
-  myVisEdge = edge;
-  if (myVisEdge)
-    myVisEdge->ref();
-}
-
 
 FFlVisEdgeRef::FFlVisEdgeRef(const FFlVisEdgeRef& ref)
 {

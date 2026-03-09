@@ -26,8 +26,8 @@ using FFlVisEdgeIdx = std::pair<FFlVisEdge*,int>;
 
 struct FFlGroupPartData
 {
-  bool isIndexShape = true;
-  bool isLineShape  = false;
+  bool isLineShape  = true;
+  bool isIndexShape = false;
 
   //! Pointer to the visualization of this GroupPart
   FdFEGroupPart* visualModel = NULL;
@@ -129,7 +129,7 @@ protected:
 
   void expandPolygon(IntList& polygon, FFlVisFace& f, const FaVec3& normal);
 
-  void joinFacesFromEdge   ( IntList&            polygon,
+  void joinFacesFromEdge   ( IntList                  & polygon,
                              const IntList::iterator  & splEdgEndPolyIt,
                              const FFlVisEdgeRef      & edgeIt,
                              const FFlVisFace         & previousFace,
@@ -161,9 +161,7 @@ private:
 
   // Internal control variables
   bool IAmIncludingInOpsDir;
-#if defined(win32) || defined(win64)
-  int joinFacesFromEdgeMethodCount; // Stack overflow recursivity workaround
-#endif
+  int joinFacesFromEdgeMethodCount; //!< Stack overflow recursivity workaround
 };
 
 #endif
