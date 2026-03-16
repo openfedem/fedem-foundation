@@ -68,8 +68,8 @@ module FFlLinkHandlerInterface
      subroutine ffl_getnodes (nnod, ndof, madof, minex, mnode, msc, &
           &                   x, y, z, ierr)
        integer , parameter   :: dp = kind(1.0D0)
-       integer , intent(out) :: nnod, ndof, ierr
-       integer , intent(out) :: madof, minex, mnode, msc
+       integer , intent(in)  :: nnod
+       integer , intent(out) :: ndof, madof, minex, mnode, msc, ierr
        real(dp), intent(out) :: x, y, z
      end subroutine ffl_getnodes
 

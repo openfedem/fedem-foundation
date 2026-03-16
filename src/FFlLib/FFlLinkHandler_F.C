@@ -429,7 +429,7 @@ SUBROUTINE(ffl_getsize,FFL_GETSIZE) (int& nnod, int& nel, int& ndof, int& nmnpc,
 // Date/ver: 20 Sep 2000 / 1.0
 ////////////////////////////////////////////////////////////////////////////////
 
-SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
+SUBROUTINE(ffl_getnodes,FFL_GETNODES) (const int& nnod, int& ndof, int* madof,
                                        int* minex, int* mnode, int* msc,
                                        double* X, double* Y, double* Z,
                                        int& ierr)
@@ -441,16 +441,13 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
     return;
   }
 
-  NodesCIter nit;
-  int        inod, maxDOFs;
-
-  ierr = inod = ndof = 0;
+  ierr = ndof = 0;
   madof[0] = 1;
 
+  int inod = 0;
+  NodesCIter nit;
   for (nit = ourLink->nodesBegin(); nit != ourLink->nodesEnd(); ++nit)
-  {
-    maxDOFs = (*nit)->getMaxDOFs();
-    if (maxDOFs == 3 || maxDOFs == 6)
+    if (int maxDOFs = (*nit)->getMaxDOFs(); maxDOFs == 3 || maxDOFs == 6)
     {
       const FaVec3& pos = (*nit)->getPos();
       minex[inod] = (*nit)->getID();
@@ -476,16 +473,26 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
       std::cout <<"ffl_getnodes: Ignoring loose node "<< (*nit)->getID()
                 << std::endl;
 #endif
-  }
 
   if (inod >= nnod) return;
 
-  // Lambda function converting a beam pin flag into DOF status codes.
-  auto&& resolvePinFlag = [](int pinFlag, int* msc)
+  // Lambda function adding one extra node for the beam pin flag.
+  auto&& resolvePinFlag = [&inod,&ndof,madof,minex,mnode,X,Y,Z]
+    (FFlNode* node, int pinFlag, int* msc)
   {
-    if (pinFlag <= 0) return 0;
+    if (pinFlag <= 0)
+      return true;
+    else if (node->getStatus() > 0)
+    {
+      ListUI <<" *** Error: Node "<< node->getID() <<" has the beam pin flag "
+             << pinFlag <<" associated with it,\n"
+             <<"            but is not an internal node (status = "
+             << node->getStatus() <<").\n";
+      return false;
+    }
 
     int nndof = 6;
+    ndof += nndof;
     while (pinFlag > 0)
     {
       int ldof = pinFlag%10;
@@ -496,47 +503,32 @@ SUBROUTINE(ffl_getnodes,FFL_GETNODES) (int& nnod, int& ndof, int* madof,
     }
     while (nndof > 0)
       msc[--nndof] = 0;
-    return 6;
+
+    // Add an extra node which will be the slave of the beam pin constraint
+    const FaVec3& pos = node->getPos();
+    minex[inod] = -inod-1;
+    X[inod] = pos.x();
+    Y[inod] = pos.y();
+    Z[inod] = pos.z();
+    madof[inod+1] = madof[inod] + 6;
+    mnode[inod++] = 1;
+    return true;
   };
 
   ElementsCIter eit;
   for (eit = ourLink->fElementsBegin(); eit != ourLink->fElementsEnd(); ++eit)
     if ((*eit)->getTypeName() == "BEAM2")
-    {
-      // Add extra nodes for beams with pin flags
-      FFlPBEAMPIN* myPin = GET_ATTRIBUTE(*eit,PBEAMPIN);
-      if (myPin)
+      // Add extra nodes for beams with pin flags, if any
+      if (FFlPBEAMPIN* myPin = GET_ATTRIBUTE(*eit,PBEAMPIN); myPin)
       {
         NodeCIter nit = (*eit)->nodesBegin();
-        maxDOFs = resolvePinFlag(myPin->PA.getValue(),msc+ndof);
-        if (maxDOFs > 0)
-        {
-          const FaVec3& pos = (*nit)->getPos();
-          minex[inod] = -inod-1;
-          X[inod] = pos.x();
-          Y[inod] = pos.y();
-          Z[inod] = pos.z();
-          mnode[inod] = 1;
-          madof[inod+1] = madof[inod] + maxDOFs;
-          ndof += maxDOFs;
-          inod ++;
-        }
-        ++nit;
-        maxDOFs = resolvePinFlag(myPin->PB.getValue(),msc+ndof);
-        if (maxDOFs > 0)
-        {
-          const FaVec3& pos = (*nit)->getPos();
-          minex[inod] = -inod-1;
-          X[inod] = pos.x();
-          Y[inod] = pos.y();
-          Z[inod] = pos.z();
-          mnode[inod] = 1;
-          madof[inod+1] = madof[inod] + maxDOFs;
-          ndof += maxDOFs;
-          inod ++;
-        }
+        if (!resolvePinFlag(nit->getReference(),myPin->PA.getValue(),msc+ndof))
+          ierr--;
+
+	++nit;
+        if (!resolvePinFlag(nit->getReference(),myPin->PB.getValue(),msc+ndof))
+          ierr--;
       }
-    }
 }
 
 
@@ -590,7 +582,7 @@ SUBROUTINE(ffl_gettopol,FFL_GETTOPOL) (int& nel, int& nmnpc,
   ElementsCIter eit;
   NodeCIter     nit;
   std::map<std::string,int>::const_iterator tit;
-  int inod, npbeam, nrgd, nrbar, nwavgm;
+  int npbeam, nrgd, nrbar, nwavgm;
 
   ierr = nel = nmnpc = npbeam = nrbar = nrgd = nwavgm = 0;
   mpmnpc[0] = 1;
@@ -638,7 +630,7 @@ SUBROUTINE(ffl_gettopol,FFL_GETTOPOL) (int& nel, int& nmnpc,
 
     // Find the nodal point correspondance
     for (nit = (*eit)->nodesBegin(); nit != (*eit)->nodesEnd(); ++nit)
-      if ((inod = ourLink->getIntNodeID((*nit)->getID())) > 0)
+      if (int inod = ourLink->getIntNodeID((*nit)->getID()); inod > 0)
         mmnpc[nmnpc++] = inod;
       else if (inod < 0)
         ListUI <<"  ** Warning : DOF-less node "<< (*nit)->getID()
@@ -855,14 +847,12 @@ SUBROUTINE(ffl_getpcomp,FFL_GETPCOMP) (int& compID, int& nPlys, double& Z0,
   Z0     = curComp->Z0.getValue();
   nPlys  = curComp->plySet.data().size();
 
-  size_t        i = 0;
-  FFlPMATSHELL* pMatShell;
-  FFlPMAT*      pMat;
   ierr = 0;
 
+  size_t i = 0;
   for (const FFlPly& ply : curComp->plySet.getValue())
   {
-    if ((pMatShell = LINK_ATTRIBUTE(PMATSHELL,ply.MID)))
+    if (FFlPMATSHELL* pMatShell = LINK_ATTRIBUTE(PMATSHELL,ply.MID); pMatShell)
     {
       E1[i]   = pMatShell->E1.getValue();
       E2[i]   = pMatShell->E2.getValue();
@@ -872,7 +862,7 @@ SUBROUTINE(ffl_getpcomp,FFL_GETPCOMP) (int& compID, int& nPlys, double& Z0,
       G2Z[i]  = pMatShell->G2Z.getValue();
       rho[i]  = pMatShell->materialDensity.getValue();
     }
-    else if ((pMat = LINK_ATTRIBUTE(PMAT,ply.MID)))
+    else if (FFlPMAT* pMat = LINK_ATTRIBUTE(PMAT,ply.MID); pMat)
     {
       E1[i]   = pMat->youngsModule.getValue();
       E2[i]   = E1[i];
@@ -1244,16 +1234,14 @@ SUBROUTINE(ffl_getrgddofcomp,FFL_GETRGDDOFCOMP) (int* comp, const int& iel,
 
   if (curElm->getTypeName() == "RGD")
   {
-    FFlPRGD* pRGD = GET_ATTRIBUTE(curElm,PRGD);
-    if (pRGD)
+    if (FFlPRGD* pRGD = GET_ATTRIBUTE(curElm,PRGD); pRGD)
       comp[0] = pRGD->dependentDofs.getValue();
     else
       comp[0] = 123456; // Default: all DOFs are coupled
   }
   else if (curElm->getTypeName() == "RBAR")
   {
-    FFlPRBAR* pRBAR = GET_ATTRIBUTE(curElm,PRBAR);
-    if (pRBAR)
+    if (FFlPRBAR* pRBAR = GET_ATTRIBUTE(curElm,PRBAR); pRBAR)
     {
       comp[0] = pRBAR->CNA.getValue();
       comp[1] = pRBAR->CNB.getValue();
@@ -1304,8 +1292,7 @@ SUBROUTINE(ffl_getwavgm,FFL_GETWAVGM) (int& refC, int* indC, double* weights,
     return;
   }
 
-  FFlPWAVGM* pWAVGM = GET_ATTRIBUTE(curElm,PWAVGM);
-  if (pWAVGM)
+  if (FFlPWAVGM* pWAVGM = GET_ATTRIBUTE(curElm,PWAVGM); pWAVGM)
   {
     ierr = 1;
     refC = pWAVGM->refC.getValue();
@@ -1450,24 +1437,18 @@ static void getStrainCoatAttributes (FFlPSTRC* p, FFlPFATIGUE* pFat,
   else if (name == "Top")
     resSet = 3;
 
-  FFlPMAT* curMat = GET_ATTRIBUTE(p,PMAT);
-  if (curMat)
+  if (FFlPMAT* curMat = GET_ATTRIBUTE(p,PMAT); curMat)
   {
     id = curMat->getID();
     E  = curMat->youngsModule.getValue();
     nu = curMat->poissonsRatio.getValue();
   }
 
-  FFlPTHICKREF* curTref = NULL;
-  FFlPHEIGHT* curHeight = GET_ATTRIBUTE(p,PHEIGHT);
-  if (curHeight)
+  if (FFlPHEIGHT* curHeight = GET_ATTRIBUTE(p,PHEIGHT); curHeight)
     Z = curHeight->height.getValue();
-  else if ((curTref = GET_ATTRIBUTE(p,PTHICKREF)))
-  {
-    FFlPTHICK* curThk = GET_ATTRIBUTE(curTref,PTHICK);
-    if (curThk)
+  else if (FFlPTHICKREF* curTref = GET_ATTRIBUTE(p,PTHICKREF); curTref)
+    if (FFlPTHICK* curThk = GET_ATTRIBUTE(curTref,PTHICK); curThk)
       Z = curThk->thickness.getValue() * curTref->factor.getValue();
-  }
 
   if (pFat)
   {
