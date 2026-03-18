@@ -61,8 +61,14 @@ void FFlElementBase::calculateChecksum(FFaCheckSum* cs, int) const
   FFlVisualRefs::checksum(cs,cstype);
 #elif defined(FFL_DEBUG)
   if ((cstype & FFl::CS_VISUALMASK) != FFl::CS_NOVISUALINFO)
-    std::cout <<"FFlElementBase::calculateChecksum: Visuals ignored"
-              << std::endl;
+  {
+    static int ignored = 0;
+    if (++ignored <= 10)
+      std::cout <<"FFlElementBase::calculateChecksum: Visuals ignored"
+                << std::endl;
+    else if (ignored == 11)
+      std::cout <<"..."<< std::endl;
+  }
 #endif
 }
 
@@ -81,20 +87,21 @@ double FFlElementBase::getMassDensity() const
 }
 
 
-bool FFlElementBase::getVolumeAndInertia(double& volume, FaVec3& cog,
-					 FFaTensor3& inertia) const
+double FFlElementBase::getVolumeAndCoG(FaVec3& cog, FFaTensor3* inert) const
 {
-  volume  = 0.0;
-  cog     = FaVec3(0.0,0.0,0.0);
-  inertia = FFaTensor3(0.0);
-  return false;
+  cog.clear();
+  if (inert)
+    inert->fill(0.0);
+
+  return 0.0;
 }
 
 
 bool FFlElementBase::getMassProperties(double& mass, FaVec3& cog,
 				       FFaTensor3& inertia) const
 {
-  if (!this->getVolumeAndInertia(mass,cog,inertia)) return false;
+  if ((mass = this->getVolumeAndCoG(cog,&inertia)) <= 0.0)
+    return false;
 
   double rho = this->getMassDensity();
   mass    *= rho;
