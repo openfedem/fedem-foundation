@@ -42,6 +42,7 @@ bool FFl::convertMPCsToWAVGM (FFlLinkHandler* part, const FFl::MPCMap& mpcs)
 #endif
 
     size_t nRow = 0;
+    int nmndofs = 0;
     DoublesMapMap dofWeights;
     for (const std::pair<const short int,DepDOFs>& mpc : mpcGroup.second)
       if (mpc.first > 0 && mpc.first < 7)
@@ -50,16 +51,13 @@ bool FFl::convertMPCsToWAVGM (FFlLinkHandler* part, const FFl::MPCMap& mpcs)
         DoublesMap& dofWeight = dofWeights[mpc.first];
         for (const DepDOF& dof : mpc.second)
         {
+          if (dof.lDof > nmndofs) nmndofs = dof.lDof;
+          int i = std::find(nodes.begin(),nodes.end(),dof.node) - nodes.begin();
           Doubles& weights = dofWeight[dof.lDof];
           weights.resize(nodes.size()-1,0.0);
-          for (size_t iNod = 1; iNod < nodes.size(); iNod++)
-            if (dof.node == nodes[iNod])
-            {
-              weights[iNod-1] = dof.coeff;
-              break;
-            }
+          weights[i-1] = dof.coeff;
         }
-        nRow += 6; // Assuming all DOFs in the master node is referred
+        ++nRow; // Assuming all DOFs in the master node is referred
 #if FFL_DEBUG > 1
         std::cout <<"Weight matrix associated with slave dof "<< mpc.first;
         for (const std::pair<const int,Doubles>& weights : dofWeight)
@@ -75,15 +73,15 @@ bool FFl::convertMPCsToWAVGM (FFlLinkHandler* part, const FFl::MPCMap& mpcs)
     size_t indx = 1;
     size_t nMst = nodes.size() - 1;
     int indC[6] = { 0, 0, 0, 0, 0, 0 };
-    Doubles weights(nRow*nMst,0.0);
+    Doubles weights(nRow*nmndofs*nMst,0.0);
     for (const std::pair<const int,DoublesMap>& dofw : dofWeights)
     {
       refC = 10*refC + dofw.first; // Compressed slave DOFs identifier
       indC[dofw.first-1] = indx;   // Index to first weight for this slave DOF
       for (const std::pair<const int,Doubles>& dof : dofw.second)
         for (size_t j = 0; j < dof.second.size(); j++)
-          weights[indx+6*j+dof.first-2] = dof.second[j];
-      indx += 6*nMst;
+          weights[indx+nmndofs*j+dof.first-2] = dof.second[j];
+      indx += nmndofs*nMst;
     }
 
     int id = part->getNewElmID();
