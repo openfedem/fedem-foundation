@@ -128,8 +128,7 @@ void FFlFaceGenerator::createGeometry(FFlElementBase* elm,
     FFlFaceElemRef elmRef;
     elmRef.myElementFaceNumber = faceID++;
     FFlVisFace* face = new FFlVisFace();
-    face->setFaceVertices(faceVertices, myVisEdges, elmRef, tester);
-    if (face->getNumVertices() < 3)
+    if (!face->setFaceVertices(faceVertices, myVisEdges, elmRef, tester))
       delete face; // Degenerated face, skip
     else
     {

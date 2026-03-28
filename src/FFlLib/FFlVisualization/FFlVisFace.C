@@ -13,6 +13,9 @@
 #include "FFlLib/FFlFEParts/FFlVDetail.H"
 #include "FFlLib/FFlVisualization/FFlGeomUniqueTester.H"
 
+#include <algorithm>
+#include <functional>
+
 #ifdef FT_USE_MEMPOOL
 FFaMemPool FFlVisFace::ourMemPool(sizeof(FFlVisFace));
 #endif
@@ -33,7 +36,7 @@ FFlVisFace::FFlVisFace()
   into faceRef in order to restore the original face indices.
 */
 
-void FFlVisFace::setFaceVertices(const std::vector<FFlVertex*>& vertices,
+bool FFlVisFace::setFaceVertices(const std::vector<FFlVertex*>& vertices,
                                  std::vector<FFlVisEdge*>& edgeContainer,
                                  FFlFaceElemRef& faceRef,
                                  FFlGeomUniqueTester& tester)
@@ -60,13 +63,14 @@ void FFlVisFace::setFaceVertices(const std::vector<FFlVertex*>& vertices,
     }
   }
 
-  // Rotate the sequence to make the min element first
+  if (myEdges.size() < 3)
+    return false; // degenerated face
 
-  std::vector<FFlVisEdgeRef>::iterator minEdge = std::min_element(myEdges.begin(),myEdges.end());
+  // Rotate the edge sequence to make the min element first
 
-  faceRef.elementFaceNodeOffset = std::distance(myEdges.begin(),minEdge);
-
-  std::rotate(myEdges.begin(),minEdge,myEdges.end());
+  VisEdgeRefVec::iterator iEdge = std::min_element(myEdges.begin(),myEdges.end());
+  faceRef.elementFaceNodeOffset = std::distance(myEdges.begin(),iEdge);
+  std::rotate(myEdges.begin(),iEdge,myEdges.end());
 
   // Reverse direction such that the second idx is the lowest of the two candidates
 
@@ -82,6 +86,8 @@ void FFlVisFace::setFaceVertices(const std::vector<FFlVertex*>& vertices,
   }
   else
     faceRef.elementAndFaceNormalParallel = true;
+
+  return true;
 }
 
 
@@ -95,9 +101,8 @@ void FFlVisFace::getFaceVertices(std::vector<int>& vertexRef) const
   vertexRef.clear();
   vertexRef.reserve(myEdges.size());
 
-  FFlVertex* firstVertex;
   for (const FFlVisEdgeRef& edge : myEdges)
-    if ((firstVertex = edge.getFirstVertex()))
+    if (FFlVertex* firstVertex = edge.getFirstVertex(); firstVertex)
       vertexRef.push_back(firstVertex->getRunningID());
 }
 
@@ -122,33 +127,25 @@ void FFlVisFace::getElmFaceVertices(std::vector<int>& vertexRef) const
 
 void FFlVisFace::getElmFaceVertices(int*& vertexIdxArrayPtr) const
 {
-  if (!myElementRefs.empty() && !myElementRefs.front().elementAndFaceNormalParallel)
+  // Lambda function extracting the id of the first vertex of an edge.
+  std::function<void(const FFlVisEdgeRef&)> getFirstVertex =
+    [&vertexIdxArrayPtr](const FFlVisEdgeRef& ref) -> void
   {
-    VisEdgeRefVecCIter it = myEdges.begin();
-    if (it != myEdges.end())
-    {
-      FFlVertex* firstVertex = it->getFirstVertex();
-      if (firstVertex)
-        *vertexIdxArrayPtr = firstVertex->getRunningID();
-      ++vertexIdxArrayPtr;
-      it = myEdges.end();
-      for (--it; it != myEdges.begin(); --it)
-      {
-        firstVertex = it->getFirstVertex();
-        if (firstVertex)
-          *vertexIdxArrayPtr = firstVertex->getRunningID();
-        ++vertexIdxArrayPtr;
-      }
-    }
-  }
-  else
+    if (FFlVertex* vertx = ref.getFirstVertex(); vertx)
+      *vertexIdxArrayPtr = vertx->getRunningID();
+    ++vertexIdxArrayPtr;
+  };
+
+  if (myElementRefs.empty() || myElementRefs.front().elementAndFaceNormalParallel)
     for (const FFlVisEdgeRef& ref : myEdges)
-    {
-      FFlVertex* firstVertex = ref.getFirstVertex();
-      if (firstVertex)
-        *vertexIdxArrayPtr = firstVertex->getRunningID();
-      ++vertexIdxArrayPtr;
-    }
+      getFirstVertex(ref);
+  else if (VisEdgeRefVecCIter it = myEdges.begin(); it != myEdges.end())
+  {
+    getFirstVertex(*it);
+    it = myEdges.end();
+    for (--it; it != myEdges.begin(); --it)
+      getFirstVertex(*it);
+  }
 }
 
 
@@ -157,10 +154,10 @@ void FFlVisFace::getElmFaceTopology(std::vector<int>& topology,
 {
   elmRefIt->myElement->getFEElementTopSpec()->
     getFaceTopology(elmRefIt->myElementFaceNumber,
-                     this->isExpandedFace(),
-                     !elmRefIt->elementAndFaceNormalParallel,
-                     elmRefIt->elementFaceNodeOffset,
-                     topology);
+                    this->isExpandedFace(),
+                    !elmRefIt->elementAndFaceNormalParallel,
+                    elmRefIt->elementFaceNodeOffset,
+                    topology);
 
   if (!myElementRefs.empty())
     if (!myElementRefs.front().elementAndFaceNormalParallel)
@@ -244,6 +241,33 @@ bool FFlVisFace::isVisible() const
 }
 
 
+bool FFlVisFace::nextEdge(VisEdgeRefVecCIter& eit,
+                          const VisEdgeRefVecCIter& splitEdgeIt,
+                          bool loopForward) const
+{
+  if (loopForward)
+  {
+    if (eit == myEdges.end())
+      eit = myEdges.begin();
+    else if (++eit == myEdges.end() && eit != splitEdgeIt)
+      eit = myEdges.begin();
+  }
+  else
+  {
+    if (eit == myEdges.begin())
+    {
+      if (splitEdgeIt != myEdges.end())
+        eit = myEdges.end();
+      else
+        return false;
+    }
+    --eit;
+  }
+
+  return eit != splitEdgeIt;
+}
+
+
 /*!
   Used to sort and compare faces.
   Sorting order: Smallest edge list first.
@@ -253,22 +277,17 @@ bool FFlVisFace::isVisible() const
 bool FFlVisFace::FFlVisFaceLess::operator()(const FFlVisFace* a,
                                             const FFlVisFace* b) const
 {
-  size_t sizeA = a->myEdges.size();
-  size_t sizeB = b->myEdges.size();
-  if (sizeA < sizeB)
+  int i = a->myEdges.size();
+  int j = b->myEdges.size();
+  if (i < j)
     return true;
-  else if (sizeA > sizeB)
+  else if (i > j)
     return false;
 
-  static std::vector<FFlVisEdgeRef>::const_reverse_iterator aIt;
-  static std::vector<FFlVisEdgeRef>::const_reverse_iterator bIt;
-
-  aIt = a->myEdges.rbegin();
-  bIt = b->myEdges.rbegin();
-  for (; aIt != a->myEdges.rend(); ++aIt, ++bIt)
-    if (*aIt < *bIt)
+  for (--i; i >= 0; --i)
+    if (a->myEdges[i] < b->myEdges[i])
       return true;
-    else if (*aIt > *bIt)
+    else if (a->myEdges[i] > b->myEdges[i])
       return false;
 
   return false;
