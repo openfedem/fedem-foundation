@@ -343,37 +343,20 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
             << std::boolalpha << faceIsPositive << std::endl;
 #endif
 
-  // Loop over all the edges of the start polygon and do a recursive
-  // breath first joining of faces
-  // (joinFacesFromEdge->joinFacesFromEdge ...)
+  // Loop over all the edges of the start polygon and
+  // do a recursive breath first joining of faces
 
-  VisEdgeRefVecCIter edgeIt;
+  VisEdgeRefVecCIter edgeIt = f.edgesEnd();
   IntList::iterator nextSplEdgEndPolyIt = polygon.begin();
   ++nextSplEdgEndPolyIt;
   IAmIncludingInOpsDir = false;
 
-  if (faceIsPositive)
-    for (edgeIt = f.edgesBegin();
-	 edgeIt != f.edgesEnd();
-	 ++edgeIt, ++nextSplEdgEndPolyIt)
-    {
-      joinFacesFromEdgeMethodCount = 0;
-      this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, f, faceIsPositive,
-			      f.isSurfaceFace(), normal );
-    }
-  else
+  while (f.nextEdge(edgeIt,f.edgesEnd(),faceIsPositive))
   {
-    edgeIt = f.edgesEnd();
-    if (edgeIt != f.edgesBegin())
-      do {
-	--edgeIt;
-	joinFacesFromEdgeMethodCount = 0;
-	this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, f,
-				faceIsPositive, f.isSurfaceFace(),  normal);
-
-	++nextSplEdgEndPolyIt;
-      } while (edgeIt != f.edgesBegin());
-
+    joinFacesFromEdgeMethodCount = 0;
+    this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, f,
+                            faceIsPositive, f.isSurfaceFace(), normal);
+    ++nextSplEdgEndPolyIt;
   }
   polygon.pop_back();
 
@@ -513,9 +496,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
 {
   // Workaround to reduce recursive stack depth
   // (joinFacesFromEdge <-> recIncludeFace)
-  if (joinFacesFromEdgeMethodCount < 4500)
-    ++joinFacesFromEdgeMethodCount;
-  else
+  if (joinFacesFromEdgeMethodCount >= 4500)
   {
 #ifdef FFL_DEBUG
     std::cout <<"  ** Max recursive depth ("<< joinFacesFromEdgeMethodCount
@@ -527,11 +508,11 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
   IntList::iterator splEdgBeginPolyIt = splEdgEndPolyIt;
   --splEdgBeginPolyIt;
 
-  // Find neigbourRef such that : neigbourRef = face joinable to f
+  // Find a neigbouring face that is joinable to previousFace
 
   bool faceToJoinIsPositive = true;
   FFlVisFace* faceToJoin = NULL;
-  VisEdgeRefVecCIter splEdgeRIt;
+  VisEdgeRefVecCIter splEdgeRIt = previousFace.edgesEnd();
 
   { // A Scope to remove these variables from the recursive call stack
 
@@ -561,7 +542,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
           if (nbEdgeRefIt->getEdge() == prevSplEdge.getEdge())
             break;
 
-        // Find whether neighbor is inside, or contains the previos face
+        // Find whether neighbor is inside, or contains the previous face
 
         bool facesHasSameNormDir    = neigbFaceIsPositive     == prevFaceIsPositive;
         bool splitEdgeReffedSameWay = nbEdgeRefIt->isPosDir() == prevSplEdge.isPosDir();
@@ -577,8 +558,8 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
             splEdgeRIt = nbEdgeRefIt;
           }
         }
-	else // Neighbor Is coincident with previous face
-	  neighbor.first->setVisited();
+        else // Neighbor Is coincident with previous face
+          neighbor.first->setVisited();
       }
 
     // Mark all inPlane polygons visited, to make sure that polygons
@@ -593,12 +574,10 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
     if (!isSomeInPlaneFaceOutside)
       IAmIncludingInOpsDir = !IAmIncludingInOpsDir;
 
-    // If the faceToJoin is not joinable to f return
+    // Return now if the faceToJoin is not joinable
 
-    if (!faceToJoin || !isOkToJoin) {
-      --joinFacesFromEdgeMethodCount;
+    if (!faceToJoin || !isOkToJoin)
       return;
-    }
 
 #if FFL_DEBUG > 3
     std::cout <<"Splitting edge: "<< *splEdgeRIt
@@ -623,94 +602,42 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
 #endif
   } // End of call stack reducing scope
 
-  // Loop over the edges of this face in polygon direction and join the
-  // jonable faces recursivly to the polygon.
-  // Start with the edge after or edge before
-  // splitting edge dep. on whether including faces in oposite dir.
 
+  // Loop over the edges of this face in polygon direction,
+  // and join the joinable faces recursivly to the polygon.
+  // Start with the edge after or before the splitting edge,
+  // depending on whether including faces are in opposite direction.
+
+  ++joinFacesFromEdgeMethodCount;
+
+  VisEdgeRefVecCIter edgeIt = splEdgeRIt;
   IntList::iterator nextSplEdgEndPolyIt;
-  VisEdgeRefVecCIter  edgeIt = splEdgeRIt;
 
-  if (!IAmIncludingInOpsDir) // if (true)  // Spiral propagation
+  if (!IAmIncludingInOpsDir) // Spiral propagation
+  {
+    nextSplEdgEndPolyIt = splEdgBeginPolyIt;
+    ++nextSplEdgEndPolyIt;
+
+    while (faceToJoin->nextEdge(edgeIt,splEdgeRIt,faceToJoinIsPositive))
     {
-      nextSplEdgEndPolyIt = splEdgBeginPolyIt;
+      this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, *faceToJoin,
+                              faceToJoinIsPositive, onlySurfaceFaces, normal);
       ++nextSplEdgEndPolyIt;
-
-      if (faceToJoinIsPositive)
-        {
-          for (++edgeIt; edgeIt != splEdgeRIt; ++edgeIt)
-            {
-              if (edgeIt ==  faceToJoin->edgesEnd()){
-                edgeIt = faceToJoin->edgesBegin();
-                if (edgeIt == splEdgeRIt)
-                  break;
-              }
-
-              this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, *faceToJoin,
-                                      faceToJoinIsPositive, onlySurfaceFaces, normal );
-                ++nextSplEdgEndPolyIt;
-            }
-        }
-      else
-        {
-          if (edgeIt == faceToJoin->edgesBegin())
-            edgeIt = faceToJoin->edgesEnd();
-          --edgeIt;
-
-          while(edgeIt != splEdgeRIt)
-            {
-              this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, *faceToJoin,
-                                      faceToJoinIsPositive, onlySurfaceFaces, normal );
-
-              ++nextSplEdgEndPolyIt;
-
-              if (edgeIt == faceToJoin->edgesBegin())
-                edgeIt = faceToJoin->edgesEnd();
-              --edgeIt;
-            }
-        }
     }
+  }
   else
+  {
+    splEdgBeginPolyIt = nextSplEdgEndPolyIt = splEdgEndPolyIt;
+    --splEdgBeginPolyIt;
+
+    while (faceToJoin->nextEdge(edgeIt,splEdgeRIt,!faceToJoinIsPositive))
     {
-      splEdgBeginPolyIt = nextSplEdgEndPolyIt = splEdgEndPolyIt;
+      this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, *faceToJoin,
+                              faceToJoinIsPositive, onlySurfaceFaces, normal);
+      nextSplEdgEndPolyIt = splEdgBeginPolyIt;
       --splEdgBeginPolyIt;
-
-      if (faceToJoinIsPositive)
-        {
-          if (edgeIt == faceToJoin->edgesBegin())
-            edgeIt = faceToJoin->edgesEnd();
-          --edgeIt;
-
-          while(edgeIt != splEdgeRIt){
-            this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, *faceToJoin,
-                                    faceToJoinIsPositive, onlySurfaceFaces, normal );
-
-            nextSplEdgEndPolyIt = splEdgBeginPolyIt;
-            --splEdgBeginPolyIt;
-
-            if (edgeIt == faceToJoin->edgesBegin())
-              edgeIt = faceToJoin->edgesEnd();
-            --edgeIt;
-          }
-        }
-      else
-        {
-          for (++edgeIt; edgeIt != splEdgeRIt; ++edgeIt)
-            {
-              if (edgeIt ==  faceToJoin->edgesEnd()){
-                edgeIt = faceToJoin->edgesBegin();
-                if (edgeIt == splEdgeRIt)
-                  break;
-              }
-
-              this->joinFacesFromEdge(polygon, nextSplEdgEndPolyIt, *edgeIt, *faceToJoin,
-                                      faceToJoinIsPositive, onlySurfaceFaces, normal );
-
-              nextSplEdgEndPolyIt = splEdgBeginPolyIt;
-              --splEdgBeginPolyIt;
-            }
-        }
     }
+  }
 
   --joinFacesFromEdgeMethodCount;
 }
