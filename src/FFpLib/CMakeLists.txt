@@ -8,19 +8,23 @@
 
 set ( LIB_ID FFpLib )
 set ( LIB_ID_LIST FFpCurveData FFpFatigue )
+if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+  list ( APPEND LIB_ID_LIST FFpExport FFpDLL )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+if ( BUILD_FOUNDATION_TESTS )
+  list ( APPEND LIB_ID_LIST FFpTests )
+endif ( BUILD_FOUNDATION_TESTS )
 set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
-  list ( APPEND LIB_ID_LIST FFpExport FFpDLL )
-  if ( BUILD_TESTS )
-    list ( APPEND LIB_ID_LIST FFpTests )
-  endif ( BUILD_TESTS )
-elseif ( "${APPLICATION_ID}" STREQUAL "fedemGui" )
+if ( "${APPLICATION_ID}" STREQUAL "fedemGui" )
   string ( APPEND CMAKE_CXX_FLAGS " -DFFR_LISTVIEW" )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
+endif ( "${APPLICATION_ID}" STREQUAL "fedemGui" )
+
+
+# Subfolder handling
 
 foreach ( FOLDER ${LIB_ID_LIST} )
   add_subdirectory ( ${FOLDER} )
