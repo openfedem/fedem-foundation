@@ -338,8 +338,9 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
 
 #if FFL_DEBUG > 2
   std::cout <<"New Polygon:";
-  for (int pol : polygon) std::cout <<" "<< pol;
-  std::cout <<"\nNormal :"<< normal << std::endl;
+  for (int idx : polygon) std::cout <<" "<< idx;
+  std::cout <<"\nNormal: "<< normal <<" "
+            << std::boolalpha << faceIsPositive << std::endl;
 #endif
 
   // Loop over all the edges of the start polygon and do a recursive
@@ -378,7 +379,7 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
 
 #if FFL_DEBUG > 2
   std::cout <<"Before Removing Dead Ends:";
-  for (int pol : polygon) std::cout <<" "<< pol;
+  for (int idx : polygon) std::cout <<" "<< idx;
   std::cout << std::endl;
 #endif
 
@@ -436,7 +437,7 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
 
 #if FFL_DEBUG > 2
   std::cout <<"After Removing Dead Ends:";
-  for (int pol : polygon) std::cout <<" "<< pol;
+  for (int idx : polygon) std::cout <<" "<< idx;
   std::cout << std::endl;
 #endif
 
@@ -704,10 +705,9 @@ void FFlGroupPartCreator::insertFaceInPolygon(IntList                  & polygon
 					      const VisEdgeRefVecCIter & splEdgeRIt,
 					      const bool               & faceToJoinIsPositive)
 {
-#if FFL_DEBUG > 2
-  std::cout <<"Splitting edge :"<< splEdgeRIt->getFirstVertex()->getRunningID() <<", "
-	    << splEdgeRIt->getSecondVertex()->getRunningID()
-	    <<" PolygonIterator: "<< *splEdgEndPolyIt << std::endl;
+#if FFL_DEBUG > 3
+  std::cout <<"Splitting edge: "<< *splEdgeRIt
+            <<" PolygonIterator: "<< *splEdgEndPolyIt << std::endl;
 #endif
 
   // Get vertex idexes from face and insert them into polygon vxlist
@@ -718,9 +718,9 @@ void FFlGroupPartCreator::insertFaceInPolygon(IntList                  & polygon
   facePolygon.pop_back();
   polygon.splice(splEdgEndPolyIt, facePolygon);
 
-#if FFL_DEBUG > 2
+#if FFL_DEBUG > 3
   std::cout <<"Bigger Polygon:";
-  for (int pol : polygon) std::cout <<" "<< pol;
+  for (int idx : polygon) std::cout <<" "<< idx;
   std::cout << std::endl;
 #endif
 }
@@ -761,9 +761,9 @@ void FFlGroupPartCreator::getPolygonFromFace(IntList & polygon,
       while (edgeIt != splEdgeRIt);
     }
 
-#if FFL_DEBUG > 2
+#if FFL_DEBUG > 3
   std::cout <<"Creating face polygon:";
-  for (int pol : polygon) std::cout <<" "<< pol;
+  for (int idx : polygon) std::cout <<" "<< idx;
   std::cout << std::endl;
 #endif
 }
@@ -810,8 +810,8 @@ void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internal,
   // Loop over edges, push edge into buckets labeled by the vertices they use
   for (FFlVisEdge* edge : myVisEdges)
   {
-    vertexEdgeRefs[edge->getFirstVertex()->getRunningID()].push_back(edge);
-    vertexEdgeRefs[edge->getSecondVertex()->getRunningID()].push_back(edge);
+    vertexEdgeRefs[edge->getFirstVxIdx()].push_back(edge);
+    vertexEdgeRefs[edge->getSecondVxIdx()].push_back(edge);
   }
 
   // Recursive lambda function for concatenating nearly co-linear edges.
@@ -819,7 +819,7 @@ void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internal,
     [&expand, angleTol=myEdgesParallelAngle, vertexEdgeRefs]
     (FFlVisEdge* origEdge, IntVec& simplifiedEdge, int idx) -> void
   {
-    int                   endID    = origEdge->getVertex(idx)->getRunningID();
+    int                   endID    = origEdge->getVertexIdx(idx);
     FaVec3                startVec = origEdge->getVector();
     FFlVisEdgeRenderData* orgRData = origEdge->getRenderData();
 
@@ -835,16 +835,16 @@ void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internal,
       {
         // Orient the vector
         FaVec3 endVec = edge->getVector();
-        if (edge->getVertex(1-idx)->getRunningID() != endID)
+        if (edge->getVertexIdx(1-idx) != endID)
           endVec = -endVec;
 
         if (startVec.angle(endVec) < angleTol)
         {
           // Extend the simplified edge
-          if (edge->getVertex(1-idx)->getRunningID() == endID)
-            simplifiedEdge[idx] = edge->getVertex(idx)->getRunningID();
+          if (edge->getVertexIdx(1-idx) == endID)
+            simplifiedEdge[idx] = edge->getVertexIdx(idx);
           else
-            simplifiedEdge[idx] = edge->getVertex(1-idx)->getRunningID();
+            simplifiedEdge[idx] = edge->getVertexIdx(1-idx);
 
           // Try to expand more on this edge
           expand(edge,simplifiedEdge,idx);

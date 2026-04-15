@@ -170,26 +170,31 @@ void FFlVisFace::getElmFaceTopology(std::vector<int>& topology,
 
 bool FFlVisFace::getFaceNormal(FaVec3& normal)
 {
-  static FaVec3 vec2;
-  static FaVec3 vec1;
-
   int nEdges = myEdges.size();
   if (nEdges < 3)
     return false; // degenereated face, normal is undefined
 
-  if (nEdges <= 4)
+  if (nEdges > 4)
+  {
+    int i2 = nEdges/2;
+    int i4 = nEdges/4;
+    normal = ((*(myEdges[i2].getFirstVertex()) - *(myEdges.front().getFirstVertex())) ^
+              (*(myEdges[i2+i4].getFirstVertex()) - *(myEdges[i4].getFirstVertex())));
+  }
+  else
   {
     // Get the first vector
     VisEdgeRefVecCIter it = myEdges.begin();
-    vec1 = *it->getSecondVertex() - *it->getFirstVertex();
+    FaVec3 vec1 = *it->getSecondVertex() - *it->getFirstVertex();
 
     // Find a usable second vector
     for (++it; it != myEdges.end(); ++it)
-    {
-      vec2 = *it->getSecondVertex() - *it->getFirstVertex();
-      if (!vec1.isParallell(vec2))
+      if (FaVec3 vec2 = *it->getSecondVertex() - *it->getFirstVertex();
+          !vec1.isParallell(vec2))
+      {
+        normal = vec1 ^ vec2;
         break;
-    }
+      }
 
     if (it == myEdges.end())
     {
@@ -204,15 +209,7 @@ bool FFlVisFace::getFaceNormal(FaVec3& normal)
       return false;
     }
   }
-  else
-  {
-    int nEdgesH = nEdges/2;
-    int nEdgesQ = nEdges/4;
-    vec1 = *(myEdges[nEdgesH].getFirstVertex()) - *(myEdges.front().getFirstVertex());
-    vec2 = *(myEdges[nEdgesH + nEdgesQ].getFirstVertex()) - *(myEdges[nEdgesQ].getFirstVertex());
-  }
 
-  normal = vec1 ^ vec2;
   normal.normalize();
   return true;
 }

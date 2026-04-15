@@ -63,6 +63,7 @@ public:
 
   void getEdgeVertices(std::vector<int>& vertexRefs) const;
   void getEdgeVertices(int*& vertexIdxArrayPtr) const;
+  int  getVertexIdx(int idx) const;
   int  getFirstVxIdx() const;
   int  getSecondVxIdx() const;
 
@@ -74,10 +75,10 @@ public:
 
   void releaseVertices();
 
-  // Ref-counting from faces : myRefCount = nFaces reffing this edge:
+  // Reference counting from faces
 
-  int ref()           { if(myRefCount < 254) myRefCount++; return myRefCount; }
-  int unRef()         { if(myRefCount > 0)   myRefCount--; return myRefCount; }
+  int ref();
+  int unRef();
   int getRefs() const { return myRefCount; }
 
   // Render data used by groupPartGenerator to store status etc.
@@ -86,9 +87,9 @@ public:
   void deleteRenderData();
 
 protected:
-  unsigned char         myRefCount;
-  FFlVertex*            myVertex[2];
-  FFlVisEdgeRenderData* myRenderData;
+  unsigned char         myRefCount; //!< Number of faces referring to this edge
+  FFlVertex*            myVertex[2]; //!< The two vertices defining this edge
+  FFlVisEdgeRenderData* myRenderData; //!< Data for geometry reduction
 
 public:
   struct FFlVisEdgeLess
@@ -124,16 +125,22 @@ public:
   bool isPosDir() const { return iAmPositive; }
   void setPosDir(bool pos) { iAmPositive = pos;}
 
-  // Returns correct oriented edge vertices.
+  // Returns correct oriented edge vertices
 
   FFlVertex* getFirstVertex()  const;
   FFlVertex* getSecondVertex() const;
 
+  // Get running vertex indices for edge
+
+  int getFirstVxIdx()  const;
+  int getSecondVxIdx() const;
+
 protected:
   bool        iAmPositive; // true if the user sees the edge in the same direction as the edge itself
   FFlVisEdge* myVisEdge;
-};
 
+  friend std::ostream& operator<<(std::ostream& os, const FFlVisEdgeRef& a);
+};
 
 bool operator< (const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
 bool operator==(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
