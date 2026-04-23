@@ -137,7 +137,7 @@ int FFlrFringeCreator::buildColorXfs(FFlGroupPartData& visRep,
   }
   else
   {
-    visRep.colorOps.resize(visRep.nVisiblePrimitiveVertexes,NULL);
+    visRep.colorOps.resize(visRep.getNoVisibleVertices(),NULL);
 
     int previousFaceEndIdx = 0;
     for (i = 0; i < visRep.facePointers.size(); i++)

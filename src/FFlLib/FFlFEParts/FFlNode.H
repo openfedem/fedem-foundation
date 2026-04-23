@@ -18,7 +18,6 @@
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #else
 class FaVec3;
-class FFlVertex;
 #endif
 class FFaCheckSum;
 class FFaUnitCalculator;
@@ -29,6 +28,9 @@ class FFlFENodeResult;
 namespace FF_NAMESPACE {
 #endif
 
+#ifdef FT_USE_VERTEX
+class FFlVertex;
+#endif
 class FFlAttributeBase;
 class FFlPCOORDSYS;
 

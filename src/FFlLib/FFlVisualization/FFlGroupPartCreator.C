@@ -175,43 +175,28 @@ void FFlGroupPartCreator::setEdgeGeomStatus()
 }
 
 
-void FFlGroupPartCreator::createLinkFullFaces(FFlGroupPartData& internalFaces,
-					      FFlGroupPartData& surfaceFaces)
+void FFlGroupPartCreator::createLinkFullFaces(FFlGroupPartData& internal,
+                                              FFlGroupPartData& surface)
 {
-  // Initialize :
-
-  internalFaces.isLineShape = false;
-  internalFaces.isIndexShape = false;
-  internalFaces.nVisiblePrimitiveVertexes = 0;
-
-  surfaceFaces.isLineShape = false;
-  surfaceFaces.isIndexShape = false;
-  surfaceFaces.nVisiblePrimitiveVertexes = 0;
+  internal.isLineShape  = surface.isLineShape  = false;
+  internal.isIndexShape = surface.isIndexShape = false;
 
   // Loop over the faces, add them into the result link parts.
 
   for (FFlVisFace* face : myVisFaces)
     if (face->isSurfaceFace())
     {
-      // Surface face
       if (face->isVisible())
-      {
-	surfaceFaces.nVisiblePrimitiveVertexes += face->getNumVertices();
-	surfaceFaces.facePointers.emplace_back(face,-1);
-      }
+        surface.facePointers.emplace_back(face,-1);
       else
-	surfaceFaces.hiddenFaces.emplace_back(face,-1);
+        surface.hiddenFaces.emplace_back(face,-1);
     }
-    else
+    else // Internal face
     {
-      // Internal face
       if (face->isVisible())
-      {
-	internalFaces.nVisiblePrimitiveVertexes += face->getNumVertices();
-	internalFaces.facePointers.emplace_back(face,-1);
-      }
+        internal.facePointers.emplace_back(face,-1);
       else
-	internalFaces.hiddenFaces.emplace_back(face,-1);
+        internal.hiddenFaces.emplace_back(face,-1);
     }
 }
 
@@ -221,9 +206,6 @@ void FFlGroupPartCreator::updateElementVisibility()
 #ifdef FFL_DEBUG
   size_t gpNr = 0;
 #endif
-  size_t faceNr;
-  int emptyHiddenFacePlace = -1;
-  int emptyVisiblFacePlace = -1;
 
   for (GroupPartMap::value_type& gp : myLinkParts)
     if (gp.first == SURFACE_FACES || gp.first == INTERNAL_FACES)
@@ -231,12 +213,11 @@ void FFlGroupPartCreator::updateElementVisibility()
         std::vector<FFlVisFaceIdx> toBeHidden, toBeShown;
         std::vector<FFlVisFaceIdx>& faces = gp.second->facePointers;
         std::vector<FFlVisFaceIdx>& hfaces = gp.second->hiddenFaces;
-        int& primVertexCount = gp.second->nVisiblePrimitiveVertexes;
 
 	// Loop over visible faces.
 
-	primVertexCount = 0;
-	emptyVisiblFacePlace = -1;
+	size_t faceNr = 0;
+	int emptyVisiblFacePlace = -1;
 	for (faceNr = 0; faceNr < faces.size(); ++faceNr)
 	  if (!faces[faceNr].first->isVisible())
 	  {
@@ -246,14 +227,13 @@ void FFlGroupPartCreator::updateElementVisibility()
 	  }
 	  else
 	  {
-	    primVertexCount += faces[faceNr].first->getNumVertices();
 	    if (emptyVisiblFacePlace >= 0)
 	      faces[emptyVisiblFacePlace++] = faces[faceNr];
 	  }
 
 	// Loop over hidden faces.
 
-	emptyHiddenFacePlace = -1;
+	int emptyHiddenFacePlace = -1;
 	for (faceNr = 0; faceNr < hfaces.size(); ++faceNr)
 	  if (hfaces[faceNr].first->isVisible())
 	  {
@@ -272,10 +252,7 @@ void FFlGroupPartCreator::updateElementVisibility()
 	faceNr = emptyVisiblFacePlace;
 	faces.resize(emptyVisiblFacePlace + toBeShown.size());
 	for (const FFlVisFaceIdx& face : toBeShown)
-	{
 	  faces[faceNr++] = face;
-	  primVertexCount += face.first->getNumVertices();
-	}
 
 	// Add newly hidden faces to hiddenFaces
 
@@ -308,11 +285,11 @@ void FFlGroupPartCreator::updateElementVisibility()
 }
 
 
-void FFlGroupPartCreator::createLinkReducedFaces(FFlGroupPartData& redInternalFaces,
-						 FFlGroupPartData& redSurfaceFaces)
+void FFlGroupPartCreator::createLinkReducedFaces(FFlGroupPartData& internal,
+                                                 FFlGroupPartData& surface)
 {
-  redInternalFaces.isLineShape = false;
-  redSurfaceFaces.isLineShape = false;
+  internal.isLineShape  = surface.isLineShape  = false;
+  internal.isIndexShape = surface.isIndexShape = true;
 
   for (FFlVisFace* face : myVisFaces)
     if (!face->isVisited())
@@ -321,9 +298,14 @@ void FFlGroupPartCreator::createLinkReducedFaces(FFlGroupPartData& redInternalFa
         IntList polygon;
         this->expandPolygon(polygon,*face,normal);
 
-        // Tesselate the reduced polygon, and add triangles to shape indices in group parts
-        FFlGroupPartData& faces = face->isSurfaceFace() ? redSurfaceFaces : redInternalFaces;
-        FFlTesselator::tesselate(faces.shapeIndexes,polygon,myVertices,normal);
+        // Tesselate the reduced polygon,
+        // and add triangles to shape indices in group parts
+        if (face->isSurfaceFace())
+          FFlTesselator::tesselate(surface.shapeIndexes,
+                                   polygon,myVertices,normal);
+        else
+          FFlTesselator::tesselate(internal.shapeIndexes,
+                                   polygon,myVertices,normal);
       }
 }
 
@@ -793,12 +775,11 @@ void FFlGroupPartCreator::getPolygonFromFace(IntList & polygon,
   status before this method is called.
 */
 
-void FFlGroupPartCreator::createLinkFullEdges(FFlGroupPartData& internalLines,
-					      FFlGroupPartData& surfaceLines,
-					      FFlGroupPartData& outlineParts)
+void FFlGroupPartCreator::createLinkFullEdges(FFlGroupPartData& internal,
+                                              FFlGroupPartData& surface,
+                                              FFlGroupPartData& outline)
 {
-  internalLines.isLineShape  = surfaceLines.isLineShape  = outlineParts.isLineShape  = true;
-  internalLines.isIndexShape = surfaceLines.isIndexShape = outlineParts.isIndexShape = false;
+  internal.isIndexShape = surface.isIndexShape = outline.isIndexShape = false;
 
   for (FFlVisEdge* edge : myVisEdges)
 
@@ -806,26 +787,23 @@ void FFlGroupPartCreator::createLinkFullEdges(FFlGroupPartData& internalLines,
     switch (edge->getRenderData()->edgeStatus)
       {
       case FFlVisEdgeRenderData::SURFACE:
-        surfaceLines.edgePointers.emplace_back(edge,-1);
-        surfaceLines.nVisiblePrimitiveVertexes += 2;
+        surface.edgePointers.emplace_back(edge,-1);
         break;
       case FFlVisEdgeRenderData::OUTLINE:
-        outlineParts.edgePointers.emplace_back(edge,-1);
-        outlineParts.nVisiblePrimitiveVertexes += 2;
+        outline.edgePointers.emplace_back(edge,-1);
         break;
       default:
-        internalLines.edgePointers.emplace_back(edge,-1);
-        internalLines.nVisiblePrimitiveVertexes += 2;
+        internal.edgePointers.emplace_back(edge,-1);
         break;
       }
 }
 
 
-void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internalLines,
-						 FFlGroupPartData& surfaceLines,
-						 FFlGroupPartData& outlineParts)
+void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internal,
+                                                 FFlGroupPartData& surface,
+                                                 FFlGroupPartData& outline)
 {
-  internalLines.isLineShape = surfaceLines.isLineShape = outlineParts.isLineShape = true;
+  internal.isIndexShape = surface.isIndexShape = outline.isIndexShape = true;
 
   // Create vertex-to-edge reference array
   std::vector< std::vector<FFlVisEdge*> > vertexEdgeRefs(myVertices.size());
@@ -890,13 +868,13 @@ void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internalLines
       switch (edge->getRenderData()->edgeStatus)
         {
         case FFlVisEdgeRenderData::SURFACE:
-          surfaceLines.shapeIndexes.push_back(simplEdge);
+          surface.shapeIndexes.push_back(simplEdge);
           break;
         case FFlVisEdgeRenderData::OUTLINE:
-          outlineParts.shapeIndexes.push_back(simplEdge);
+          outline.shapeIndexes.push_back(simplEdge);
           break;
         default:
-          internalLines.shapeIndexes.push_back(simplEdge);
+          internal.shapeIndexes.push_back(simplEdge);
           break;
         }
     }
@@ -959,16 +937,51 @@ void FFlGroupPartCreator::dump() const
               <<" "<< gp.second->edgePointers.size()
               <<" "<< gp.second->hiddenEdges.size()
               <<" "<< gp.second->shapeIndexes.size()
-              <<" "<< gp.second->nVisiblePrimitiveVertexes;
+              <<" "<< gp.second->getNoVisibleVertices();
   std::cout <<"\n  SPECIAL_LINES:     ";
   for (const GroupPartMap::value_type& gp : mySpecialLines)
     std::cout <<" "<< std::boolalpha << gp.second->isLineShape
               <<" "<< std::boolalpha << gp.second->isIndexShape
               <<" "<< gp.first <<" "<< gp.second->edgePointers.size()
-              <<" "<< gp.second->nVisiblePrimitiveVertexes;
+              <<" "<< gp.second->getNoVisibleVertices();
   std::cout << std::endl;
 
   this->FFlFaceGenerator::dump();
+}
+
+
+size_t FFlGroupPartData::getNoItems() const
+{
+  if (isIndexShape)
+    return shapeIndexes.size();
+  else if (isLineShape)
+    return edgePointers.size();
+  else
+    return facePointers.size();
+}
+
+
+size_t FFlGroupPartData::getNoVisibleVertices(bool addOnePrItem) const
+{
+  size_t nVert = 0;
+  if (isIndexShape)
+  {
+    for (const IntVec& shape : shapeIndexes)
+      nVert += shape.size();
+    if (addOnePrItem)
+      nVert += shapeIndexes.size();
+  }
+  else if (isLineShape)
+    nVert = (addOnePrItem ? 3 : 2)*edgePointers.size();
+  else
+  {
+    for (const FFlVisFaceIdx& face : facePointers)
+      nVert += face.first->getNumVertices();
+    if (addOnePrItem)
+      nVert += facePointers.size();
+  }
+
+  return nVert;
 }
 
 
