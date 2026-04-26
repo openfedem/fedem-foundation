@@ -26,8 +26,7 @@ using FFlVisEdgeIdx = std::pair<FFlVisEdge*,int>;
 
 struct FFlGroupPartData
 {
-  bool isLineShape  = true;
-  bool isIndexShape = false;
+  bool isLineShape = true;
 
   //! Pointer to the visualization of this GroupPart
   FdFEGroupPart* visualModel = NULL;
@@ -65,7 +64,6 @@ class FFlGroupPartCreator : public FFlFaceGenerator
 {
 public:
   FFlGroupPartCreator(FFlLinkHandler* lh);
-  virtual ~FFlGroupPartCreator();
 
   enum GroupPartType {
     RED_OUTLINE_LINES,  OUTLINE_LINES,
@@ -77,7 +75,7 @@ public:
     NUM_TYPES
   };
 
-  using GroupPartMap = std::map<unsigned short int,FFlGroupPartData*>;
+  using GroupPartMap = std::map<unsigned short int,FFlGroupPartData>;
 
   // Create internally stored geometry
 
@@ -88,8 +86,9 @@ public:
 
   // Access the internally stored geometry
 
-  const GroupPartMap& getLinkParts() const { return myLinkParts; }
-  const GroupPartMap& getSpecialLines() const { return mySpecialLines; }
+  GroupPartMap::iterator begin()  { return myLinkParts.begin(); }
+  GroupPartMap::iterator end()    { return myLinkParts.end(); }
+  GroupPartMap& getSpecialLines() { return mySpecialLines; }
 
   FFlFaceGenerator* getFaceGenerator() { return this; }
 
@@ -132,13 +131,13 @@ protected:
 
   void expandPolygon(IntList& polygon, FFlVisFace& f, const FaVec3& normal);
 
-  void joinFacesFromEdge   ( IntList                  & polygon,
-                             const IntList::iterator  & splEdgEndPolyIt,
-                             const FFlVisEdgeRef      & edgeIt,
-                             const FFlVisFace         & previousFace,
-                             const bool               & faceIsPositive,
-                             const bool               & onlySurfaceFaces,
-                             const FaVec3             & normal );
+  void joinFacesFromEdge(IntList                 & polygon,
+                         const IntList::iterator & splEdgEndPolyIt,
+                         const FFlVisEdgeRef     & edgeIt,
+                         const FFlVisFace        & previousFace,
+                         const bool              & faceIsPositive,
+                         const bool              & onlySurfaceFaces,
+                         const FaVec3            & normal);
 
   void getPolygonPosFace(IntList& polygon, const FFlVisFace& f,
                          const VisEdgeRefVecCIter& splEdge);

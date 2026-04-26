@@ -46,10 +46,10 @@ namespace
     gpc.dump();
 
     std::vector<int> stat; // Extract some statistics
-    for (const FFlGroupPartCreator::GroupPartMap::value_type& gp : gpc.getLinkParts())
+    for (const FFlGroupPartCreator::GroupPartMap::value_type& gp : gpc)
     {
-      stat.push_back(gp.second->getNoItems());
-      stat.push_back(gp.second->getNoVisibleVertices());
+      stat.push_back(gp.second.getNoItems());
+      stat.push_back(gp.second.getNoVisibleVertices());
     }
     std::cout <<"\n{"<< stat.front();
     for (size_t i = 1; i < stat.size(); i++)
