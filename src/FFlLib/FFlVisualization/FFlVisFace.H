@@ -90,6 +90,10 @@ public:
                 const VisEdgeRefVecCIter& splitEdgeIt,
                 bool loopForward) const;
 
+  // Define the geometry status of the edges of a surface
+
+  void setEdgeGeomStatus(double angleTol);
+
   // Edge access
 
   VisEdgeRefVecCIter edgesBegin() const { return myEdges.begin(); }

@@ -38,7 +38,7 @@
 */
 
 FFlGroupPartCreator::FFlGroupPartCreator(FFlLinkHandler* lh)
-  : FFlFaceGenerator(lh), myVertices(lh->getVertexes())
+  : FFlFaceGenerator(lh)
 {
   myOutlineEdgeMinAngle = M_PI/4;
   myEdgesParallelAngle = 0.002;  // ca 0.1 degs
@@ -90,7 +90,10 @@ bool FFlGroupPartCreator::recreateSpecialLines(double XZscale)
 
 void FFlGroupPartCreator::makeLinkParts()
 {
-  this->setEdgeGeomStatus();
+  // Create geometrical status of the edges of the surface faces
+  for (FFlVisFace* face : myVisFaces)
+    if (face->isSurfaceFace())
+      face->setEdgeGeomStatus(myOutlineEdgeMinAngle);
 
   this->createLinkFullFaces(myLinkParts[INTERNAL_FACES],
                             myLinkParts[SURFACE_FACES]);
@@ -113,50 +116,6 @@ void FFlGroupPartCreator::makeLinkParts()
     edge->deleteRenderData();
   for (FFlVisEdge* edge : mySpecialEdges)
     edge->deleteRenderData();
-}
-
-
-/*!
-  Find and create the geometrical status of the edges of the face,
-  to be used when looping over the edges :
-*/
-
-void FFlGroupPartCreator::setEdgeGeomStatus()
-{
-  VisEdgeRefVecCIter edgeIt;
-
-  for (FFlVisFace* face : myVisFaces)
-    if (face->isSurfaceFace())
-    {
-      // If face is surface face :
-
-      FaVec3 surfNorm;
-      bool degenerated = !face->getFaceNormal(surfNorm);
-
-      // Loop Over the edges of the surface face :
-
-      for (edgeIt = face->edgesBegin(); edgeIt != face->edgesEnd(); ++edgeIt)
-      {
-	FFlVisEdgeRenderData* edgeRenderData = (*edgeIt)->getRenderData();
-	edgeRenderData->faceReferences.emplace_back(face,surfNorm);
-
-	if (degenerated || (*edgeIt)->getRefs() == 1)
-	  edgeRenderData->edgeStatus = FFlVisEdgeRenderData::OUTLINE;
-	else if (edgeRenderData->edgeStatus == FFlVisEdgeRenderData::INTERNAL)
-	  edgeRenderData->edgeStatus = FFlVisEdgeRenderData::SURFACE;
-	else if (edgeRenderData->edgeStatus == FFlVisEdgeRenderData::SURFACE)
-	  // compare surfNorm to the edges existing surface normals.
-	  // If some angle > OutlineEdgeMinAngle, upgrade to OUTLINE,
-	  // else add this surface normal to the vector:
-          for (const FFlFaceRef& fn : edgeRenderData->faceReferences)
-            if (surfNorm.angle(fn.second) >= myOutlineEdgeMinAngle &&
-                surfNorm.angle(-fn.second) >= myOutlineEdgeMinAngle)
-            {
-              edgeRenderData->edgeStatus = FFlVisEdgeRenderData::OUTLINE;
-              break;
-            }
-      }
-    }
 }
 
 
@@ -279,11 +238,11 @@ void FFlGroupPartCreator::createLinkReducedFaces(FFlGroupPartData& internal,
         // Tesselate the reduced polygon,
         // and add triangles to shape indices in group parts
         if (face->isSurfaceFace())
-          FFlTesselator::tesselate(surface.shapeIndexes,
-                                   polygon,myVertices,normal);
+          FFlTesselator::tesselate(surface.shapeIndexes,polygon,
+                                   myWorkLink->getVertexes(),normal);
         else
-          FFlTesselator::tesselate(internal.shapeIndexes,
-                                   polygon,myVertices,normal);
+          FFlTesselator::tesselate(internal.shapeIndexes,polygon,
+                                   myWorkLink->getVertexes(),normal);
       }
 }
 
@@ -343,51 +302,54 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
   for (int idx : polygon) std::cout <<" "<< idx;
   std::cout << std::endl;
 #endif
-
-  // Remove Dead ends :
-
-  IntList::iterator it1, it2, tmpIt, tmpIt2;
+  if (polygon.size() < 2)
+    return; // polygon too small (should not happen)
 
   // Initialize It1 and It2 to be separated by one, It1 first:
 
-  it2 = polygon.end();
-  for (int i = 0; i < 2; ++i)
-    if (it2 != polygon.begin()) --it2;
-    else return; // Polygon To Small
-
+  IntList::iterator it1, it2;
   it1 = polygon.begin();
+  it2 = polygon.end();
+  --it2;
+  --it2;
+
+  // Remove the dead ends :
 
   bool goneAround = false;
-
   while ( !goneAround && it1 != polygon.end() )
   {
-    if (it2 == polygon.end()) it2 = polygon.begin();
+    if (it2 == polygon.end())
+      it2 = polygon.begin();
 
     // If the indexes pointed to by the two iterators(separated by one)
     // are equal, we have a dead end. Cut it off
 
     if (*it2 == *it1)
     {
-      tmpIt = it2;
-      tmpIt2 = it2;
+      IntList::iterator tmpIt = it2;
 
-      if (it2 == polygon.begin()) it2 = polygon.end();
-      --it2;
-      if (it2 == it1) goneAround = true;
+      if (it2 == polygon.begin())
+        it2 = polygon.end();
 
-      if (it2 == polygon.begin()) it2 = polygon.end();
-      --it2;
-      if (it2 == it1) goneAround = true;
+      if (--it2 == it1)
+        goneAround = true;
 
-      if (!goneAround)
-      {
-	++tmpIt2;
-	if (tmpIt2 == polygon.end()) tmpIt2 = polygon.begin();
-	polygon.erase(tmpIt);
-	polygon.erase(tmpIt2);
-      }
+      if (it2 == polygon.begin())
+        it2 = polygon.end();
+
+      if (--it2 == it1)
+        goneAround = true;
+
+      if (goneAround)
+        polygon.clear();
       else
-	polygon.clear();
+      {
+        IntList::iterator tmpIt2 = tmpIt;
+        if (++tmpIt2 == polygon.end())
+          tmpIt2 = polygon.begin();
+        polygon.erase(tmpIt);
+        polygon.erase(tmpIt2);
+      }
     }
     else
     {
@@ -402,7 +364,7 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
   std::cout << std::endl;
 #endif
 
-  tmpIt = polygon.begin();
+  IntList::iterator tmpIt = polygon.begin();
   for (int i = 0; i < 3; i++)
     if (tmpIt == polygon.end())
       return; // polygon too small
@@ -416,14 +378,10 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
 
   bool start = true;
   while ((it1 != tmpIt || start) && it1 != it2 && it1 != it3)
-  {
-    // If the indices pointed to by the three iterators
-    // are on same line we'll remove the middle point
-    FaVec3 first  = *myVertices[*it2] - *myVertices[*it3];
-    FaVec3 second = *myVertices[*it1] - *myVertices[*it2];
-
-    if (first.angle(second) < myEdgesParallelAngle)
+    if (myWorkLink->coLinearVertices(*it1,*it2,*it3,myEdgesParallelAngle))
     {
+      // The vertices pointed to by the three iterators are on a straight line
+      // so we'll remove the middle point from the polygon
       if (it2 == tmpIt)
       {
         tmpIt = it1;
@@ -442,7 +400,7 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
       if (++it2 == polygon.end()) it2 = polygon.begin();
       if (++it3 == polygon.end()) it3 = polygon.begin();
     }
-  }
+
 #if FFL_DEBUG > 2
   std::cout <<"After Simplifying Straight Lines:";
   for (int idx : polygon) std::cout <<" "<< idx;
@@ -464,13 +422,13 @@ void FFlGroupPartCreator::expandPolygon(IntList& polygon, FFlVisFace& f,
   to include all the faces around the edges of the face.
 */
 
-void FFlGroupPartCreator::joinFacesFromEdge(IntList                  & polygon,
-					    const IntList::iterator  & splEdgEndPolyIt,
-					    const FFlVisEdgeRef      & prevSplEdge,
-					    const FFlVisFace         & previousFace,
-					    const bool               & prevFaceIsPositive,
-					    const bool               & onlySurfaceFaces,
-					    const FaVec3             & normal )
+void FFlGroupPartCreator::joinFacesFromEdge(IntList                 & polygon,
+                                            const IntList::iterator & splEdgEndPolyIt,
+                                            const FFlVisEdgeRef     & prevSplEdge,
+                                            const FFlVisFace        & previousFace,
+                                            const bool              & prevFaceIsPositive,
+                                            const bool              & onlySurfaceFaces,
+                                            const FaVec3            & normal)
 {
   // Workaround to reduce recursive stack depth
   // (joinFacesFromEdge <-> recIncludeFace)
@@ -712,7 +670,8 @@ void FFlGroupPartCreator::createLinkReducedEdges(FFlGroupPartData& internal,
                                                  FFlGroupPartData& outline)
 {
   // Create vertex-to-edge reference array
-  std::vector< std::vector<FFlVisEdge*> > vertexEdgeRefs(myVertices.size());
+  using FFlVisEdgeVec = std::vector<FFlVisEdge*>;
+  std::vector<FFlVisEdgeVec> vertexEdgeRefs(myWorkLink->getVertexCount());
   // Loop over edges, push edge into buckets labeled by the vertices they use
   for (FFlVisEdge* edge : myVisEdges)
   {

@@ -268,6 +268,34 @@ bool FFlVisFace::nextEdge(VisEdgeRefVecCIter& eit,
 }
 
 
+void FFlVisFace::setEdgeGeomStatus(double angleTol)
+{
+  FaVec3 normal;
+  bool degenerated = !this->getFaceNormal(normal);
+
+  for (FFlVisEdgeRef& edge : myEdges)
+  {
+    FFlVisEdgeRenderData* renderData = edge->getRenderData();
+    renderData->faceReferences.emplace_back(this,normal);
+
+    if (degenerated || edge->getRefs() == 1)
+      renderData->edgeStatus = FFlVisEdgeRenderData::OUTLINE;
+    else if (renderData->edgeStatus == FFlVisEdgeRenderData::INTERNAL)
+      renderData->edgeStatus = FFlVisEdgeRenderData::SURFACE;
+    else if (renderData->edgeStatus == FFlVisEdgeRenderData::SURFACE)
+      // Compare normal to the existing edge surface normals.
+      // If some angle is larger than the tolerance, upgrade to OUTLINE.
+      for (const FFlFaceRef& fn : renderData->faceReferences)
+        if (normal.angle( fn.second) >= angleTol &&
+            normal.angle(-fn.second) >= angleTol)
+        {
+          renderData->edgeStatus = FFlVisEdgeRenderData::OUTLINE;
+          break;
+        }
+  }
+}
+
+
 /*!
   Used to sort and compare faces.
   Sorting order: Smallest edge list first.

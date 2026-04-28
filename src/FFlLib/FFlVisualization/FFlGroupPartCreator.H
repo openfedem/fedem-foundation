@@ -107,8 +107,6 @@ public:
   virtual void dump() const;
 
 protected:
-  void setEdgeGeomStatus();
-
   // Link part generation :
 
   void createLinkFullFaces(FFlGroupPartData& internal,
@@ -147,8 +145,6 @@ protected:
 private:
   GroupPartMap myLinkParts;    //!< Internal container for stored geometry
   GroupPartMap mySpecialLines; //!< Internal container for special lines
-
-  const std::vector<FaVec3*>& myVertices; //!< Reference to vertex container
 
   // Algorithm parameters
   double myOutlineEdgeMinAngle;

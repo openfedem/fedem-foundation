@@ -192,7 +192,8 @@ public:
 #ifdef FT_USE_VERTEX
   size_t getVertexCount() const { return myVertices.size(); }
   const VertexVec& getVertexes() const { return myVertices; }
-  const FaVec3& getVertexPos(size_t idx) const { return *myVertices[idx]; }
+  bool coLinearVertices(size_t i1, size_t i2, size_t i3,
+                        double tolerance = 1.0e-8) const;
   FFlVertex* getVertex(size_t idx) const;
   void addVertex(FFlVertex* aVertex);
 
