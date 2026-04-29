@@ -11,6 +11,7 @@
 #include "FFlLib/FFlVertex.H"
 #include "FFaLib/FFaAlgebra/FFaMath.H"
 
+#include <algorithm>
 #include <functional>
 
 
@@ -473,16 +474,16 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                 & polygon,
 
         // Find the edge reference in the neighbor face:
 
-        VisEdgeRefVecCIter nbEdgeRefIt;
-        for (nbEdgeRefIt = neighbor.first->edgesBegin(); nbEdgeRefIt != neighbor.first->edgesEnd(); ++nbEdgeRefIt)
-          if (nbEdgeRefIt->getEdge() == prevSplEdge.getEdge())
-            break;
+        VisEdgeRefVecCIter nEdgeIt = std::find_if(neighbor.first->edgesBegin(),
+                                                  neighbor.first->edgesEnd(),
+                                                  [&prevSplEdge](const FFlVisEdgeRef& a)
+                                                  { return a.sameAs(prevSplEdge); });
 
         // Find whether neighbor is inside, or contains the previous face
 
-        bool facesHasSameNormDir    = neigbFaceIsPositive     == prevFaceIsPositive;
-        bool splitEdgeReffedSameWay = nbEdgeRefIt->isPosDir() == prevSplEdge.isPosDir();
-        if ( (facesHasSameNormDir && !splitEdgeReffedSameWay) || (!facesHasSameNormDir && splitEdgeReffedSameWay) )
+        bool facesHasSameNormDir    = neigbFaceIsPositive == prevFaceIsPositive;
+        bool splitEdgeReffedSameWay = nEdgeIt->isPosDir() == prevSplEdge.isPosDir();
+        if (facesHasSameNormDir != splitEdgeReffedSameWay)
         {
           // Neighbor is Not coincident with previous face
           isSomeInPlaneFaceOutside = true;
@@ -491,7 +492,7 @@ void FFlGroupPartCreator::joinFacesFromEdge(IntList                 & polygon,
           else if (!faceToJoin || neighbor.first->getNumVertices() > faceToJoin->getNumVertices()) {
             faceToJoin = neighbor.first;
             faceToJoinIsPositive = neigbFaceIsPositive;
-            splEdgeRIt = nbEdgeRefIt;
+            splEdgeRIt = nEdgeIt;
           }
         }
         else // Neighbor Is coincident with previous face

@@ -97,11 +97,6 @@ public:
     bool operator()(const FFlVisEdge* a, const FFlVisEdge* b) const;
   };
 
-  struct FFlVisEdgeEqual
-  {
-    bool operator()(const FFlVisEdge* a, const FFlVisEdge* b) const;
-  };
-
 #ifdef FT_USE_MEMPOOL
   FFA_MAKE_MEMPOOL;
 #endif
@@ -116,14 +111,16 @@ public:
 
   ~FFlVisEdgeRef() { if (myVisEdge) myVisEdge->unRef(); }
 
-  FFlVisEdge* operator->() const { return myVisEdge; }
-  FFlVisEdge* getEdge() const { return myVisEdge; }
   FFlVisEdgeRef& operator=(const FFlVisEdgeRef& ref);
   FFlVisEdgeRef& operator=(const FFlVisEdge& e) { return this->operator=(&e); }
   FFlVisEdgeRef& operator=(const FFlVisEdge* e);
 
+  FFlVisEdge* operator->() const { return myVisEdge; }
+
+  bool equals(const FFlVisEdgeRef& a) const;
+  bool sameAs(const FFlVisEdgeRef& a) const { return myVisEdge == a.myVisEdge; }
   bool isPosDir() const { return iAmPositive; }
-  void setPosDir(bool pos) { iAmPositive = pos;}
+  void setPosDir(bool pos) { iAmPositive = pos; }
 
   // Returns correct oriented edge vertices
 
@@ -140,10 +137,9 @@ protected:
   FFlVisEdge* myVisEdge;
 
   friend std::ostream& operator<<(std::ostream& os, const FFlVisEdgeRef& a);
+  friend bool operator<(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
 };
 
-bool operator< (const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
-bool operator==(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
 bool operator> (const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
 bool operator<=(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
 bool operator>=(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);

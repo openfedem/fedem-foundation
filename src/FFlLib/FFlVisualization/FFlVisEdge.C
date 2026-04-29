@@ -188,13 +188,6 @@ bool FFlVisEdge::FFlVisEdgeLess::operator()(const FFlVisEdge* a,
     return aID < bID;
 }
 
-bool FFlVisEdge::FFlVisEdgeEqual::operator()(const FFlVisEdge* a,
-                                             const FFlVisEdge* b) const
-{
-  return (a->getFirstVxIdx()  == b->getFirstVxIdx() &&
-          a->getSecondVxIdx() == b->getSecondVxIdx());
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -231,6 +224,13 @@ FFlVisEdgeRef& FFlVisEdgeRef::operator=(const FFlVisEdgeRef& ref)
   }
 
   return *this;
+}
+
+
+bool FFlVisEdgeRef::equals(const FFlVisEdgeRef& a) const
+{
+  return (myVisEdge->getFirstVxIdx()  == a.myVisEdge->getFirstVxIdx() &&
+          myVisEdge->getSecondVxIdx() == a.myVisEdge->getSecondVxIdx());
 }
 
 
@@ -282,25 +282,20 @@ std::ostream& operator<<(std::ostream& os, const FFlVisEdgeRef& a)
 
 bool operator<(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
 {
-  return FFlVisEdge::FFlVisEdgeLess()(a.getEdge(),b.getEdge());
-}
-
-bool operator==(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
-{
-  return FFlVisEdge::FFlVisEdgeEqual()(a.getEdge(),b.getEdge());
+  return FFlVisEdge::FFlVisEdgeLess()(a.myVisEdge,b.myVisEdge);
 }
 
 bool operator>(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
 {
-  return (!(a < b) && !(a == b));
+  return !(a < b) && !a.equals(b);
 }
 
 bool operator<=(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
 {
-  return (a < b || a == b);
+  return (a < b) || a.equals(b);
 }
 
 bool operator>=(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
 {
-  return (a > b || a == b);
+  return (a > b) || a.equals(b);
 }
