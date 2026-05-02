@@ -13,15 +13,13 @@ class FaMat33;
 
 
 /*!
-  \brief Class with static matrix-vector methods used by link file parsers, etc.
+  \brief Namespace with matrix-vector function used by FE file parsers, etc.
 */
 
-class FFaAlgebra
+namespace FFaAlgebra
 {
-public:
-  static void eccTransform6 (double mat[6][6], const FaVec3& X);
-  static bool congruenceTransform (double** mat, const FaMat33& T,
-				   int N, int node = 0);
-};
+  void eccTransform6(double mat[6][6], const FaVec3& X);
+  bool congruenceTransform(double** mat, const FaMat33& T, int N, int node = 0);
+}
 
 #endif
