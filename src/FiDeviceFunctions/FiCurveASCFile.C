@@ -105,12 +105,11 @@ bool FiCurveASCFile::concludingDeviceWrite(bool)
 
   if (!myParent.empty())
   {
-    FFaAppInfo current;
-    this->writeString("#FEDEM\t",current.version);
+    this->writeString("#FEDEM\t",FFaAppInfo::getVersion());
     this->writeString("\n#PARENT\t",myParent);
     this->writeString("\n#FILE \t",myDatasetDevice);
-    this->writeString("\n#USER \t",current.user);
-    this->writeString("\n#DATE \t",current.date);
+    this->writeString("\n#USER \t",FFaAppInfo::getUser());
+    this->writeString("\n#DATE \t",FFaAppInfo::getDate());
     this->writeString("\n#\n");
   }
 
