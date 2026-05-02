@@ -14,53 +14,46 @@
 class FaVec3;
 
 
-class FFaFunctionManager
+namespace FFaFunctionManager
 {
-public:
-  static double getValue(int baseID,
-			 const std::vector<int>& intVars,
-			 const std::vector<double>& realVars,
-			 const double x, int& ierr);
+  using IntVec  = std::vector<int>;
+  using RealVec = std::vector<double>;
 
-  static double getValue(int baseID, int fType, int extrap,
-			 const std::vector<double>& realVars,
-			 const double x, int& ierr);
+  double getValue(int baseID, const IntVec& intVars,
+                  const RealVec& realVars, const double x, int& ierr);
 
-  static double getDerivative(int baseID, int fType, int extrap,
-			      const std::vector<double>& realVars,
-			      const double x, int& ierr);
+  double getValue(int baseID, int fType, int extrap,
+                  const RealVec& realVars, const double x, int& ierr);
 
-  static int getSmartPoints(int funcType, int extrap,
-			    const double start, const double stop,
-			    const std::vector<double>& realVars,
-			    std::vector<double>& xtofill,
-			    std::vector<double>& ytofill);
+  double getDerivative(int baseID, int fType, int extrap,
+                       const RealVec& realVars, const double x, int& ierr);
 
-  static int getTypeID(const std::string& functionType);
+  int getSmartPoints(int funcType, int extrap,
+                     const double start, const double stop,
+                     const RealVec& realVars,
+                     RealVec& xtofill, RealVec& ytofill);
 
-  static bool initWaveFunction(const std::string& fileName, const int nWave,
-			       const int rSeed, std::vector<double>& realVars);
-  static bool initWaveFunction(const int iop, const int nWave, const int nDir,
-			       const int sprExp, const int rSeed,
-			       std::vector<double>& realVars);
-  static bool initWaveFunction(const int iop, const double g, double d,
-			       std::vector<double>& realVars);
-  static bool initWaveFunction (const int iop, const int nWave, const int rSeed,
-				const double g, const double d,
-				std::vector<int>& intVars,
-				std::vector<double>& realVars);
+  int getTypeID(const std::string& functionType);
 
-  static double getWaveValue(const std::vector<double>& realVars,
-			     const double g, const double d, const FaVec3& x,
-			     const double t, int iop = 0);
-  static double getWaveValue(const std::vector<int>& intVars,
-  			     const std::vector<double>& realVars,
-			     const double g, const double d, const FaVec3& x,
-			     const double t, int iop = 0);
-  static double getWaveValue(const std::vector<int>& intVars,
-  		             const std::vector<double>& realVars,
-			     const double g, const double d, const FaVec3& x,
-			     const double t, FaVec3& v, FaVec3& a, int iop = 0);
-};
+  bool initWaveFunction(const std::string& fileName, const int nWave,
+                        const int rSeed, RealVec& realVars);
+  bool initWaveFunction(const int iop, const int nWave, const int nDir,
+                        const int sprExp, const int rSeed, RealVec& realVars);
+  bool initWaveFunction(const int iop, const double g, double d,
+                        RealVec& realVars);
+  bool initWaveFunction(const int iop, const int nWave, const int rSeed,
+                        const double g, const double d,
+                        IntVec& intVars, RealVec& realVars);
+
+  double getWaveValue(const RealVec& realVars,
+                      const double g, const double d, const FaVec3& x,
+                      const double t, int iop = 0);
+  double getWaveValue(const IntVec& intVars, const RealVec& realVars,
+                      const double g, const double d, const FaVec3& x,
+                      const double t, int iop = 0);
+  double getWaveValue(const IntVec& intVars, const RealVec& realVars,
+                      const double g, const double d, const FaVec3& x,
+                      const double t, FaVec3& v, FaVec3& a, int iop = 0);
+}
 
 #endif
