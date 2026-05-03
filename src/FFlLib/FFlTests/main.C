@@ -14,6 +14,7 @@
 #include "FFlLib/FFlIOAdaptors/FFlFedemWriter.H"
 #include "FFaLib/FFaAlgebra/FFaUnitCalculator.H"
 #include "FFaLib/FFaAlgebra/FFaTensor3.H"
+#include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include <iterator>
 #include <cstring>
 

@@ -36,7 +36,7 @@ jobs:
       - name: Configure main build
         run: >
           GTEST_ROOT=/usr/local
-          cmake -B ./build -DCMAKE_BUILD_TYPE=Release -DUSE_FORTRAN=ON
+          cmake -B ./build -DCMAKE_BUILD_TYPE=Release -DUSE_VERTEXOBJ=ON
 
       - name: Build binaries and execute tests
         run: cmake --build ./build --target check

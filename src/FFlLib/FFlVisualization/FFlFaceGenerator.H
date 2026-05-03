@@ -42,7 +42,6 @@ protected:
   std::vector<FFlVisEdge*> myBeamEccEdges; //!< Beam eccentricity vectors
   std::vector<FFlVisEdge*> myBeamSysEdges; //!< Local beam system markers
 
-private:
   FFlLinkHandler* myWorkLink;
 };
 

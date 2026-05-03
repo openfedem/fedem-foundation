@@ -63,6 +63,7 @@ public:
 
   void getEdgeVertices(std::vector<int>& vertexRefs) const;
   void getEdgeVertices(int*& vertexIdxArrayPtr) const;
+  int  getVertexIdx(int idx) const;
   int  getFirstVxIdx() const;
   int  getSecondVxIdx() const;
 
@@ -74,10 +75,10 @@ public:
 
   void releaseVertices();
 
-  // Ref-counting from faces : myRefCount = nFaces reffing this edge:
+  // Reference counting from faces
 
-  int ref()           { if(myRefCount < 254) myRefCount++; return myRefCount; }
-  int unRef()         { if(myRefCount > 0)   myRefCount--; return myRefCount; }
+  int ref();
+  int unRef();
   int getRefs() const { return myRefCount; }
 
   // Render data used by groupPartGenerator to store status etc.
@@ -86,17 +87,12 @@ public:
   void deleteRenderData();
 
 protected:
-  unsigned char         myRefCount;
-  FFlVertex*            myVertex[2];
-  FFlVisEdgeRenderData* myRenderData;
+  unsigned char         myRefCount; //!< Number of faces referring to this edge
+  FFlVertex*            myVertex[2]; //!< The two vertices defining this edge
+  FFlVisEdgeRenderData* myRenderData; //!< Data for geometry reduction
 
 public:
   struct FFlVisEdgeLess
-  {
-    bool operator()(const FFlVisEdge* a, const FFlVisEdge* b) const;
-  };
-
-  struct FFlVisEdgeEqual
   {
     bool operator()(const FFlVisEdge* a, const FFlVisEdge* b) const;
   };
@@ -115,28 +111,35 @@ public:
 
   ~FFlVisEdgeRef() { if (myVisEdge) myVisEdge->unRef(); }
 
-  FFlVisEdge* operator->() const { return myVisEdge; }
-  FFlVisEdge* getEdge() const { return myVisEdge; }
   FFlVisEdgeRef& operator=(const FFlVisEdgeRef& ref);
   FFlVisEdgeRef& operator=(const FFlVisEdge& e) { return this->operator=(&e); }
   FFlVisEdgeRef& operator=(const FFlVisEdge* e);
 
-  bool isPosDir() const { return iAmPositive; }
-  void setPosDir(bool pos) { iAmPositive = pos;}
+  FFlVisEdge* operator->() const { return myVisEdge; }
 
-  // Returns correct oriented edge vertices.
+  bool equals(const FFlVisEdgeRef& a) const;
+  bool sameAs(const FFlVisEdgeRef& a) const { return myVisEdge == a.myVisEdge; }
+  bool isPosDir() const { return iAmPositive; }
+  void setPosDir(bool pos) { iAmPositive = pos; }
+
+  // Returns correct oriented edge vertices
 
   FFlVertex* getFirstVertex()  const;
   FFlVertex* getSecondVertex() const;
 
+  // Get running vertex indices for edge
+
+  int getFirstVxIdx()  const;
+  int getSecondVxIdx() const;
+
 protected:
   bool        iAmPositive; // true if the user sees the edge in the same direction as the edge itself
   FFlVisEdge* myVisEdge;
+
+  friend std::ostream& operator<<(std::ostream& os, const FFlVisEdgeRef& a);
+  friend bool operator<(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
 };
 
-
-bool operator< (const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
-bool operator==(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
 bool operator> (const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
 bool operator<=(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
 bool operator>=(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b);
