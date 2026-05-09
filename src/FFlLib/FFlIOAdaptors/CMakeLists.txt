@@ -45,4 +45,4 @@ endforeach ( FILE ${SOURCE_FILE_LIST} )
 
 
 add_library ( ${LIB_ID} ${CPP_SOURCE_FILES} ${CPP_HEADER_FILES} )
-target_link_libraries ( ${LIB_ID} FFlLib Admin ${VKI_LIBRARY} ${VTF_LIBRARY} )
+target_link_libraries ( ${LIB_ID} FFlLib FFaOS Admin ${VKI_LIBRARY} ${VTF_LIBRARY} )

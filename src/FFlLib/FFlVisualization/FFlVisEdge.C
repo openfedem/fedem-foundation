@@ -61,9 +61,9 @@ bool FFlVisEdge::setVertices(FFlVertex* n1, FFlVertex* n2, bool constructing)
   myVertex[i1] = n1;
   myVertex[1-i1] = n2;
 
-  for (int idx = 0; idx < 2; idx++)
-    if (myVertex[idx])
-      myVertex[idx]->ref();
+  for (int i = 0; i < 2; i++)
+    if (myVertex[i])
+      myVertex[i]->ref();
 
   return i1 == 0; // if swapped then negative direction
 }
@@ -99,14 +99,22 @@ void FFlVisEdge::getEdgeVertices(int*& vertexIdxArrayPtr) const
 }
 
 
+int FFlVisEdge::getVertexIdx(int idx) const
+{
+  if (idx < 0 || idx > 1)
+    return -99;
+
+  return myVertex[idx] ? myVertex[idx]->getRunningID() : -1-idx;
+}
+
 int FFlVisEdge::getFirstVxIdx() const
 {
-  return myVertex[0]->getRunningID();
+  return myVertex[0] ? myVertex[0]->getRunningID() : -1;
 }
 
 int FFlVisEdge::getSecondVxIdx() const
 {
-  return myVertex[1]->getRunningID();
+  return myVertex[1] ? myVertex[1]->getRunningID() : -2;
 }
 
 
@@ -147,23 +155,37 @@ void FFlVisEdge::deleteRenderData()
 }
 
 
+int FFlVisEdge::ref()
+{
+  if (myRefCount < 254)
+    myRefCount++;
+  else
+    std::cout <<"  ** FFlVisEdge::ref(): More than 255 references to one edge,"
+              <<" reference counting will be incorrect."<< std::endl;
+
+  return myRefCount;
+}
+
+
+int FFlVisEdge::unRef()
+{
+  if (myRefCount > 0)
+    myRefCount--;
+
+  return myRefCount;
+}
+
+
 bool FFlVisEdge::FFlVisEdgeLess::operator()(const FFlVisEdge* a,
                                             const FFlVisEdge* b) const
 {
-  int aID = a->getFirstVertex()->getRunningID();
-  int bID = b->getFirstVertex()->getRunningID();
+  int aID = a->getFirstVxIdx();
+  int bID = b->getFirstVxIdx();
 
   if (aID == bID)
-    return a->getVertex(1)->getRunningID() < b->getVertex(1)->getRunningID();
+    return a->getSecondVxIdx() < b->getSecondVxIdx();
   else
     return aID < bID;
-}
-
-bool FFlVisEdge::FFlVisEdgeEqual::operator()(const FFlVisEdge* a,
-                                             const FFlVisEdge* b) const
-{
-  return (a->getVertex(0)->getRunningID() == b->getVertex(0)->getRunningID() &&
-          a->getVertex(1)->getRunningID() == b->getVertex(1)->getRunningID());
 }
 
 
@@ -205,6 +227,13 @@ FFlVisEdgeRef& FFlVisEdgeRef::operator=(const FFlVisEdgeRef& ref)
 }
 
 
+bool FFlVisEdgeRef::equals(const FFlVisEdgeRef& a) const
+{
+  return (myVisEdge->getFirstVxIdx()  == a.myVisEdge->getFirstVxIdx() &&
+          myVisEdge->getSecondVxIdx() == a.myVisEdge->getSecondVxIdx());
+}
+
+
 FFlVertex* FFlVisEdgeRef::getFirstVertex() const
 {
   if (!myVisEdge)
@@ -228,27 +257,45 @@ FFlVertex* FFlVisEdgeRef::getSecondVertex() const
 }
 
 
-bool operator<(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
+int FFlVisEdgeRef::getFirstVxIdx() const
 {
-  return FFlVisEdge::FFlVisEdgeLess()(a.getEdge(),b.getEdge());
+  FFlVertex* vtx = this->getFirstVertex();
+  return vtx ? vtx->getRunningID() : -1;
 }
 
-bool operator==(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
+int FFlVisEdgeRef::getSecondVxIdx() const
 {
-  return FFlVisEdge::FFlVisEdgeEqual()(a.getEdge(),b.getEdge());
+  FFlVertex* vtx = this->getSecondVertex();
+  return vtx ? vtx->getRunningID() : -2;
+}
+
+
+std::ostream& operator<<(std::ostream& os, const FFlVisEdgeRef& a)
+{
+  if (!a.myVisEdge)
+    return os <<"(NULL)";
+  else
+    return os <<"["<< a.getFirstVxIdx()
+              <<"]->["<< a.getSecondVxIdx() <<"]";
+}
+
+
+bool operator<(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
+{
+  return FFlVisEdge::FFlVisEdgeLess()(a.myVisEdge,b.myVisEdge);
 }
 
 bool operator>(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
 {
-  return (!(a < b) && !(a == b));
+  return !(a < b) && !a.equals(b);
 }
 
 bool operator<=(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
 {
-  return (a < b || a == b);
+  return (a < b) || a.equals(b);
 }
 
 bool operator>=(const FFlVisEdgeRef& a, const FFlVisEdgeRef& b)
 {
-  return (a > b || a == b);
+  return (a > b) || a.equals(b);
 }

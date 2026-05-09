@@ -13,7 +13,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
-#include <utility>
+#include <functional>
 
 
 /*!
@@ -1197,10 +1197,9 @@ FFaMathExpr FFaMathExpr::Diff(const FFaMathVar& var) const
     rop = FFaMathExpr(2.0);
     if (mmb2->op != Juxt)
       return (mmb2->Diff(var) / (FFaMathExpr(1.0) + ((*mmb2) ^ rop)));
-    else 
-      return ((mmb2->NthMember(1).Diff(var)) * (mmb2->NthMember(2)) -
-	      (mmb2->NthMember(2).Diff(var)) * (mmb2->NthMember(1))) /
-	    (((mmb2->NthMember(1)) ^ rop) + ((mmb2->NthMember(2)) ^ rop));
+    return (mmb2->NthMember(1).Diff(var) * mmb2->NthMember(2) -
+            mmb2->NthMember(2).Diff(var) * mmb2->NthMember(1)) /
+          ((mmb2->NthMember(1) ^ rop) + (mmb2->NthMember(2) ^ rop));
 
   case Asin:
     rop.op = Sqrt;
@@ -1414,12 +1413,31 @@ void FFaMathExpr::BCFun(DoublePtRefFuncType*& pf, DoublePtRefFuncType* pf1,
   *prf3 = NULL;
 }
 
+
 /*!
   \fn FFaMathExpr::BuildCode()
   \brief Builds a tree of variables, numbers, operations and functions.
 */
 void FFaMathExpr::BuildCode()
 {
+  // Convenience lambda adding a single-argument operation.
+  std::function<void(DoublePtRefFuncType)> buildSimple =
+    [this](DoublePtRefFuncType oper) -> void
+  {
+    BCSimple(pinstr, mmb2->pinstr, pvals,     mmb2->pvals,
+             ppile,  mmb2->ppile,  pfuncpile, mmb2->pfuncpile, oper);
+  };
+
+  // Convenience lambda adding a double-argument operation.
+  std::function<void(DoublePtRefFuncType)> buildDouble =
+    [this](DoublePtRefFuncType oper) -> void
+  {
+    BCDouble(pinstr,    mmb1->pinstr,    mmb2->pinstr,
+             pvals,     mmb1->pvals,     mmb2->pvals,
+             ppile,     mmb1->ppile,     mmb2->ppile,
+             pfuncpile, mmb1->pfuncpile, mmb2->pfuncpile, oper);
+  };
+
   switch (op) {
   case ErrOp:
   case Num:
@@ -1446,211 +1464,139 @@ void FFaMathExpr::BuildCode()
     break;
 
   case Juxt:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::JuxtF);
+    buildDouble([](double*&){});
     break;
 
   case Add:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::Addition);
+    buildDouble(&FFaMathOps::Addition);
     break;
 
   case Sub:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::Subtraction);
+    buildDouble(&FFaMathOps::Subtraction);
     break;
     
   case Mult:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::Multiplication);
+    buildDouble(&FFaMathOps::Multiplication);
     break;
 
   case Div:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::Division);
+    buildDouble(&FFaMathOps::Division);
     break;
 
   case Mod:
-    FFaMathExpr::BCDouble(pinstr,    mmb1->pinstr,    mmb2->pinstr,
-                          pvals,     mmb1->pvals,     mmb2->pvals,
-                          ppile,     mmb1->ppile,     mmb2->ppile,
-                          pfuncpile, mmb1->pfuncpile, mmb2->pfuncpile,
-                          &FFaMathOps::Modulus);
+    buildDouble(&FFaMathOps::Modulus);
     break;
 
   case Max:
-    FFaMathExpr::BCSimple(pinstr, mmb2->pinstr, pvals, mmb2->pvals,
-                          ppile,  mmb2->ppile,  pfuncpile, mmb2->pfuncpile,
-                          &FFaMathOps::Max);
+    buildSimple(&FFaMathOps::Max);
     break;
 
   case Min:
-    FFaMathExpr::BCSimple(pinstr, mmb2->pinstr, pvals, mmb2->pvals,
-                          ppile,  mmb2->ppile,  pfuncpile, mmb2->pfuncpile,
-                          &FFaMathOps::Min);
+    buildSimple(&FFaMathOps::Min);
     break;
 
   case Pow:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::Puissance);
+    buildDouble(&FFaMathOps::Puissance);
     break;
 
   case NthRoot:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::RacineN);
+    buildDouble(&FFaMathOps::RacineN);
     break;
 
   case E10:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::Puiss10);
+    buildDouble(&FFaMathOps::Puiss10);
     break;
 
   case Opp:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile, 
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::Oppose);
+    buildSimple(&FFaMathOps::Oppose);
     break;
 
   case Sin:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2-> pvals, ppile,
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::Sinus);
+    buildSimple(&FFaMathOps::Sinus);
     break;
 
   case Sqrt:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile,
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::Racine);
+    buildSimple(&FFaMathOps::Racine);
     break;
 
   case Log:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile, 
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::Logarithme);
+    buildSimple(&FFaMathOps::Logarithme);
     break;
 
   case Ln:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile, 
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::NaturalLogarithme);
+    buildSimple(&FFaMathOps::NaturalLogarithme);
     break;
   
   case Exp:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile,
-	     mmb2 -> ppile, pfuncpile ,mmb2 -> pfuncpile, &FFaMathOps::Exponentielle);
+    buildSimple(&FFaMathOps::Exponentielle);
   break;
 
   case Cos:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile,
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::Cosinus);
+    buildSimple(&FFaMathOps::Cosinus);
     break;
 
   case Tg:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile,
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::Tangente);
+    buildSimple(&FFaMathOps::Tangente);
     break;
     
   case Atan:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile,
-	      mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, 
-	      (mmb2 -> NMembers() > 1 ? &FFaMathOps::ArcTangente2 : 
-	      &FFaMathOps::ArcTangente));
+    buildSimple(&FFaMathOps::ArcTangente);
     break;
     
   case Asin:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile,
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::ArcSinus);
+    buildSimple(&FFaMathOps::ArcSinus);
     break;
     
   case Acos:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile,
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::ArcCosinus);
+    buildSimple(&FFaMathOps::ArcCosinus);
     break;
     
   case Abs:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile,
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::Absolu);
+    buildSimple(&FFaMathOps::Absolu);
     break;
     
   case Fun:
-    FFaMathExpr::BCFun(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile, 
-	  mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, pfunc);
+    BCFun(pinstr, mmb2->pinstr, pvals    , mmb2->pvals,
+          ppile,  mmb2->ppile,  pfuncpile, mmb2->pfuncpile, pfunc);
     break;
 
   case LogicalLess:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::LessThan);
+    buildDouble(&FFaMathOps::LessThan);
     break;
 
   case LogicalGreater:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::GreaterThan);
+    buildDouble(&FFaMathOps::GreaterThan);
     break;    
 
   case LogicalAnd:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::BooleanAnd);
+    buildDouble(&FFaMathOps::BooleanAnd);
     break;    
 
   case LogicalOr:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::BooleanOr );
+    buildDouble(&FFaMathOps::BooleanOr);
     break;    
 
   case LogicalEqual:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::BooleanEqual );
+    buildDouble(&FFaMathOps::BooleanEqual);
     break;    
 
   case LogicalNotEqual:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::BooleanNotEqual );
+    buildDouble(&FFaMathOps::BooleanNotEqual);
     break;    
 
   case LogicalLessOrEqual:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::BooleanLessOrEqual );
+    buildDouble(&FFaMathOps::BooleanLessOrEqual);
     break;    
 
   case LogicalGreaterOrEqual:
-    FFaMathExpr::BCDouble(pinstr, mmb1 -> pinstr, mmb2 -> pinstr, pvals, 
-				 mmb1 -> pvals, mmb2 -> pvals, ppile, mmb1 -> ppile, 
-				 mmb2 -> ppile, pfuncpile, mmb1 -> pfuncpile, 
-				 mmb2 -> pfuncpile, &FFaMathOps::BooleanGreaterOrEqual );
+    buildDouble(&FFaMathOps::BooleanGreaterOrEqual);
     break;
 
   case LogicalNot:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile,
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::BooleanNot);
+    buildSimple(&FFaMathOps::BooleanNot);
     break;    
 
   default:
-    FFaMathExpr::BCSimple(pinstr, mmb2 -> pinstr, pvals, mmb2 -> pvals, ppile,
-	     mmb2 -> ppile, pfuncpile, mmb2 -> pfuncpile, &FFaMathOps::FonctionError);
+    buildSimple([](double*& p) { *p = FFaMathOps::ErrVal; });
   }
 }

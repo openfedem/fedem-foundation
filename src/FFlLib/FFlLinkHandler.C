@@ -1750,6 +1750,18 @@ FFlNode* FFlLinkHandler::getNodeConnectivity(int ID, Strings& elmList) const
 
 
 #ifdef FT_USE_VERTEX
+bool FFlLinkHandler::coLinearVertices(size_t i, size_t j, size_t k,
+                                      double tolerance) const
+{
+  if (i >= myVertices.size() || j > myVertices.size() || k > myVertices.size())
+    return false;
+
+  FaVec3 v1 = *myVertices[j] - *myVertices[k];
+  FaVec3 v2 = *myVertices[i] - *myVertices[j];
+  return v1.angle(v2) < tolerance;
+}
+
+
 FFlVertex* FFlLinkHandler::getVertex(size_t i) const
 {
   return i < myVertices.size() ? static_cast<FFlVertex*>(myVertices[i]) : NULL;

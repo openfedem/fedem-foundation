@@ -59,47 +59,32 @@
 #define maxPrimeFactor     1009
 #define maxPrimeFactorDiv2 505
 
-static double pi = 3.14159265358979323846;
 
-static double c3_1 = -1.5;              //  = cos(2*pi/3)-1
-static double c3_2 =  0.86602540378444; //  = sin(2*pi/3)
-static double c5_1 = -1.25;             //  = (cos(2*pi/5)+cos(4*pi/5))/2-1
-static double c5_2 =  0.55901699437495; //  = (cos(2*pi/5)-cos(4*pi/5))/2
-static double c5_3 = -0.95105651629515; //  = -sin(2*pi/5)
-static double c5_4 = -1.5388417685876;  //  = -(sin(2*pi/5)+sin(4*pi/5))
-static double c5_5 =  0.36327126400268; //  = (sin(2*pi/5)-sin(4*pi/5))
-static double c8   =  0.70710678118655; //  = 1/sqrt(2)
-
-static double twiddleRe[maxPrimeFactor], twiddleIm[maxPrimeFactor],
-              trigRe[maxPrimeFactor], trigIm[maxPrimeFactor],
-              zRe[maxPrimeFactor], zIm[maxPrimeFactor];
-static double vRe[maxPrimeFactorDiv2], vIm[maxPrimeFactorDiv2];
-static double wRe[maxPrimeFactorDiv2], wIm[maxPrimeFactorDiv2];
-
-
-bool FFpFourier::FFT (const std::vector<double>& xRe, const std::vector<double>& xIm,
-		      std::vector<double>& yRe, std::vector<double>& yIm)
+namespace
 {
-  int sofarRadix[maxFactorCount];
-  int actualRadix[maxFactorCount];
-  int remainRadix[maxFactorCount];
-  int nFact;
+  const double pi = 3.14159265358979323846;
 
-  if (!transTableSetup(sofarRadix, actualRadix, remainRadix, nFact, xRe.size()))
-    return false;
+  const double c3_1 = -1.5;              //  = cos(2*pi/3)-1
+  const double c3_2 =  0.86602540378444; //  = sin(2*pi/3)
+  const double c5_1 = -1.25;             //  = (cos(2*pi/5)+cos(4*pi/5))/2-1
+  const double c5_2 =  0.55901699437495; //  = (cos(2*pi/5)-cos(4*pi/5))/2
+  const double c5_3 = -0.95105651629515; //  = -sin(2*pi/5)
+  const double c5_4 = -1.5388417685876;  //  = -(sin(2*pi/5)+sin(4*pi/5))
+  const double c5_5 =  0.36327126400268; //  = (sin(2*pi/5)-sin(4*pi/5))
+  const double c8   =  0.70710678118655; //  = 1/sqrt(2)
 
-  permute(nFact, actualRadix, remainRadix, xRe, xIm, yRe, yIm);
-  for (int i = 1; i <= nFact; i++)
-    twiddleTransf(sofarRadix[i], actualRadix[i], remainRadix[i], yRe, yIm);
+  double twiddleRe[maxPrimeFactor], twiddleIm[maxPrimeFactor];
+  double trigRe[maxPrimeFactor], trigIm[maxPrimeFactor];
+  double zRe[maxPrimeFactor], zIm[maxPrimeFactor];
+  double vRe[maxPrimeFactorDiv2], vIm[maxPrimeFactorDiv2];
+  double wRe[maxPrimeFactorDiv2], wIm[maxPrimeFactorDiv2];
 
-  return true;
-}
+  void factorize(int n, int& nFact, int* fact);
+  void initTrig(int radix);
 
-
-int FFpFourier::getMaxPrimeFactor()
-{
-  return maxPrimeFactor;
-}
+  void fft_8();
+  void fft_10();
+  void fft_odd(int radix);
 
 
 /****************************************************************************
@@ -110,15 +95,15 @@ int FFpFourier::getMaxPrimeFactor()
     remain  : the product of the remaining radices.
  ****************************************************************************/
 
-bool FFpFourier::transTableSetup(int* sofar, int* actual, int* remain,
-				 int& nFact, int nPoints)
+bool transTableSetup(int* sofar, int* actual, int* remain, int& nFact, int nPts)
 {
-  factorize(nPoints, nFact, actual);
+  actual[0] = actual[1] = 0;
+  factorize(nPts, nFact, actual);
   if (actual[1] > maxPrimeFactor) return false;
 
-  remain[0]=nPoints;
+  remain[0]=nPts;
   sofar[1]=1;
-  remain[1]=nPoints / actual[1];
+  remain[1]=nPts / actual[1];
   for (int i=2; i<=nFact; i++)
   {
     sofar[i]=sofar[i-1]*actual[i-1];
@@ -127,7 +112,7 @@ bool FFpFourier::transTableSetup(int* sofar, int* actual, int* remain,
   return true;
 }
 
-void FFpFourier::factorize(int n, int& nFact, int* fact)
+void factorize(int n, int& nFact, int* fact)
 {
   int i,j,k;
   int nRadix;
@@ -198,9 +183,9 @@ void FFpFourier::factorize(int n, int& nFact, int* fact)
   normal order.
  ****************************************************************************/
 
-void FFpFourier::permute(int /*nFact*/, int* fact, int* remain,
-			 const std::vector<double>& xRe, const std::vector<double>& xIm,
-			 std::vector<double>& yRe, std::vector<double>& yIm)
+void permute(int /*nFact*/, int* fact, int* remain,
+             const std::vector<double>& xRe, const std::vector<double>& xIm,
+             std::vector<double>& yRe, std::vector<double>& yIm)
 {
   int i, j, k, lastPoint = xRe.size()-1;
   bool isComplex = xIm.size() >= xRe.size();
@@ -237,9 +222,8 @@ void FFpFourier::permute(int /*nFact*/, int* fact, int* remain,
   following stages.
  ***************************************************************************/
 
-void FFpFourier::twiddleTransf(int sofarRadix, int radix, int remainRadix,
-			       std::vector<double>& yRe, std::vector<double>& yIm)
-
+void twiddleTransf(int sofarRadix, int radix, int remainRadix,
+                   std::vector<double>& yRe, std::vector<double>& yIm)
 {
   double gem;
   double t1_re,t1_im, t2_re,t2_im, t3_re,t3_im;
@@ -372,7 +356,7 @@ void FFpFourier::twiddleTransf(int sofarRadix, int radix, int remainRadix,
   }
 }
 
-void FFpFourier::initTrig(int radix)
+void initTrig(int radix)
 {
   trigRe[0]=1.0; trigIm[0]=0.0;
   double w=2*pi/radix;
@@ -386,7 +370,7 @@ void FFpFourier::initTrig(int radix)
   }
 }
 
-void FFpFourier::fft_4(double* aRe, double* aIm)
+void fft_4(double* aRe, double* aIm)
 {
   double t1_re,t1_im, t2_re,t2_im;
   double m2_re,m2_im, m3_re,m3_im;
@@ -403,7 +387,7 @@ void FFpFourier::fft_4(double* aRe, double* aIm)
   aRe[3]=m2_re - m3_re; aIm[3]=m2_im - m3_im;
 }
 
-void FFpFourier::fft_5(double* aRe, double* aIm)
+void fft_5(double* aRe, double* aIm)
 {
   double  t1_re,t1_im, t2_re,t2_im, t3_re,t3_im;
   double  t4_re,t4_im, t5_re,t5_im;
@@ -437,7 +421,7 @@ void FFpFourier::fft_5(double* aRe, double* aIm)
   aRe[4]=s2_re - s3_re; aIm[4]=s2_im - s3_im;
 }
 
-void FFpFourier::fft_8()
+void fft_8()
 {
   double aRe[4], aIm[4], bRe[4], bIm[4], gem;
 
@@ -474,7 +458,7 @@ void FFpFourier::fft_8()
   zIm[3] = aIm[3] + bIm[3]; zIm[7] = aIm[3] - bIm[3];
 }
 
-void FFpFourier::fft_10()
+void fft_10()
 {
   double aRe[5], aIm[5], bRe[5], bIm[5];
 
@@ -505,7 +489,7 @@ void FFpFourier::fft_10()
   zIm[4] = aIm[4] + bIm[4]; zIm[9] = aIm[4] - bIm[4];
 }
 
-void FFpFourier::fft_odd(int radix)
+void fft_odd(int radix)
 {
   double rere, reim, imre, imim;
   int    i,j,k,n,max;
@@ -548,4 +532,30 @@ void FFpFourier::fft_odd(int radix)
     zRe[0]=zRe[0] + vRe[j];
     zIm[0]=zIm[0] + wIm[j];
   }
+}
+} // end anonymous namespace
+
+
+bool FFpFourier::FFT (const std::vector<double>& xRe, const std::vector<double>& xIm,
+		      std::vector<double>& yRe, std::vector<double>& yIm)
+{
+  int sofarRadix[maxFactorCount];
+  int actualRadix[maxFactorCount];
+  int remainRadix[maxFactorCount];
+  int nFact;
+
+  if (!transTableSetup(sofarRadix, actualRadix, remainRadix, nFact, xRe.size()))
+    return false;
+
+  permute(nFact, actualRadix, remainRadix, xRe, xIm, yRe, yIm);
+  for (int i = 1; i <= nFact; i++)
+    twiddleTransf(sofarRadix[i], actualRadix[i], remainRadix[i], yRe, yIm);
+
+  return true;
+}
+
+
+int FFpFourier::getMaxPrimeFactor()
+{
+  return maxPrimeFactor;
 }

@@ -40,7 +40,7 @@ class FFlVisFace
 public:
   FFlVisFace();
 
-  void setFaceVertices(const std::vector<FFlVertex*>& vertices,
+  bool setFaceVertices(const std::vector<FFlVertex*>& vertices,
                        std::vector<FFlVisEdge*>& edgeContainer,
                        FFlFaceElemRef& faceRef,
                        FFlGeomUniqueTester& tester);
@@ -60,10 +60,6 @@ public:
 
   bool getElmFaceNormal(FaVec3& normal);
   bool getFaceNormal   (FaVec3& normal);
-
-  // Unref all edges around face
-
-  bool releaseEdges();
 
   // Ref-counting from elements myRefCount = nElms using this face
 
@@ -87,6 +83,16 @@ public:
 
   void setVisited(bool yesOrNo = true) { IAmVisited = yesOrNo; }
   bool isVisited() const               { return IAmVisited; }
+
+  // Iterate over the face edges from splitEdgeIt
+
+  bool nextEdge(VisEdgeRefVecCIter& eit,
+                const VisEdgeRefVecCIter& splitEdgeIt,
+                bool loopForward) const;
+
+  // Define the geometry status of the edges of a surface
+
+  void setEdgeGeomStatus(double angleTol);
 
   // Edge access
 

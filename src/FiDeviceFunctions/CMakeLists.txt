@@ -8,9 +8,9 @@
 
 set ( LIB_ID FiDeviceFunctions )
 set ( LIB_ID_LIST )
-if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND BUILD_TESTS )
+if ( BUILD_FOUNDATION_TESTS )
   set ( LIB_ID_LIST FiDeviceFunctionsTests )
-endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" AND BUILD_TESTS )
+endif ( BUILD_FOUNDATION_TESTS )
 set ( UNIT_ID ${DOMAIN_ID}_${PACKAGE_ID}_${LIB_ID} )
 
 message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )

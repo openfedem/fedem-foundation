@@ -26,26 +26,30 @@
 #endif
 
 
-char FFaAppInfo::consoleFlag = 0; // Default is GUI only (no console)
-int FFaAppInfo::runInConsole = -1;
-bool FFaAppInfo::iAmInCwd = false;
-std::string FFaAppInfo::programPath;
-
-
-/*!
-  \brief Checks if the named executable \a fileName exists or not.
-*/
-
-static bool fileExists(const std::string& fileName)
+namespace
 {
+  //! Application type.
+  //! - 0: GUI without console.
+  //! - 1: console only.
+  //! - 2: console and GUI.
+  char consoleFlag;
+
+  int runInConsole = -1; //!< If positive, the executable is run from console
+  bool iAmInCwd = false; //!< If \e true, the executable is in current work dir
+  std::string progrPath; //!< Absolute path of the executable
+
+  //! \brief Checks if the named executable \a fileName exists or not.
+  bool fileExists(const std::string& fileName)
+  {
 #if defined(win32) || defined(win64)
-  struct _stat buf;
-  return (_stat(fileName.c_str(),&buf) == 0 ||
-          _stat((fileName+".exe").c_str(),&buf) == 0);
+    struct  _stat buf;
+    return (_stat(fileName.c_str(),&buf) == 0 ||
+            _stat((fileName+".exe").c_str(),&buf) == 0);
 #else
-  struct  stat buf;
-  return ( stat(fileName.c_str(),&buf) == 0);
+    struct   stat buf;
+    return ( stat(fileName.c_str(),&buf) == 0);
 #endif
+  }
 }
 
 
@@ -98,25 +102,54 @@ void FFaAppInfo::closeConsole(bool)
 }
 
 
-FFaAppInfo::FFaAppInfo()
+bool FFaAppInfo::isConsole()
 {
-  version = FedemAdmin::getVersion() + std::string(" ")
-          + FedemAdmin::getBuildDate();
+  return consoleFlag == 1;
+}
 
+
+bool FFaAppInfo::haveConsole()
+{
+  return consoleFlag >= 1;
+}
+
+
+std::string FFaAppInfo::getVersion()
+{
+  return FedemAdmin::getVersion() + std::string(" ") +
+         FedemAdmin::getBuildDate();
+}
+
+
+std::string FFaAppInfo::getUser()
+{
 #if defined(win32) || defined(win64)
   DWORD cchBuff = BUFSIZ;
   TCHAR tchBuffer[BUFSIZ];
   LPTSTR uname = tchBuffer;
   GetUserName(uname,&cchBuff);
-  user = uname;
 #else
   char* uname = getenv("USER");
-  user = uname ? uname : "(none)";
 #endif
+  return uname ? uname : "(none)";
+}
 
+
+std::string FFaAppInfo::getDate()
+{
   const time_t currentTime = time(NULL);
-  date = ctime(&currentTime);
+  std::string date = ctime(&currentTime);
   date.erase(date.size()-1); // Erasing the trailing newline character
+  return date;
+}
+
+
+std::string FFaAppInfo::getCWD()
+{
+  char* cdir = getcwd(NULL,1024);
+  std::string CWD(cdir ? cdir : ".");
+  free(cdir);
+  return CWD;
 }
 
 
@@ -135,18 +168,18 @@ void FFaAppInfo::init(const char* program)
   if (slashPos < fullPath.size())
   {
     // Check if the program is in current working directory
-    programPath = fullPath.substr(0, slashPos > 0 ? slashPos : 1);
-    iAmInCwd = programPath == getCWD();
+    progrPath = fullPath.substr(0, slashPos > 0 ? slashPos : 1);
+    iAmInCwd  = progrPath == getCWD();
   }
   else if (fileExists(program))
   {
     // The program is in current working directory
-    programPath = getCWD();
-    iAmInCwd = true;
+    progrPath = getCWD();
+    iAmInCwd  = true;
   }
   else
   {
-    programPath.clear();
+    progrPath.clear();
     char* ppath = strdup(getenv("PATH"));
     if (ppath)
     {
@@ -162,21 +195,12 @@ void FFaAppInfo::init(const char* program)
       for (char* p = strtok(ppath,delim); p; p = strtok(NULL,delim))
         if (fileExists(p + p_sep + program))
         {
-          programPath = p;
+          progrPath = p;
           break;
         }
       free(ppath);
     }
   }
-}
-
-
-std::string FFaAppInfo::getCWD()
-{
-  char* cdir = getcwd(NULL,1024);
-  std::string CWD(cdir ? cdir : ".");
-  free(cdir);
-  return CWD;
 }
 
 
@@ -188,10 +212,10 @@ std::string FFaAppInfo::getProgramPath(const std::string& program, bool fnutts)
   // Assume their executables are located in the same directory as this program
 #ifdef win64
   // Check first for 32-bit version on 64-bit
-  fullPath = programPath + "\\bin32\\" + program;
+  fullPath = progrPath + "\\bin32\\" + program;
   if (!fileExists(fullPath))
 #endif
-  fullPath = programPath + "\\" + program;
+  fullPath = progrPath + "\\" + program;
   if (!fileExists(fullPath))
     return "";
 #else
@@ -211,13 +235,25 @@ std::string FFaAppInfo::checkProgramPath(const std::string& program)
   // Assume their executables are located in the same directory as this program
 #ifdef win64
   // Check first for 32-bit version on 64-bit
-  fullPath = programPath + "\\bin32\\" + program;
+  fullPath = progrPath + "\\bin32\\" + program;
   if (fileExists(fullPath))
     return "bin32\\" + program;
 #endif
-  fullPath = programPath + "\\" + program;
+  fullPath = progrPath + "\\" + program;
   if (!fileExists(fullPath))
     return "";
 #endif
   return program;
+}
+
+
+const std::string& FFaAppInfo::getProgramPath()
+{
+  return progrPath;
+}
+
+
+bool FFaAppInfo::isInCwd()
+{
+  return iAmInCwd;
 }

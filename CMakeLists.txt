@@ -4,11 +4,17 @@
 #
 # This file is part of FEDEM - https://openfedem.org
 
+################################################################################
+# This is the top-level cmake project file for the Fedem Foundation modules.
+# Its main purpose is to manage the build and execution of associated tests,
+# which typically is not performed when included as a sub-module.
+################################################################################
+
 cmake_minimum_required ( VERSION 2.8...3.10 )
 
 # Project setup
 
-set ( APPLICATION_ID fedemKernel )
+set ( APPLICATION_ID fedemFoundation )
 set ( DOMAIN_ID FEDEM )
 set ( PACKAGE_ID FOUNDATION )
 
@@ -17,7 +23,8 @@ option ( USE_VTFAPI "Build with VTF API included" OFF )
 option ( USE_MEMPOOL "Use memory pool for heap allocation in FE library" OFF )
 option ( USE_PROFILER "Use CPU and Memory profiler" OFF )
 option ( USE_REFCOUNT "Use reference counting in FFlLib" OFF )
-mark_as_advanced ( USE_FORTRAN USE_MEMPOOL USE_PROFILER )
+option ( USE_VERTEXOBJ "Build FFlLib with visualization classes" OFF )
+mark_as_advanced ( USE_FORTRAN USE_MEMPOOL USE_PROFILER USE_VERTEXOBJ )
 
 if ( USE_FORTRAN)
   project ( ${APPLICATION_ID} CXX Fortran )
@@ -57,6 +64,7 @@ if ( BUILD_TESTS )
     include ( pFUnit ) # Using the pFUnit test framework for Fortran unit tests
   endif ( USE_FORTRAN )
 
+  set ( BUILD_FOUNDATION_TESTS ON ) # Include the Fedem Foundation unit tests
 endif ( BUILD_TESTS )
 
 add_subdirectory ( src )

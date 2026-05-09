@@ -9,47 +9,44 @@
 #define FFA_MATH_OPS_H
 
 
-class FFaMathOps
+namespace FFaMathOps
 {
-public:
-  static const double ErrVal;
-  static void FonctionError(double*& p) { *p = ErrVal; }
+  extern const double ErrVal;
 
-  static void Addition(double*& p);
-  static void Subtraction(double*& p);
-  static void Multiplication(double*& p);
-  static void Division(double*& p);
-  static void Modulus(double*& p);
-  static void Max(double*& p);
-  static void Min(double*& p);
-  static void Puissance(double*& p);
-  static void RacineN(double*& p);
-  static void Puiss10(double*& p);
-  static void ArcTangente2(double*& p);
-  static void NextVal(double*&);
-  static void RFunc(double*&);
-  static void JuxtF(double*&) {}
-  static void Absolu(double*& p);
-  static void Oppose(double*& p);
-  static void ArcSinus(double*& p);
-  static void ArcCosinus(double*& p);
-  static void ArcTangente(double*& p);
-  static void Logarithme(double*& p);
-  static void NaturalLogarithme(double*& p);
-  static void Exponentielle(double*& p);
-  static void Sinus(double*& p);
-  static void Tangente(double*& p);
-  static void Cosinus(double*& p);
-  static void Racine(double*& p);
-  static void LessThan(double*& p);
-  static void GreaterThan(double*& p);
-  static void BooleanAnd(double*& p);
-  static void BooleanOr(double*& p);
-  static void BooleanEqual(double*& p);
-  static void BooleanNotEqual(double*& p);
-  static void BooleanLessOrEqual(double*& p);
-  static void BooleanGreaterOrEqual(double*& p);
-  static void BooleanNot(double*& p);
-};
+  void Addition(double*& p);
+  void Subtraction(double*& p);
+  void Multiplication(double*& p);
+  void Division(double*& p);
+  void Modulus(double*& p);
+  void Max(double*& p);
+  void Min(double*& p);
+  void Puissance(double*& p);
+  void RacineN(double*& p);
+  void Puiss10(double*& p);
+  void ArcTangente2(double*& p);
+  void NextVal(double*& p);
+  void RFunc(double*& p);
+  void Absolu(double*& p);
+  void Oppose(double*& p);
+  void ArcSinus(double*& p);
+  void ArcCosinus(double*& p);
+  void ArcTangente(double*& p);
+  void Logarithme(double*& p);
+  void NaturalLogarithme(double*& p);
+  void Exponentielle(double*& p);
+  void Sinus(double*& p);
+  void Tangente(double*& p);
+  void Cosinus(double*& p);
+  void Racine(double*& p);
+  void LessThan(double*& p);
+  void GreaterThan(double*& p);
+  void BooleanAnd(double*& p);
+  void BooleanOr(double*& p);
+  void BooleanEqual(double*& p);
+  void BooleanNotEqual(double*& p);
+  void BooleanLessOrEqual(double*& p);
+  void BooleanGreaterOrEqual(double*& p);
+  void BooleanNot(double*& p);
+}
 
 #endif

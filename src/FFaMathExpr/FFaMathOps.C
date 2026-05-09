@@ -6,24 +6,29 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "FFaMathOps.H"
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
+
 
 const double FFaMathOps::ErrVal = tan(atan(1.0)*2.0);
-const double zeroTol = 1E-100L;
 
-
-static bool binaryArgsOK (double*& p, double inftyTol = 1E100L)
+namespace
 {
-  if (*p == FFaMathOps::ErrVal || fabs(*p) > inftyTol)
-    *(--p) = FFaMathOps::ErrVal;
-  else if (*(--p) == FFaMathOps::ErrVal || fabs(*p) > inftyTol)
-    *p = FFaMathOps::ErrVal;
-  else
-    return true;
+  const double zeroTol = 1E-100L;
 
-  return false;
+  bool binaryArgsOK (double*& p, double inftyTol = 1E100L)
+  {
+    if (*p == FFaMathOps::ErrVal || fabs(*p) > inftyTol)
+      *(--p) = FFaMathOps::ErrVal;
+    else if (*(--p) == FFaMathOps::ErrVal || fabs(*p) > inftyTol)
+      *p = FFaMathOps::ErrVal;
+    else
+      return true;
+
+    return false;
+  }
 }
+
 
 /*
   Note: The two functions NextVal and RFunc are (should be) never invoked.
@@ -34,14 +39,16 @@ static bool binaryArgsOK (double*& p, double inftyTol = 1E100L)
   with segmentation fault as a consequence (KMO 8/8-2017).
 */
 
-void FFaMathOps::NextVal(double*&)
+void FFaMathOps::NextVal(double*& p)
 {
   fprintf(stderr,"*** Logic error: FFaMathOps::NexVal invoked.\n");
+  *p = FFaMathOps::ErrVal;
 }
 
-void FFaMathOps::RFunc(double*&)
+void FFaMathOps::RFunc(double*& p)
 {
   fprintf(stderr,"*** Logic error: FFaMathOps::RFunc invoked.\n");
+  *p = FFaMathOps::ErrVal;
 }
 
 /*!
@@ -55,7 +62,7 @@ void FFaMathOps::RFunc(double*&)
 void FFaMathOps::Addition(double*& p)
 {
   if (binaryArgsOK(p))
-    *p += (*(p + 1));
+    *p += *(p+1);
 }
 
 /*!
@@ -69,7 +76,7 @@ void FFaMathOps::Addition(double*& p)
 void FFaMathOps::Subtraction(double*& p)
 {
   if (binaryArgsOK(p))
-    *p -= (*(p + 1));
+    *p -= *(p+1);
 }
 
 /*!
@@ -84,10 +91,11 @@ void FFaMathOps::Multiplication(double*& p)
 {
   if (!binaryArgsOK(p))
     return;
-  else if (fabs(*(p+1)) < zeroTol || fabs(*p) < zeroTol)
+
+  if (fabs(*(p+1)) < zeroTol || fabs(*p) < zeroTol)
     *p = 0.0;
   else
-    *p *= (*(p+1));
+    *p *= *(p+1);
 }
 
 /*!
@@ -102,12 +110,13 @@ void FFaMathOps::Division(double*& p)
 {
   if (!binaryArgsOK(p))
     return;
-  else if (fabs(*(p+1)) < zeroTol)
+
+  if (fabs(*(p+1)) < zeroTol)
     *p = FFaMathOps::ErrVal;
   else if (fabs(*p) < zeroTol)
     *p = 0.0;
   else
-    *p /= (*(p + 1));
+    *p /= *(p+1);
 }
 
 /*!
@@ -122,7 +131,8 @@ void FFaMathOps::Modulus(double*& p)
 {
   if (!binaryArgsOK(p))
     return;
-  else if (fabs(*(p+1)) < zeroTol)
+
+  if (fabs(*(p+1)) < zeroTol)
     *p = FFaMathOps::ErrVal;
   else if (fabs(*p) < zeroTol)
     *p = 0.0;
@@ -142,7 +152,8 @@ void FFaMathOps::Max(double*& p)
 {
   if (!binaryArgsOK(p))
     return;
-  else if (*(p+1) > *p)
+
+  if (*(p+1) > *p)
     *p = *(p+1);
 }
 
@@ -158,7 +169,8 @@ void FFaMathOps::Min(double*& p)
 {
   if (!binaryArgsOK(p))
     return;
-  else if (*(p+1) < *p)
+
+  if (*(p+1) < *p)
     *p = *(p+1);
 }
 
@@ -222,7 +234,8 @@ void FFaMathOps::Puiss10 (double*& p)
 {
   if (!binaryArgsOK(p) || fabs(*(p+1)) < zeroTol)
     return;
-  else if (fabs(*(p+1)) > 2000.0)
+
+  if (fabs(*(p+1)) > 2000.0)
     *p = FFaMathOps::ErrVal;
   else if (fabs(*p) < zeroTol)
     *p = 0.0;
@@ -242,7 +255,8 @@ void FFaMathOps::ArcTangente2 (double*& p)
 {
   if (!binaryArgsOK(p,1E18L))
     return;
-  else if (fabs(*p) < zeroTol && fabs(*(p+1)) < zeroTol)
+
+  if (fabs(*p) < zeroTol && fabs(*(p+1)) < zeroTol)
     *p = FFaMathOps::ErrVal;
   else
     *p = atan2(*p,*(p+1));
@@ -258,7 +272,8 @@ void FFaMathOps::ArcTangente2 (double*& p)
 */
 void FFaMathOps::Absolu (double*& p)
 {
-  if (*p != FFaMathOps::ErrVal && *p < 0.0) *p = -(*p);
+  if (*p != FFaMathOps::ErrVal && *p < 0.0)
+    *p = -(*p);
 }
 
 /*!
@@ -271,7 +286,8 @@ void FFaMathOps::Absolu (double*& p)
 */
 void FFaMathOps::Oppose (double*& p)
 {
-  if (*p != FFaMathOps::ErrVal) *p = -(*p);
+  if (*p != FFaMathOps::ErrVal)
+    *p = -(*p);
 }
 
 /*!
@@ -312,7 +328,8 @@ void FFaMathOps::ArcCosinus (double*&p)
 */
 void FFaMathOps::ArcTangente (double*& p)
 {
-  if (*p != FFaMathOps::ErrVal) *p = atan(*p);
+  if (*p != FFaMathOps::ErrVal)
+    *p = atan(*p);
 }
 
 /*!
@@ -425,7 +442,7 @@ void FFaMathOps::Racine (double*& p)
 void FFaMathOps::LessThan (double*& p)
 {
   if (binaryArgsOK(p))
-    *p = *p < *(p + 1);
+    *p = *p < *(p+1);
 }
 
 /*!
@@ -440,7 +457,7 @@ void FFaMathOps::LessThan (double*& p)
 void FFaMathOps::GreaterThan (double*& p)
 {
   if (binaryArgsOK(p))
-    *p = *p > *(p + 1);
+    *p = *p > *(p+1);
 }
 
 /*!
@@ -455,7 +472,7 @@ void FFaMathOps::GreaterThan (double*& p)
 void FFaMathOps::BooleanAnd (double*& p)
 {
   if (binaryArgsOK(p))
-    *p = *p && *(p + 1);
+    *p = *p && *(p+1);
 }
 
 /*!
@@ -470,7 +487,7 @@ void FFaMathOps::BooleanAnd (double*& p)
 void FFaMathOps::BooleanOr (double*& p)
 {
   if (binaryArgsOK(p))
-    *p = *p || *(p + 1);
+    *p = *p || *(p+1);
 }
 
 /*!
@@ -485,7 +502,7 @@ void FFaMathOps::BooleanOr (double*& p)
 void FFaMathOps::BooleanEqual (double*& p)
 {
   if (binaryArgsOK(p))
-    *p = *p == *(p + 1);
+    *p = *p == *(p+1);
 }
 
 /*!
@@ -500,7 +517,7 @@ void FFaMathOps::BooleanEqual (double*& p)
 void FFaMathOps::BooleanNotEqual (double*& p)
 {
   if (binaryArgsOK(p))
-    *p = *p != *(p + 1);
+    *p = *p != *(p+1);
 }
 
 /*!
@@ -515,7 +532,7 @@ void FFaMathOps::BooleanNotEqual (double*& p)
 void FFaMathOps::BooleanLessOrEqual (double*& p)
 {
   if (binaryArgsOK(p))
-    *p = *p <= *(p + 1);
+    *p = *p <= *(p+1);
 }
 
 /*!
@@ -530,7 +547,7 @@ void FFaMathOps::BooleanLessOrEqual (double*& p)
 void FFaMathOps::BooleanGreaterOrEqual (double*& p)
 {
   if (binaryArgsOK(p))
-    *p = *p >= *(p + 1);
+    *p = *p >= *(p+1);
 }
 
 /*!
@@ -544,5 +561,6 @@ void FFaMathOps::BooleanGreaterOrEqual (double*& p)
 */
 void FFaMathOps::BooleanNot (double*& p)
 {
-  if (*p != FFaMathOps::ErrVal) *p = !(*p);
+  if (*p != FFaMathOps::ErrVal)
+    *p = !(*p);
 }

@@ -10,6 +10,59 @@
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 
 
+namespace
+{
+  //! \brief Volume of a tetrahedron as a triple vector product.
+  double tet_volume (const FaVec3& v1, const FaVec3& v2,
+                     const FaVec3& v3, const FaVec3& v4)
+  {
+    return (((v2-v1) ^ (v3-v1)) * (v4-v1)) / 6.0;
+  }
+
+  //! \brief Volume of a pyramid as a sum of 4 tetrahedron contributions.
+  double pyrVolume (const FaVec3& v1, const FaVec3& v2,
+                    const FaVec3& v3, const FaVec3& v4, const FaVec3& v5)
+  {
+    FaVec3 v0 = (v1 + v2 + v3 + v4) * 0.25;
+
+    return tet_volume(v0,v1,v2,v5) + tet_volume(v0,v2,v3,v5)
+      +    tet_volume(v0,v3,v4,v5) + tet_volume(v0,v4,v1,v5);
+  }
+
+  //! \brief Volume center of a pyramid as a sum of 4 tetrahedron contributions.
+  double pyrCenter (const FaVec3& v1, const FaVec3& v2,
+                    const FaVec3& v3, const FaVec3& v4,
+                    const FaVec3& v5, FaVec3& vc)
+  {
+    FaVec3 v0 = (v1 + v2 + v3 + v4) * 0.25;
+
+    double vol1 = tet_volume(v0,v1,v2,v5);
+    double vol2 = tet_volume(v0,v2,v3,v5);
+    double vol3 = tet_volume(v0,v3,v4,v5);
+    double vol4 = tet_volume(v0,v4,v1,v5);
+    double volP = vol1 + vol2 + vol3 + vol4;
+
+    if (volP > 0.0)
+      vc = (v1*(vol4+vol1) + v2*(vol1+vol2) + v3*(vol2+vol3) + v4*(vol3+vol4) +
+            (v0+v5)*volP) / (4.0*volP);
+    else
+      vc = v0*0.8 + v5*0.2;
+
+    return volP;
+  }
+
+  //! \brief Volume moment of a pyramid as a sum of 4 tetrahedron contributions.
+  FFaTensor3 pyrMoment (const FaVec3& v1, const FaVec3& v2,
+                        const FaVec3& v3, const FaVec3& v4)
+  {
+    FaVec3 v0 = (v1 + v2 + v3 + v4) * 0.25;
+
+    return FFaTensor3(v0,v1,v2) + FFaTensor3(v0,v2,v3)
+      +    FFaTensor3(v0,v3,v4) + FFaTensor3(v0,v4,v1);
+  }
+}
+
+
 /*!
   Volume calculation. The volume of an object is computed as a sum of
   tetrahedron and pyramid contributions to account for possibly warped faces.
@@ -19,7 +72,7 @@ void FFaVolume::tetVolume (const FaVec3& v1, const FaVec3& v2,
                            const FaVec3& v3, const FaVec3& v4, double& vol)
 {
   // Single tetrahedron, cannot be warped
-  vol = tetVolume(v1,v2,v3,v4);
+  vol = tet_volume(v1,v2,v3,v4);
 }
 
 
@@ -31,8 +84,8 @@ void FFaVolume::wedVolume (const FaVec3& v1, const FaVec3& v2,
   FaVec3 v0 = (v1 + v2 + v3 + v4 + v5 + v6) / 6.0;
 
   // Three pyramids and two tetrahedrons
-  vol = tetVolume(v1,v2,v3,v0)
-    +   tetVolume(v6,v5,v4,v0)
+  vol = tet_volume(v1,v2,v3,v0)
+    +   tet_volume(v6,v5,v4,v0)
     +   pyrVolume(v1,v4,v5,v2,v0)
     +   pyrVolume(v2,v5,v6,v3,v0)
     +   pyrVolume(v3,v6,v4,v1,v0);
@@ -66,7 +119,7 @@ void FFaVolume::hexVolume (const FaVec3& v1, const FaVec3& v2,
 double FFaVolume::tetCenter (FaVec3& v1, FaVec3& v2,
                              FaVec3& v3, FaVec3& v4, FaVec3& vc)
 {
-  double volT = tetVolume(v1,v2,v3,v4);
+  double volT = tet_volume(v1,v2,v3,v4);
 
   vc  = (v1 + v2 + v3 + v4) * 0.25;
   v1 -= vc;
@@ -87,8 +140,8 @@ double FFaVolume::wedCenter (FaVec3& v1, FaVec3& v2,
   FaVec3 x2 = (v6 + v5 + v4 + v0) * 0.25;
   FaVec3 x3, x4, x5;
 
-  double vol1 = tetVolume(v1,v2,v3,v0);
-  double vol2 = tetVolume(v6,v5,v4,v0);
+  double vol1 = tet_volume(v1,v2,v3,v0);
+  double vol2 = tet_volume(v6,v5,v4,v0);
   double vol3 = pyrCenter(v1,v4,v5,v2,v0,x3);
   double vol4 = pyrCenter(v2,v5,v6,v3,v0,x4);
   double vol5 = pyrCenter(v3,v6,v4,v1,v0,x5);
@@ -180,62 +233,4 @@ void FFaVolume::hexMoment (const FaVec3& v1, const FaVec3& v2,
     +  pyrMoment(v2,v3,v7,v6)
     +  pyrMoment(v3,v4,v8,v7)
     +  pyrMoment(v4,v1,v5,v8);
-}
-
-
-/*!
-  Private methods.
-*/
-
-double FFaVolume::tetVolume (const FaVec3& v1, const FaVec3& v2,
-                             const FaVec3& v3, const FaVec3& v4)
-{
-  // Volume of a tetrahedron as a triple vector product
-  return (((v2-v1) ^ (v3-v1)) * (v4-v1)) / 6.0;
-}
-
-
-double FFaVolume::pyrVolume (const FaVec3& v1, const FaVec3& v2,
-                             const FaVec3& v3, const FaVec3& v4,
-                             const FaVec3& v5)
-{
-  FaVec3 v0 = (v1 + v2 + v3 + v4) * 0.25;
-
-  // Volume of a pyramid as a sum of four tetrahedron contributions
-  return tetVolume(v0,v1,v2,v5) + tetVolume(v0,v2,v3,v5)
-    +    tetVolume(v0,v3,v4,v5) + tetVolume(v0,v4,v1,v5);
-}
-
-
-double FFaVolume::pyrCenter (const FaVec3& v1, const FaVec3& v2,
-                             const FaVec3& v3, const FaVec3& v4,
-                             const FaVec3& v5, FaVec3& vc)
-{
-  FaVec3 v0 = (v1 + v2 + v3 + v4) * 0.25;
-
-  // Volume center of a pyramid as a sum of four tetrahedron contributions
-  double vol1 = tetVolume(v0,v1,v2,v5);
-  double vol2 = tetVolume(v0,v2,v3,v5);
-  double vol3 = tetVolume(v0,v3,v4,v5);
-  double vol4 = tetVolume(v0,v4,v1,v5);
-  double volP = vol1 + vol2 + vol3 + vol4;
-
-  if (volP > 0.0)
-    vc = (v1*(vol4+vol1) + v2*(vol1+vol2) + v3*(vol2+vol3) + v4*(vol3+vol4) +
-          (v0+v5)*volP) / (4.0*volP);
-  else
-    vc = v0*0.8 + v5*0.2;
-
-  return volP;
-}
-
-
-FFaTensor3 FFaVolume::pyrMoment (const FaVec3& v1, const FaVec3& v2,
-                                 const FaVec3& v3, const FaVec3& v4)
-{
-  FaVec3 v0 = (v1 + v2 + v3 + v4) * 0.25;
-
-  // Volume moment of a pyramid as a sum of four tetrahedron contributions
-  return FFaTensor3(v0,v1,v2) + FFaTensor3(v0,v2,v3)
-    +    FFaTensor3(v0,v3,v4) + FFaTensor3(v0,v4,v1);
 }
