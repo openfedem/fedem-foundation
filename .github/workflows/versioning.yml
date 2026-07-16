@@ -11,17 +11,20 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   bump-build-no:
     if: github.event.commits[0].author.name != 'github-actions'
+
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out source code repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          token: ${{ secrets.ACCESS_PAT }}
 
       - name: Bump build number
         run: echo "VERSION=$(awk -F. '{$NF++;print}' OFS=. < cfg/VERSION)" >> $GITHUB_ENV
