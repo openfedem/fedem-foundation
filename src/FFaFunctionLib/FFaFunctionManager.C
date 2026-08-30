@@ -5,6 +5,13 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaFunctionManager.C
+  \brief Global functions direct evaluation of some explicit function types.
+  \details Must of the functions herein forward to Fortran subroutines in
+  explicitFunctions.f90 and waveFunctions.f90 for conducting the evaluation.
+*/
+
 #include "FFaFunctionManager.H"
 #include "FFaFunctionProperties.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
@@ -14,6 +21,7 @@
 #ifdef _NO_FORTRAN
 #include <iostream>
 #else
+//! \cond NO_DOCUMENATION
 
 DOUBLE_FUNCTION (getfunctionvalue,GETFUNCTIONVALUE) (const int& baseID,
 						     const int* intVars,
@@ -85,9 +93,11 @@ SUBROUTINE(evalwave,EVALWAVE) (const int& iop, const int& ldi,
 			       const double* x, const double& t,
 			       double& eta, double* v, double* a);
 
+//! \endcond
 #endif
 
 
+//! \sa The fortran routine \ref getfunctionvalue().
 double FFaFunctionManager::getValue (int baseID,
 				     const std::vector<int>& intVars,
 				     const std::vector<double>& realVars,
@@ -120,6 +130,7 @@ double FFaFunctionManager::getValue (int baseID,
 }
 
 
+//! \sa The fortran routine \ref getfunctionvalue().
 double FFaFunctionManager::getValue (int baseID, int fType, int extrap,
 				     const std::vector<double>& realVars,
 				     const double x, int& ierr)
@@ -149,6 +160,7 @@ double FFaFunctionManager::getValue (int baseID, int fType, int extrap,
 }
 
 
+//! \sa The fortran routine \ref getfunctionderiv().
 double FFaFunctionManager::getDerivative (int baseID, int fType, int extrap,
 					  const std::vector<double>& realVars,
 					  const double x, int& ierr)
@@ -178,6 +190,7 @@ double FFaFunctionManager::getDerivative (int baseID, int fType, int extrap,
 }
 
 
+//! \sa The fortran routine \ref getfunctiontypeid().
 int FFaFunctionManager::getTypeID (const std::string& functionType)
 {
 #ifdef _NO_FORTRAN
@@ -190,6 +203,7 @@ int FFaFunctionManager::getTypeID (const std::string& functionType)
 }
 
 
+//! \sa FFaFunctionProperties::getSmartPoints().
 int FFaFunctionManager::getSmartPoints (int funcType, int extrap,
 					const double start, const double stop,
 					const std::vector<double>& realVars,
@@ -201,27 +215,28 @@ int FFaFunctionManager::getSmartPoints (int funcType, int extrap,
 }
 
 
-bool FFaFunctionManager::initWaveFunction (const std::string& fName,
+//! \sa The fortran routine \ref initwavefuncfromfile().
+bool FFaFunctionManager::initWaveFunction (const std::string& fileName,
 					   const int nWave, const int rSeed,
 					   std::vector<double>& realVars)
 {
   if (nWave < 1) return false;
 
 #ifdef _NO_FORTRAN
-  std::cerr <<" *** FFaFunctionManager::initWaveFunction(dummy) "<< fName
+  std::cerr <<" *** FFaFunctionManager::initWaveFunction(dummy) "<< fileName
             <<" "<< rSeed <<" "<< realVars.size() << std::endl;
   return false;
 #else
   int ierr = 0;
   realVars.resize(3*nWave);
-  F90_NAME(initwavefuncfromfile,INITWAVEFUNCFROMFILE) (fName.c_str(),
+  F90_NAME(initwavefuncfromfile,INITWAVEFUNCFROMFILE) (fileName.c_str(),
 #ifdef _NCHAR_AFTER_CHARARG
-						       fName.length(),
+						       fileName.length(),
 #endif
 						       nWave, rSeed,
 						       &realVars.front(), ierr
 #ifndef _NCHAR_AFTER_CHARARG
-						     , fName.length()
+						     , fileName.length()
 #endif
 						       );
   return ierr < 0 ? false : true;
@@ -229,6 +244,7 @@ bool FFaFunctionManager::initWaveFunction (const std::string& fName,
 }
 
 
+//! \sa The fortran routine \ref initwavefuncspectrum().
 bool FFaFunctionManager::initWaveFunction (const int iop,
 					   const int nWave, const int nDir,
 					   const int sprExp, const int rSeed,
@@ -252,6 +268,7 @@ bool FFaFunctionManager::initWaveFunction (const int iop,
 }
 
 
+//! \sa The fortran routine \ref initnonlinwavefunc().
 bool FFaFunctionManager::initWaveFunction (const int iop,
 					   const double g, const double d,
 					   std::vector<double>& realVars)
@@ -274,6 +291,7 @@ bool FFaFunctionManager::initWaveFunction (const int iop,
 }
 
 
+//! \sa The fortran routine \ref initembeddedwave().
 bool FFaFunctionManager::initWaveFunction (const int iop,
 					   const int nWave, const int rSeed,
 					   const double g, const double d,
@@ -302,6 +320,7 @@ bool FFaFunctionManager::initWaveFunction (const int iop,
 }
 
 
+//! \sa The fortran routine \ref waveprofile().
 double FFaFunctionManager::getWaveValue (const std::vector<double>& realVars,
 					 const double g, const double d,
 					 const FaVec3& x, const double t,
@@ -321,6 +340,7 @@ double FFaFunctionManager::getWaveValue (const std::vector<double>& realVars,
 }
 
 
+//! \sa The fortran routine \ref waveprofile().
 double FFaFunctionManager::getWaveValue (const std::vector<int>& intVars,
 					 const std::vector<double>& realVars,
 					 const double g, const double d,
@@ -353,6 +373,7 @@ double FFaFunctionManager::getWaveValue (const std::vector<int>& intVars,
 }
 
 
+//! \sa The fortran routine \ref evalwave().
 double FFaFunctionManager::getWaveValue (const std::vector<int>& intVars,
 					 const std::vector<double>& realVars,
 					 const double g, const double d,

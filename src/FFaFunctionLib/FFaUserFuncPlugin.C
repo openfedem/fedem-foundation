@@ -5,21 +5,41 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaUserFuncPlugin.C
+  \brief User-defined functions plugin.
+*/
+
 #include "FFaUserFuncPlugin.H"
 #include <iostream>
 #include <cstdio>
 
 
-static void nullTerminate (char* str, int nchar)
+namespace
 {
-  while (--nchar > 0)
-    if (!isspace(str[nchar]))
-    {
-      str[nchar+1] = '\0';
-      return;
-    }
+  //! \brief Helper to replace trailing white-spaces a with null-character.
+  void nullTerminate(char* str, int nchar)
+  {
+    while (--nchar > 0)
+      if (!isspace(str[nchar]))
+      {
+        str[nchar+1] = '\0';
+        return;
+      }
+  }
+
+  //! \brief Function pointer Id's for internal cache.
+  enum { idGetValue = 0, idGetDiff = 1, idWave = 2 };
 }
 
+
+/*!
+  This method is only used to detect whether the name shared object library
+  \a lib is a plugin containing user-defined function types or not.
+  The method returns \e true if that is the case, otherwise \a false.
+
+  \callgraph
+*/
 
 bool FFaUserFuncPlugin::validate(const std::string& lib, int nchar, char* sign)
 {
@@ -261,9 +281,6 @@ int FFaUserFuncPlugin::getFlag(int id) const
   // Function ufGetFlag is optional, default flag value is zero
   return 0;
 }
-
-
-enum { idGetValue = 0, idGetDiff = 1, idWave = 2 };
 
 
 double FFaUserFuncPlugin::getValue(int bId, int fId,

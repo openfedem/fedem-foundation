@@ -5,6 +5,23 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaUserFuncPlugin_F.C
+  \brief Fortran wrapper for the FFaUserFuncPlugin methods.
+  \details This file contains the implementation of the following
+  Fortran wrappers of the FFaUserFuncPlugin module:
+
+  - ffauserfuncinterface::ffauf_init
+  - ffauserfuncinterface::ffauf_getnopar
+  - ffauserfuncinterface::ffauf_getflag
+  - ffauserfuncinterface::ffauf_getvalue
+  - ffauserfuncinterface::ffauf_getdiff
+  - ffauserfuncinterface::ffauf_wave
+
+  No further documentation is provided here.
+  The wrappers are documented in the FFaUserFuncInterface.f90 file.
+*/
+
 #include <cstring>
 
 #include "FFaFunctionLib/FFaUserFuncPlugin.H"
