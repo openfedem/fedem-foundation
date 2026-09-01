@@ -8,6 +8,28 @@
 /*!
   \file FiDeviceFunctionFactory_F.C
   \brief Fortran wrapper for the FiDeviceFunctionFactory methods.
+  \details This file contains the implementation of the following
+  Fortran wrappers of the FiDeviceFunctionFactory module.
+
+  - fidevicefunctioninterface::fidf_open
+  - fidevicefunctioninterface::fidf_openwrite
+  - fidevicefunctioninterface::fidf_close
+  - fidevicefunctioninterface::fidf_closeall
+  - fidevicefunctioninterface::fidf_setvalue
+  - fidevicefunctioninterface::fidf_setfrequency
+  - fidevicefunctioninterface::fidf_setstep
+  - fidevicefunctioninterface::fidf_getxaxis
+  - fidevicefunctioninterface::fidf_getyaxis
+  - fidevicefunctioninterface::fidf_setxaxis
+  - fidevicefunctioninterface::fidf_setyaxis
+  - fidevicefunctioninterface::fidf_dump
+  - fidevicefunctioninterface::fidf_extfunc
+  - fidevicefunctioninterface::fidf_extfunc_ff
+  - fidevicefunctioninterface::fidf_storeextfunc
+  - fidevicefunctioninterface::fidf_initextfunc
+
+  No further documentation is provided here.
+  The wrappers are documented in the fiDeviceFunctionInterface.f90 file.
 */
 
 #include "FiDeviceFunctions/FiDeviceFunctionFactory.H"
@@ -20,16 +42,6 @@
 //! \endcond
 
 
-////////////////////////////////////////////////////////////////////////////////
-//! \brief Opens a function device for reading.
-//!
-//! \arg name      - Name of the file to open. The file extension
-//!                  is used to try to determine the file type.
-//!                  If this does not succeed, ASCII is assumed.
-//! \arg fileIndex - Unique index for the opened file, used in other calls.
-//!                  A negative value indicates error.
-//!
-//! \note On input, the \a fileIndex argument contains the channel index.
 ////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_open,FIDF_OPEN) (const char* name,
@@ -45,17 +57,6 @@ SUBROUTINE(fidf_open,FIDF_OPEN) (const char* name,
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-//! \brief Opens a function device for writing.
-//!
-//! \arg name      - Name of the file to open
-//! \arg fileType  - Type of the file to open. If UNKNOWN_FILE, the file
-//!                  extension is used to try to determine the actual file type.
-//!                  If this does not succeed, a simple text file is opened.
-//! \arg fileIndex - Unique index for the opened file, used in other calls.
-//!                  A negative value indicates error.
-//!
-//! \note Existing files are replaced.
 ////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_openwrite,FIDF_OPENWRITE) (const char* name,
@@ -81,8 +82,6 @@ SUBROUTINE(fidf_openwrite,FIDF_OPENWRITE) (const char* name,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//! \brief Closes the file associated with the \a fileIndex.
-////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_close,FIDF_CLOSE) (const int& fileIndex)
 {
@@ -91,8 +90,6 @@ SUBROUTINE(fidf_close,FIDF_CLOSE) (const int& fileIndex)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//! \brief Closes all open files.
-////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_closeall,FIDF_CLOSEALL) ()
 {
@@ -100,16 +97,6 @@ SUBROUTINE(fidf_closeall,FIDF_CLOSEALL) ()
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-//! \brief Returns a value from the device.
-//!
-//! \arg fileIndex - Associated file index
-//! \arg arg       - Argument to the function to evaluate
-//! \arg err       - Error flag, on input it specifies the integration order
-//! \arg channel   - Channel index
-//! \return Corresponding value, i.e., f(arg)
-//!
-//! \note Only valid for read-only devices.
 ////////////////////////////////////////////////////////////////////////////////
 
 DOUBLE_FUNCTION(fidf_getvalue,FIDF_GETVALUE) (const int& fileIndex,
@@ -124,14 +111,6 @@ DOUBLE_FUNCTION(fidf_getvalue,FIDF_GETVALUE) (const int& fileIndex,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//! \brief Sets a value pair to the device.
-//!
-//! \arg fileIndex - Associated file index
-//! \arg first     - First value (key) in the value pair
-//! \arg second    - Second value in the value pair
-//!
-//! \note Only valid for write-only devices.
-////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_setvalue,FIDF_SETVALUE) (const int& fileIndex,
                                          const double& first,
@@ -142,13 +121,6 @@ SUBROUTINE(fidf_setvalue,FIDF_SETVALUE) (const int& fileIndex,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//! \brief Defines the sampling frequency for the device.
-//!
-//! \arg fileIndex - Associated file index
-//! \arg freq      - Desired sampling frequency
-//!
-//! \note Only valid for write-only devices.
-////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_setfrequency,FIDF_SETFREQUENCY) (const int& fileIndex,
                                                  const double& freq)
@@ -158,13 +130,6 @@ SUBROUTINE(fidf_setfrequency,FIDF_SETFREQUENCY) (const int& fileIndex,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//! \brief Defines the sampling step size for the device.
-//!
-//! \arg fileIndex - Associated file index
-//! \arg step      - Desired sampling step size
-//!
-//! \note Only valid for write-only devices.
-////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_setstep,FIDF_SETSTEP) (const int& fileIndex, const double& step)
 {
@@ -173,12 +138,16 @@ SUBROUTINE(fidf_setstep,FIDF_SETSTEP) (const int& fileIndex, const double& step)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//! \brief Returns X-axis info for the device.
-//!
-//! \arg fileIndex - Associated file index
-//! \arg title     - Description of the axis (output)
-//! \arg unit      - The axis unit (output)
-////////////////////////////////////////////////////////////////////////////////
+
+namespace
+{
+  //! \brief Pad character string with traling spaces when passing to Fortran.
+  void padWhiteSpace(char* str, const int nchar)
+  {
+    if (int nc = strlen(str); nc < nchar)
+      memset(str+nc,' ',nchar-nc);
+  }
+}
 
 SUBROUTINE(fidf_getxaxis,FIDF_GETXAXIS) (const int& fileIndex, char* title,
 #ifdef _NCHAR_AFTER_CHARARG
@@ -189,22 +158,11 @@ SUBROUTINE(fidf_getxaxis,FIDF_GETXAXIS) (const int& fileIndex, char* title,
                                          const int ncharU)
 {
   FIDF->getAxisTitle(fileIndex,FiDeviceFunctionBase::X,title,ncharT);
-  int nc = strlen(title);
-  if (nc < ncharT) memset(title+nc,' ',ncharT-nc);
+  padWhiteSpace(title,ncharT);
 
   FIDF->getAxisUnit(fileIndex,FiDeviceFunctionBase::X,unit,ncharU);
-  nc = strlen(unit);
-  if (nc < ncharU) memset(unit+nc,' ',ncharU-nc);
+  padWhiteSpace(unit,ncharU);
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-//! \brief Returns Y-axis info for the device.
-//!
-//! \arg fileIndex - Associated file index
-//! \arg title     - Description of the axis (output)
-//! \arg unit      - The axis unit (output)
-////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_getyaxis,FIDF_GETYAXIS) (const int& fileIndex, char* title,
 #ifdef _NCHAR_AFTER_CHARARG
@@ -215,19 +173,13 @@ SUBROUTINE(fidf_getyaxis,FIDF_GETYAXIS) (const int& fileIndex, char* title,
                                          const int ncharU)
 {
   FIDF->getAxisTitle(fileIndex,FiDeviceFunctionBase::Y,title,ncharT);
+  padWhiteSpace(title,ncharT);
+
   FIDF->getAxisUnit (fileIndex,FiDeviceFunctionBase::Y,unit ,ncharU);
-  int nt = strlen(title), nu = strlen(unit);
-  if (nt < ncharT) memset(title+nt,' ',ncharT-nt);
-  if (nu < ncharU) memset(unit +nu,' ',ncharU-nu);
+  padWhiteSpace(unit,ncharU);
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-//! \brief Sets X-axis info for the device.
-//!
-//! \arg fileIndex - Associated file index
-//! \arg title     - Description of the axis
-//! \arg unit      - The axis unit
 ////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_setxaxis,FIDF_SETXAXIS) (const int& fileIndex,
@@ -243,15 +195,6 @@ SUBROUTINE(fidf_setxaxis,FIDF_SETXAXIS) (const int& fileIndex,
   FIDF->setAxisTitle(fileIndex,FiDeviceFunctionBase::X,t.c_str());
   FIDF->setAxisUnit (fileIndex,FiDeviceFunctionBase::X,u.c_str());
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-//! \brief Sets Y-axis info for the device.
-//!
-//! \arg fileIndex - Associated file index
-//! \arg title     - Description of the axis
-//! \arg unit      - The axis unit
-////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_setyaxis,FIDF_SETYAXIS) (const int& fileIndex,
                                          const char* title,
@@ -269,8 +212,6 @@ SUBROUTINE(fidf_setyaxis,FIDF_SETYAXIS) (const int& fileIndex,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//! \brief Dumps data about current device functions.
-////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_dump,FIDF_DUMP) ()
 {
@@ -278,12 +219,6 @@ SUBROUTINE(fidf_dump,FIDF_DUMP) ()
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-//! \brief Opens a file for reading external function values.
-//!
-//! \arg error - Error flag
-//! \arg fname - File name
-//! \arg label - Labels of file columns to use
 ////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_extfunc,FIDF_EXTFUNC) (int& error, char* fname,
@@ -300,10 +235,6 @@ SUBROUTINE(fidf_extfunc,FIDF_EXTFUNC) (int& error, char* fname,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//! \brief Updates the external function values from file without step counting.
-//!
-//! \arg nstep - Number of steps to read
-////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_extfunc_ff,FIDF_EXTFUNC_FF) (const int& nstep)
 {
@@ -311,13 +242,6 @@ SUBROUTINE(fidf_extfunc_ff,FIDF_EXTFUNC_FF) (const int& nstep)
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-//! \brief Transfers external function values to/from state array.
-//!
-//! \arg data - The state array
-//! \arg ndat - Length of the state array
-//! \arg iop - 0: Return size in \a istat, 1: store values, 2: restore values
-//! \arg istat - Running state array index, output negative on error
 ////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_storeextfunc,FIDF_STOREEXTFUNC) (double* data, const int& ndat,
@@ -332,12 +256,6 @@ SUBROUTINE(fidf_storeextfunc,FIDF_STOREEXTFUNC) (double* data, const int& ndat,
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-//! \brief Initializes external function values either from state array or file.
-//!
-//! \arg data - The state array
-//! \arg ndat - Length of the state array
-//! \arg istat - Negative value on error, otherwise equals \a ndat
 ////////////////////////////////////////////////////////////////////////////////
 
 SUBROUTINE(fidf_initextfunc,FIDF_INITEXTFUNC) (double* data, const int& ndat,
