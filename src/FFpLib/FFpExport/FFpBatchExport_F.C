@@ -5,6 +5,16 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFpBatchExport_F.C
+  \brief Fortran wrapper for the FFpBatchExport methods.
+  \details This file contains the implementation of the Fortran wrapper
+  ffpbatchexportinterface::ffp_crvexp.
+
+  No further documentation is provided here.
+  The wrapper is documented in the FFpBatchExportInterface.f90 file.
+*/
+
 #include "FFpLib/FFpExport/FFpBatchExport.H"
 #include "FFrLib/FFrReadOpInit.H"
 #include "FFaLib/FFaOperation/FFaBasicOperations.H"
@@ -14,10 +24,6 @@
 #include "FFaLib/FFaOS/FFaFortran.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
-
-/*!
-  \brief Launches the automatic curve export after the solver has finished.
-*/
 
 SUBROUTINE(ffp_crvexp,FFP_CRVEXP) (const char* frsNames,
 #ifdef _NCHAR_AFTER_CHARARG
@@ -39,7 +45,7 @@ SUBROUTINE(ffp_crvexp,FFP_CRVEXP) (const char* frsNames,
     return;
   }
 
-  std::string rpcFile, crvFile, expFile(expPath,nchar2);
+  std::string rpcFile, crvFile;
   FFaCmdLineArg::instance()->getValue ("rpcFile",rpcFile);
   FFaCmdLineArg::instance()->getValue ("curveFile",crvFile);
   if (crvFile.empty())
@@ -68,7 +74,7 @@ SUBROUTINE(ffp_crvexp,FFP_CRVEXP) (const char* frsNames,
   FFa::initBasicOps();
 
   // Open frs-files and read the curve definitions
-  ListUI <<"\n===> Exporting Curves to "<< expFile
+  ListUI <<"\n===> Exporting Curves to "<< std::string(expPath,nchar2)
          <<"\n     based on results stored in "<< frsFiles.front();
   for (size_t i = 1; i < frsFiles.size(); i++)
     ListUI <<"\n                                "<< frsFiles[i];

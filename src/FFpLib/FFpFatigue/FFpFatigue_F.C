@@ -5,6 +5,22 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFpFatigue_F.C
+  \brief Fortran wrapper for fatigue calculation methods.
+  \details This file contains the implementation of the following wrappers:
+
+  - ffpfatigueinterface::ffp_initfatigue
+  - ffpfatigueinterface::ffp_addpoint
+  - ffpfatigueinterface::ffp_releasedata
+  - ffpfatigueinterface::ffp_calcdamage
+  - ffpfatigueinterface::ffp_getdamage
+  - ffpfatigueinterface::ffp_getnumcycles
+
+  No further documentation is provided here.
+  The wrappers are documented in the FFpFatigueInterface.f90 file.
+*/
+
 #include <map>
 #include <fstream>
 #include <algorithm>
@@ -16,14 +32,17 @@
 #include "FFaLib/FFaOS/FFaFortran.H"
 
 
-struct FFpHistory
+namespace
 {
-  std::vector<double>   times;
-  std::vector<double>   data;
-  std::vector<FFpCycle> cycles;
-};
+  struct FFpHistory
+  {
+    std::vector<double>   times;  //!< Array of times
+    std::vector<double>   data;   //!< Array of associated response values
+    std::vector<FFpCycle> cycles; //!< Array of full cycles for the time history
+  };
 
-static std::map<int,FFpHistory> hist;
+  std::map<int,FFpHistory> hist;  //!< Time histories container
+}
 
 
 SUBROUTINE(ffp_initfatigue,FFP_INITFATIGUE) (int& ierr)
