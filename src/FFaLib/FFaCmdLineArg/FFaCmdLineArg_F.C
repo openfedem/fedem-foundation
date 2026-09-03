@@ -8,6 +8,22 @@
 /*!
   \file FFaCmdLineArg_F.C
   \brief Fortran wrapper for the FFaCmdLineArg methods.
+  \details This file contains the implementation of the following
+  Fortran wrappers of the FFaCmdLineArg module:
+
+  - ffacmdlinearginterface::ffa_cmdlinearg_init
+  - ffacmdlinearginterface::ffa_cmdlinearg_list
+  - ffacmdlinearginterface::ffa_cmdlinearg_getint
+  - ffacmdlinearginterface::ffa_cmdlinearg_getbool
+  - ffacmdlinearginterface::ffa_cmdlinearg_getfloat
+  - ffacmdlinearginterface::ffa_cmdlinearg_getdouble
+  - ffacmdlinearginterface::ffa_cmdlinearg_getints
+  - ffacmdlinearginterface::ffa_cmdlinearg_getdoubles
+  - ffacmdlinearginterface::ffa_cmdlinearg_getstring
+  - ffacmdlinearginterface::ffa_cmdlinearg_isset
+
+  No further documentation is provided here.
+  The wrappers are documented in the FFaUserFuncInterface.f90 file.
 */
 
 #include <cstring>
@@ -26,10 +42,6 @@
 //! \endcond
 
 
-/*!
-  \brief Adds some common command-line options used by all Fortran modules.
-*/
-
 SUBROUTINE (ffa_cmdlinearg_init,FFA_CMDLINEARG_INIT) ()
 {
   FFaCmdLineArg::instance()->addOption("debug",0,"Debug print switch");
@@ -39,19 +51,11 @@ SUBROUTINE (ffa_cmdlinearg_init,FFA_CMDLINEARG_INIT) ()
 }
 
 
-/*!
-  \brief Prints out all specified command-line options.
-*/
-
 SUBROUTINE (ffa_cmdlinearg_list,FFA_CMDLINEARG_LIST) (const int& noDefault)
 {
   FFaCmdLineArg::instance()->listOptions (noDefault);
 }
 
-
-/*!
-  \brief Returns the actual value of the specified integer command-line option.
-*/
 
 SUBROUTINE (ffa_cmdlinearg_getint,FFA_CMDLINEARG_GETINT) (const char* id,
                                                           REF(int,val,nchar))
@@ -61,10 +65,6 @@ SUBROUTINE (ffa_cmdlinearg_getint,FFA_CMDLINEARG_GETINT) (const char* id,
   FFaCmdLineArg::instance()->getValue (std::string(id,nchar),val);
 }
 
-
-/*!
-  \brief Returns the actual value of the specified float command-line option.
-*/
 
 SUBROUTINE (ffa_cmdlinearg_getfloat,FFA_CMDLINEARG_GETFLOAT) (const char* id,
                                                               REF(float,val,
@@ -76,10 +76,6 @@ SUBROUTINE (ffa_cmdlinearg_getfloat,FFA_CMDLINEARG_GETFLOAT) (const char* id,
 }
 
 
-/*!
-  \brief Returns the actual value of the specified double command-line option.
-*/
-
 SUBROUTINE (ffa_cmdlinearg_getdouble,FFA_CMDLINEARG_GETDOUBLE) (const char* id,
                                                                 REF(double,val,
                                                                     nchar))
@@ -89,10 +85,6 @@ SUBROUTINE (ffa_cmdlinearg_getdouble,FFA_CMDLINEARG_GETDOUBLE) (const char* id,
   FFaCmdLineArg::instance()->getValue (std::string(id,nchar),val);
 }
 
-
-/*!
-  \brief Returns the actual values of the specified integer command-line option.
-*/
 
 SUBROUTINE (ffa_cmdlinearg_getints,
             FFA_CMDLINEARG_GETINTS) (const char* id,
@@ -112,10 +104,6 @@ SUBROUTINE (ffa_cmdlinearg_getints,
 }
 
 
-/*!
-  \brief Returns the actual values of the specified double command-line option.
-*/
-
 SUBROUTINE (ffa_cmdlinearg_getdoubles,
             FFA_CMDLINEARG_GETDOUBLES) (const char* id,
 #ifdef _NCHAR_AFTER_CHARARG
@@ -134,10 +122,6 @@ SUBROUTINE (ffa_cmdlinearg_getdoubles,
 }
 
 
-/*!
-  \brief Returns the actual value of the specified bool command-line option.
-*/
-
 SUBROUTINE (ffa_cmdlinearg_getbool,FFA_CMDLINEARG_GETBOOL) (const char* id,
                                                             REF(int,val,nchar))
 {
@@ -147,10 +131,6 @@ SUBROUTINE (ffa_cmdlinearg_getbool,FFA_CMDLINEARG_GETBOOL) (const char* id,
   val = value ? 1 : 0;
 }
 
-
-/*!
-  \brief Returns the actual value of the specified string command-line option.
-*/
 
 SUBROUTINE (ffa_cmdlinearg_getstring,FFA_CMDLINEARG_GETSTRING) (const char* id,
                                                                 CHAR(val,nchar),
@@ -165,10 +145,6 @@ SUBROUTINE (ffa_cmdlinearg_getstring,FFA_CMDLINEARG_GETSTRING) (const char* id,
   if (nval < m) memset(val+nval,' ',m-nval);
 }
 
-
-/*!
-  \brief Checks if the option \a id is specified on the command-line.
-*/
 
 INTEGER_FUNCTION (ffa_cmdlinearg_isset,FFA_CMDLINEARG_ISSET) (const char* id,
                                                               const int nchar)

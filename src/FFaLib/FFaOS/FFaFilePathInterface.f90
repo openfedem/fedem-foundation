@@ -6,9 +6,13 @@
 !!==============================================================================
 
 !> @file FFaFilePathInterface.f90
-!> @brief Fortran interface for FFaFilePath methods.
+!> @brief Fortran interface for some FFaFilePath methods.
+!>
+!> @details This file contains a module with Fortran interface definitions for
+!> some methods of the FFaFilePath class. See the file FFaFilePath.C
+!> for the implementation of the wrapper functions of this interface.
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!==============================================================================
 !> @brief Fortran interface for FFaFilePath methods.
 
 module FFaFilePathInterface

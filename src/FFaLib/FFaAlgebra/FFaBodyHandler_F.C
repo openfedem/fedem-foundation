@@ -5,6 +5,25 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaBodyHandler_F.C
+  \brief Fortran wrapper for the FFaBodyHandler methods.
+  \details This file contains the implementation of the following
+  Fortran wrappers of the FFaBodyHandler module:
+
+  - ffabodyhandlerinterface::ffa_body
+  - ffabodyhandlerinterface::ffa_get_nofaces
+  - ffabodyhandlerinterface::ffa_get_face
+  - ffabodyhandlerinterface::ffa_partial_volume
+  - ffabodyhandlerinterface::ffa_total_volume
+  - ffabodyhandlerinterface::ffa_save_intersection
+  - ffabodyhandlerinterface::ffa_inc_area
+  - ffabodyhandlerinterface::ffa_erase_bodies
+
+  No further documentation is provided here.
+  The wrappers are documented in the FFaBodyHandlerInterface.f90 file.
+*/
+
 #include <fstream>
 #include <vector>
 #include <string>
@@ -16,7 +35,29 @@
 #include "FFaLib/FFaOS/FFaFilePath.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 
-static std::vector<FFaBody*> ourBodies;
+
+namespace
+{
+  std::vector<FFaBody*> ourBodies; //!< Internal body container
+
+  //! \brief Helper checking the validity of a body index.
+  bool checkBodyIndex (int bodyIndex, int& ierr)
+  {
+    int nBody = ourBodies.size();
+    if (bodyIndex >= 0 && bodyIndex < nBody)
+    {
+      ierr = 0;
+      return true;
+    }
+    else
+    {
+      ListUI <<" *** Body index "<< bodyIndex <<" out of range [0,"
+             << nBody-1 <<"].\n";
+      ierr = -1;
+      return false;
+    }
+  }
+}
 
 
 INTEGER_FUNCTION(ffa_body,FFA_BODY) (const char* fileName, const int nchar)
@@ -40,24 +81,6 @@ INTEGER_FUNCTION(ffa_body,FFA_BODY) (const char* fileName, const int nchar)
 
   ourBodies.push_back(body);
   return ourBodies.size()-1;
-}
-
-
-static bool checkBodyIndex (int bodyIndex, int& ierr)
-{
-  int nBody = ourBodies.size();
-  if (bodyIndex >= 0 && bodyIndex < nBody)
-  {
-    ierr = 0;
-    return true;
-  }
-  else
-  {
-    ListUI <<" *** Body index "<< bodyIndex <<" out of range [0,"
-           << nBody-1 <<"].\n";
-    ierr = -1;
-    return false;
-  }
 }
 
 
@@ -146,8 +169,8 @@ SUBROUTINE(ffa_inc_area,FFA_INC_AREA) (const int& bodyIndex,
 
 SUBROUTINE(ffa_erase_bodies,FFA_ERASE_BODIES) ()
 {
-  for (size_t i = 0; i < ourBodies.size(); i++)
-    delete ourBodies[i];
+  for (FFaBody* body : ourBodies)
+    delete body;
 
   ourBodies.clear();
 }

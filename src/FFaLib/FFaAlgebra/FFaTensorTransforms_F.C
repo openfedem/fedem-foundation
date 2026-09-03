@@ -5,14 +5,28 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaTensorTransforms_F.C
+  \brief Fortran wrapper for the FFaTensorTransforms methods.
+  \details This file contains the implementation of the following
+  Fortran wrappers of the FFaTensorTransforms module:
+
+  - ffatensortransformsinterface::vonmises
+  - ffatensortransformsinterface::princval
+  - ffatensortransformsinterface::maxshearvalue
+  - ffatensortransformsinterface::maxshear
+  - ffatensortransformsinterface::tratensor
+  - ffatensortransformsinterface::trainertia
+
+  No further documentation is provided here.
+  The wrappers are documented in the FFaTensorTransformsInterface.f90 file.
+*/
+
 #include "FFaLib/FFaAlgebra/FFaTensorTransforms.H"
 #include "FFaLib/FFaAlgebra/FFaTensor3.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 
-/*!
-  von Mises calculation for stress and strain tensors.
-*/
 
 DOUBLE_FUNCTION(vonmises,VONMISES) (const int& N, double* S)
 {
@@ -20,29 +34,17 @@ DOUBLE_FUNCTION(vonmises,VONMISES) (const int& N, double* S)
 }
 
 
-/*!
-  Principal values calculation.
-*/
-
 SUBROUTINE(princval,PRINCVAL) (const int& N, double* S, double* Pv)
 {
   FFaTensorTransforms::principalValues(N,S,Pv);
 }
 
 
-/*!
-  Maximum shear value calculation.
-*/
-
 SUBROUTINE(maxshearvalue,MAXSHEARVALUE) (const int& N, double* Pv, double& S)
 {
   S = FFaTensorTransforms::maxShearValue(Pv[0],Pv[N-1]);
 }
 
-
-/*!
-  Maximum shear value and associated direction.
-*/
 
 SUBROUTINE(maxshear,MAXSHEAR) (const int& N, double* Pv, double* Pd,
                                double& S, double* Sd)
@@ -52,10 +54,6 @@ SUBROUTINE(maxshear,MAXSHEAR) (const int& N, double* Pv, double* Pd,
 }
 
 
-/*!
-  Congruence transformation of 2D and 3D symmetric tensors.
-*/
-
 SUBROUTINE(tratensor,TRATENSOR) (const int& N, double* S, const double* T)
 {
   if (N == 2)
@@ -64,10 +62,6 @@ SUBROUTINE(tratensor,TRATENSOR) (const int& N, double* S, const double* T)
     FFaTensorTransforms::rotate3D(S,T,S);
 }
 
-
-/*!
-  Inertia tensor transformation based on the parallel-axis theorem.
-*/
 
 SUBROUTINE(trainertia,TRAINERTIA) (const int& N, double* inertia,
                                    const double* x, const double& mass)

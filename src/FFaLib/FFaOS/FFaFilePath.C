@@ -8,6 +8,13 @@
 /*!
   \file FFaFilePath.C
   \brief Utilities for file path handling.
+  \details In addition to the FFaFilePath methods, this file also constains the
+  implementation of the following Fortran wrappers:
+
+  - ffafilepath::ffa_checkpath
+  - ffafilepath::ffa_getbasename
+
+  These wrappers are documented in the FFaFilePathInterface.f90 file.
 */
 
 #include <algorithm>
