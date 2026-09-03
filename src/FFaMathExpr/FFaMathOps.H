@@ -5,11 +5,16 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaMathOps.H
+  \brief Mathematical operation implementations.
+*/
+
 #ifndef FFA_MATH_OPS_H
 #define FFA_MATH_OPS_H
 
 
-namespace FFaMathOps
+namespace FFaMathOps //! Mathematical operation implementations
 {
   extern const double ErrVal;
 

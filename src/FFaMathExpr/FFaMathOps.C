@@ -5,11 +5,17 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaMathOps.C
+  \brief Mathematical operation implementations.
+*/
+
 #include "FFaMathOps.H"
 #include <cstdio>
 #include <cmath>
 
 
+//! \brief Special value to interpreted as an error condition.
 const double FFaMathOps::ErrVal = tan(atan(1.0)*2.0);
 
 namespace
@@ -39,12 +45,20 @@ namespace
   with segmentation fault as a consequence (KMO 8/8-2017).
 */
 
+/*!
+  \fn void FFaMathOps::NextVal(double*& p)
+  \brief Dummy function only producing an error message.
+*/
 void FFaMathOps::NextVal(double*& p)
 {
   fprintf(stderr,"*** Logic error: FFaMathOps::NexVal invoked.\n");
   *p = FFaMathOps::ErrVal;
 }
 
+/*!
+  \fn void FFaMathOps::RFunc(double*& p)
+  \brief Dummy function only producing an error message.
+*/
 void FFaMathOps::RFunc(double*& p)
 {
   fprintf(stderr,"*** Logic error: FFaMathOps::RFunc invoked.\n");
@@ -57,7 +71,7 @@ void FFaMathOps::RFunc(double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Addition(double*& p)
 {
@@ -71,7 +85,7 @@ void FFaMathOps::Addition(double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Subtraction(double*& p)
 {
@@ -85,7 +99,7 @@ void FFaMathOps::Subtraction(double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Multiplication(double*& p)
 {
@@ -104,7 +118,7 @@ void FFaMathOps::Multiplication(double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Division(double*& p)
 {
@@ -125,7 +139,7 @@ void FFaMathOps::Division(double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Modulus(double*& p)
 {
@@ -146,7 +160,7 @@ void FFaMathOps::Modulus(double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Max(double*& p)
 {
@@ -163,7 +177,7 @@ void FFaMathOps::Max(double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Min(double*& p)
 {
@@ -180,7 +194,7 @@ void FFaMathOps::Min(double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Puissance(double*& p)
 {
@@ -204,7 +218,7 @@ void FFaMathOps::Puissance(double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::RacineN(double*& p)
 {
@@ -228,7 +242,7 @@ void FFaMathOps::RacineN(double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Puiss10 (double*& p)
 {
@@ -249,7 +263,7 @@ void FFaMathOps::Puiss10 (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::ArcTangente2 (double*& p)
 {
@@ -268,7 +282,7 @@ void FFaMathOps::ArcTangente2 (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Absolu (double*& p)
 {
@@ -282,7 +296,7 @@ void FFaMathOps::Absolu (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Oppose (double*& p)
 {
@@ -296,7 +310,7 @@ void FFaMathOps::Oppose (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::ArcSinus (double*& p)
 {
@@ -310,7 +324,7 @@ void FFaMathOps::ArcSinus (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::ArcCosinus (double*&p)
 {
@@ -324,7 +338,7 @@ void FFaMathOps::ArcCosinus (double*&p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::ArcTangente (double*& p)
 {
@@ -338,7 +352,7 @@ void FFaMathOps::ArcTangente (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Logarithme (double*& p)
 {
@@ -352,7 +366,7 @@ void FFaMathOps::Logarithme (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::NaturalLogarithme (double*& p)
 {
@@ -366,7 +380,7 @@ void FFaMathOps::NaturalLogarithme (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Exponentielle (double*& p)
 {
@@ -380,7 +394,7 @@ void FFaMathOps::Exponentielle (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Sinus (double*& p)
 {
@@ -394,7 +408,7 @@ void FFaMathOps::Sinus (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Tangente (double*& p)
 {
@@ -408,7 +422,7 @@ void FFaMathOps::Tangente (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Cosinus (double*& p)
 {
@@ -422,7 +436,7 @@ void FFaMathOps::Cosinus (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result is placed in the head of the pointer p.
+  \details The result is placed in the head of the pointer p.
 */
 void FFaMathOps::Racine (double*& p)
 {
@@ -436,7 +450,7 @@ void FFaMathOps::Racine (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result, 1 if true and 0 if false, is placed in the
+  \details The result, 1 if true and 0 if false, is placed in the
    head of the pointer p.
 */
 void FFaMathOps::LessThan (double*& p)
@@ -451,7 +465,7 @@ void FFaMathOps::LessThan (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result, 1 if true and 0 if false, is placed in the
+  \details The result, 1 if true and 0 if false, is placed in the
    head of the pointer p.
 */
 void FFaMathOps::GreaterThan (double*& p)
@@ -466,7 +480,7 @@ void FFaMathOps::GreaterThan (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result, 1 if true and 0 if false, is placed in the
+  \details The result, 1 if true and 0 if false, is placed in the
    head of the pointer p.
 */
 void FFaMathOps::BooleanAnd (double*& p)
@@ -481,7 +495,7 @@ void FFaMathOps::BooleanAnd (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result, 1 if true and 0 if false, is placed in the
+  \details The result, 1 if true and 0 if false, is placed in the
    head of the pointer p.
 */
 void FFaMathOps::BooleanOr (double*& p)
@@ -496,7 +510,7 @@ void FFaMathOps::BooleanOr (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result, 1 if true and 0 if false, is placed in the
+  \details The result, 1 if true and 0 if false, is placed in the
    head of the pointer p.
 */
 void FFaMathOps::BooleanEqual (double*& p)
@@ -511,7 +525,7 @@ void FFaMathOps::BooleanEqual (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result, 1 if true and 0 if false, is placed in the
+  \details The result, 1 if true and 0 if false, is placed in the
    head of the pointer p.
 */
 void FFaMathOps::BooleanNotEqual (double*& p)
@@ -526,7 +540,7 @@ void FFaMathOps::BooleanNotEqual (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result, 1 if true and 0 if false, is placed in the
+  \details The result, 1 if true and 0 if false, is placed in the
    head of the pointer p.
 */
 void FFaMathOps::BooleanLessOrEqual (double*& p)
@@ -541,7 +555,7 @@ void FFaMathOps::BooleanLessOrEqual (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result, 1 if true and 0 if false, is placed in the
+  \details The result, 1 if true and 0 if false, is placed in the
    head of the pointer p.
 */
 void FFaMathOps::BooleanGreaterOrEqual (double*& p)
@@ -556,7 +570,7 @@ void FFaMathOps::BooleanGreaterOrEqual (double*& p)
 
   \param p A pointer to a table of parametre
 
-  \return Nothing. The result, 1 if true and 0 if false, is placed in the
+  \details The result, 1 if true and 0 if false, is placed in the
    head of the pointer p.
 */
 void FFaMathOps::BooleanNot (double*& p)
