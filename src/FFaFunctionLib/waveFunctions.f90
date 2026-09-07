@@ -8,8 +8,8 @@
 !> @file waveFunctions.f90
 !> @brief Global functions callable from C++ code.
 !>
-!> @details This file contains global function wrappers of subroutines from the
-!> wavefunctionsmodule, such that they can be invoked from C++ or python.
+!> @details This file contains global function wrappers of subroutines in
+!> @ref wavefunctionsmodule, such that they can be invoked from C++ or python.
 
 !!==============================================================================
 !> @brief Initializes parameters for a wave function from given file.
@@ -18,6 +18,8 @@
 !> @param[in] rSeed Seed for (pseudo-)random phase shift
 !> @param[out] rfunc Wave function parameters (amplitude, frequency, ...)
 !> @param[out] ierr Error flag
+!>
+!> @callgraph
 
 subroutine initWaveFuncFromFile (fName, nWave, rSeed, rfunc, ierr)
 
@@ -44,6 +46,8 @@ end subroutine initWaveFuncFromFile
 !> @param[in] rSeed Seed for (pseudo-)random phase shift
 !> @param[out] rfunc Wave function parameters (amplitude, frequency, ...)
 !> @param[out] ierr Error flag
+!>
+!> @callgraph
 
 subroutine initWaveFuncSpectrum (iopW, nWave, nDir, sprExp, rSeed, rfunc, ierr)
 
@@ -90,6 +94,8 @@ end subroutine initWaveFuncSpectrum
 !> @param[in] D Water depth
 !> @param RFUNC Wave function parameters
 !> @param[out] stat Error flag
+!>
+!> @callgraph
 
 subroutine initNonlinWaveFunc (iopW, g, D, RFUNC, stat)
 
@@ -122,6 +128,8 @@ end subroutine initNonlinWaveFunc
 !> @param ifunc Integer wave function parameters
 !> @param rfunc Real wave function parameters
 !> @param[out] ierr Error flag
+!>
+!> @callgraph
 
 subroutine initEmbeddedWave (iopW, nWave, rSeed, g, D, ifunc, rfunc, ierr)
 
@@ -188,6 +196,8 @@ end subroutine initEmbeddedWave
 !> @param[in] x Position to evaluate wave profile at
 !> @param[in] t Time to evaluate wave profile at
 !> @return Wave elevation
+!>
+!> @callgraph
 
 function waveProfile (iopW, ldi, ldr, nWave, nDir, ifunc, rfunc, &
      &                g, d, x, t) result(h)
@@ -263,6 +273,8 @@ end function waveProfile
 !> @param[out] h Wave elevation
 !> @param[out] v Water particle velocity
 !> @param[out] a Water particle acceleration
+!>
+!> @callgraph
 
 subroutine evalWave (iopW, ldi, ldr, nWave, nDir, ifunc, rfunc, &
      &               g, d, x, t, h, v, a)

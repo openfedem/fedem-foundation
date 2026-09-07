@@ -5,6 +5,21 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaProfiler_F.C
+  \brief Fortran wrapper for the FFaProfiler methods.
+  \details This file contains the implementation of the following
+  Fortran wrappers of the FFaProfiler module:
+
+  - ffaprofilerinterface::ffa_newprofiler
+  - ffaprofilerinterface::ffa_starttimer
+  - ffaprofilerinterface::ffa_stoptimer
+  - ffaprofilerinterface::ffa_reporttimer
+
+  No further documentation is provided here.
+  The wrappers are documented in the FFaProfilerInterface.f90 file.
+*/
+
 #include "FFaLib/FFaProfiler/FFaProfiler.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 

@@ -21,6 +21,7 @@ module FFaUserFuncInterface
 
   interface
 
+     !!=========================================================================
      !> @brief Loads the user-defined plugin(s) into core memory.
      !> @param[in] plugin List of user-defined plugin libraries
      !> @param[in] funcId Index of function to return number of arguments for
@@ -33,18 +34,21 @@ module FFaUserFuncInterface
        character(len=*), intent(out) :: sign
      end function ffauf_init
 
+     !!=========================================================================
      !> @brief Returns the number of parameters for the function @a funcId.
      function ffauf_getnopar (funcId)
        integer               :: ffauf_getnopar
        integer , intent(in)  :: funcId
      end function ffauf_getnopar
 
+     !!=========================================================================
      !> @brief Returns the function flag for the function @a funcId.
      function ffauf_getflag (funcId)
        integer               :: ffauf_getflag
        integer , intent(in)  :: funcId
      end function ffauf_getflag
 
+     !!=========================================================================
      !> @brief Evaluates the specified user-defined function.
      !> @param[in] baseId Base Id of the function to evaluate
      !> @param[in] funcId Index of function to evaluate
@@ -60,6 +64,7 @@ module FFaUserFuncInterface
        integer , intent(out) :: err
      end function ffauf_getvalue
 
+     !!=========================================================================
      !> @brief Evaluates the derivative of specified user-defined function.
      !> @param[in] baseId Base Id of the function to evaluate
      !> @param[in] funcId Index of function to evaluate
@@ -76,6 +81,7 @@ module FFaUserFuncInterface
        integer , intent(out) :: err
      end function ffauf_getdiff
 
+     !!=========================================================================
      !> @brief Evaluates the specified user-defined wave function.
      !> @param[in] baseId Base Id of the function to evaluate
      !> @param[in] funcId Index of function to evaluate

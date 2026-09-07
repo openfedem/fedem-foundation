@@ -24,19 +24,12 @@
 class FiUserElmPlugin : public FFaDynamicLibraryBase,
                         public FFaSingelton<FiUserElmPlugin>
 {
-protected:
-  //! \brief Default constructor.
-  FiUserElmPlugin() {}
-  //! \brief Empty destructor.
-  virtual ~FiUserElmPlugin() {}
-
 public:
   //! \brief Checks if the named library can be loaded as a plugin.
-  //! \param[in] libName Full path to the dynamic library.
+  //! \param[in] lib Full path to the dynamic library
   //! \param[in] nchar Max length of the signature string
   //! \param[out] sign A signature string describing the loaded plugin
-  //! return \e true if the named plugin contains user-defined element types.
-  bool validate(const std::string& libName, int nchar = 0, char* sign = NULL);
+  bool validate(const std::string& lib, int nchar = 0, char* sign = NULL);
   //! \brief Returns the signature string of the loaded plugin.
   //! \param[in] nchar Max length of the signature string
   //! \param[out] sign A signature string describing the loaded plugin

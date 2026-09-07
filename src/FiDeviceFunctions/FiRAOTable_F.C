@@ -5,10 +5,29 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FiRAOTable_F.C
+  \brief Fortran wrapper for the FiRAOTable methods.
+  \details This file contains the implementation of the following
+  Fortran wrappers of the FiRAOTable module.
+
+  - firaotableinterface::ficonvertwavedata
+  - firaotableinterface::fiextractmotion
+  - firaotableinterface::fireleasemotion
+
+  No further documentation is provided here.
+  The wrappers are documented in the fiRAOTableInterface.f90 file.
+*/
+
+#include "FiRAOTable.H"
 #include "FiRAOTable.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 
-static std::vector<FiWave> myMotion;
+
+namespace
+{
+  std::vector<FiWave> myMotion; //!< Vessel motion container of the RAO
+}
 
 
 SUBROUTINE(ficonvertwavedata,FICONVERTWAVEDATA) (const char* name,

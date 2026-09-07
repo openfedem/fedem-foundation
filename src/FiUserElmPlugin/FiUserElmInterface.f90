@@ -21,7 +21,7 @@ module FiUserElmInterface
   interface
 
      !!=========================================================================
-     !> @brief Loads the user-defined element plugin library into memory.
+     !> @brief Loads the user-defined element plugin library into core memory.
      !> @param[in] plugin List of user-defined plugin libraries
      !> @param[in] gdata Global parameters that applies to all element instances
      !> @param[out] sign Description of the loaded library
@@ -36,7 +36,7 @@ module FiUserElmInterface
 
      !!=========================================================================
      !> @brief Returns the length of the work arrays needed by an element.
-     !> @param[in] eId   Unique id identifying this element instance
+     !> @param[in] eId   Unique id (baseID) identifying this element instance
      !> @param[in] eType Unique id identifying the element type
      !> @param[in] nenod Number of nodes in the element
      !> @param[in] nedof Number of degrees of freedom in the element
@@ -48,15 +48,15 @@ module FiUserElmInterface
      end subroutine Fi_UDE0
 
      !!=========================================================================
-     !> @brief Initializes the state-independent part of the ework areas.
-     !> @param[in] eId   Unique id identifying this element instance
+     !> @brief Initializes the state-independent part of the work areas.
+     !> @param[in] eId   Unique id (baseID) identifying this element instance
      !> @param[in] eType Unique id identifying the element type
      !> @param[in] nenod Number of nodes in the element
      !> @param[in] nedof Number of degrees of freedom in the element
-     !> @param[in] X     Global coordinas of the element nodes
-     !> @param[in] T     Local coordinate systems of the element nodes
-     !> @param     iwork Integer work area for this element
-     !> @param     rwork Double precision work area for this element
+     !> @param[in] X Global coordinates of the element nodes (initial config.)
+     !> @param[in] T Local coordinate systems of the element nodes
+     !> @param iwork Integer work area for this element
+     !> @param rwork Double precision work area for this element
      !> @param[out] ierr Error flag
      subroutine Fi_UDE1 (eId,eType,nenod,nedof,X,T,iwork,rwork,ierr)
        integer , parameter     :: dp = kind(1.0D0)
@@ -69,16 +69,16 @@ module FiUserElmInterface
 
      !!=========================================================================
      !> @brief Updates the state of a given user-defined element.
-     !> @param[in] eId   Unique id identifying this element instance
+     !> @param[in] eId   Unique id (baseID) identifying this element instance
      !> @param[in] eType Unique id identifying the element type
      !> @param[in] nenod Number of nodes in the element
      !> @param[in] nedof Number of degrees of freedom in the element
-     !> @param[in] X Global nodal coordinates of the element
+     !> @param[in] X Global nodal coordinates of the element (current config.)
      !> @param[in] T Local nodal coordinate systems of the element
      !> @param[in] v Global nodal velocities of the element
      !> @param[in] a Global nodal accelerations of the element
-     !> @param     iwork Integer work area for this element
-     !> @param     rwork Real work area for this element
+     !> @param iwork Integer work area for this element
+     !> @param rwork Real work area for this element
      !> @param[out] K  Tangent stiffness matrix
      !> @param[out] C  Damping matrix
      !> @param[out] M  Mass matrix
@@ -91,6 +91,10 @@ module FiUserElmInterface
      !> @param[in] istep Time step number
      !> @param[in] iter  Iteration number
      !> @param[out] ierr Error flag
+     !>
+     !> @details This subroutine is invoked once within the Newton-Raphson
+     !> iteration loop for each element. It is supposed to evaluate the updated
+     !> tangent matrices and associated force vectors of the element.
      subroutine Fi_UDE2 (eId,eType,nenod,nedof,X,T,v,a,iwork,rwork, &
           &              K,C,M,Fs,Fd,Fi,Q,time,dt,istep,iter,ierr)
        integer , parameter     :: dp = kind(1.0D0)
@@ -104,15 +108,21 @@ module FiUserElmInterface
 
      !!=========================================================================
      !> @brief Calculates the local origin of a user-defined element.
-     !> @param[in] eId   Unique id identifying this element instance
+     !> @param[in] eId   Unique id (baseID) identifying this element instance
      !> @param[in] eType Unique id identifying the element type
      !> @param[in] nenod Number of element nodes
-     !> @param[in] X     Global nodal coordinates of the element
-     !> @param[in] T     Local nodal coordinate systems of the element
-     !> @param     iwork Integer work area for this element
-     !> @param[in] rwork Real work area for this element
+     !> @param[in] X Global nodal coordinates of the element (current config.)
+     !> @param[in] T Local nodal coordinate systems of the element
+     !> @param iwork Integer work area for this element
+     !> @param rwork Real work area for this element
      !> @param[out] Tlg  Local-to-global transformation matrix for the element
      !> @param[out] ierr Error flag
+     !>
+     !> @details This subroutine is invoked only in pre- and post-processing
+     !> tasks, requiring the position of current element.
+     !> It does not affect the response simulation.
+     !> @note The plugin library does not need to contain this routine.
+     !> If absent, the identity transformation matrix is assumed instead.
      subroutine Fi_UDE3 (eId,eType,nenod,X,T,iwork,rwork,Tlg,ierr)
        integer , parameter     :: dp = kind(1.0D0)
        integer , intent(in)    :: eId, eType, nenod
@@ -125,13 +135,17 @@ module FiUserElmInterface
 
      !!=========================================================================
      !> @brief Returns the name of a result quantity of a user-defined element.
-     !> @param[in] eId   Unique id identifying this element instance
+     !> @param[in] eId   Unique id (baseId) identifying this element instance
      !> @param[in] eType Unique id identifying the element type
      !> @param[in] idx   Result quantity index
      !> @param[in] iwork Integer work area for this element
      !> @param[in] rwork Real work area for this element
      !> @param[out] name Name of result quantity
      !> @param[out] nvar Total number of result quantities for this element
+     !>
+     !> @details This subroutine is only invoked once as a pre-processing task.
+     !> @note The plugin library does not need to contain this routine.
+     !> If absent, no output variables are defined.
      subroutine Fi_UDE4 (eId,eType,idx,iwork,rwork,name,nvar)
        integer         , parameter   :: dp = kind(1.0D0)
        integer         , intent(in)  :: eId, eType, idx
@@ -143,13 +157,18 @@ module FiUserElmInterface
 
      !!=========================================================================
      !> @brief Returns a result quantity value of a user-defined element.
-     !> @param[in] eId   Unique id identifying this element instance
+     !> @param[in] eId   Unique id (baseID) identifying this element instance
      !> @param[in] eType Unique id identifying the element type
      !> @param[in] idx   Result quantity index
      !> @param[in] iwork Integer work area for this element
      !> @param[in] rwork Real work area for this element
      !> @param[out] value The result quantity value
      !> @param[out] nvar Total number of result quantities for this element
+     !>
+     !> @details This subroutine is only invoked once as a post-processing task
+     !> after each time increment, when saving results to file.
+     !> @note The plugin library does not need to contain this routine.
+     !> If absent, no output variables are defined.
      subroutine Fi_UDE5 (eId,eType,idx,iwork,rwork,value,nvar)
        integer , parameter   :: dp = kind(1.0D0)
        integer , intent(in)  :: eId, eType, idx
@@ -161,14 +180,20 @@ module FiUserElmInterface
 
      !!=========================================================================
      !> @brief Returns total mass of a user-defined element.
-     !> @param[in] eId   Unique id identifying this element instance
+     !> @param[in] eId   Unique id (baseID) identifying this element instance
      !> @param[in] eType Unique id identifying the element type
      !> @param[in] nenod Number of element nodes
-     !> @param[in] X     Global nodal coordinates of the element
+     !> @param[in] X Global nodal coordinates of the element (current config.)
      !> @param[in] iwork Integer work area for this element
      !> @param[in] rwork Real work area for this element
      !> @param[out] mass Total mass of the element
      !> @param[out] ierr Error flag
+     !>
+     !> @details This subroutine is invoked only as a pre-processing task,
+     !> in the process of generating a total mass summary of the model.
+     !> It does not affect the response simulation.
+     !> @note The plugin library does not need to contain this routine.
+     !> If absent, all user-defined elements are assumed to be mass-less.
      subroutine Fi_UDE6 (eId,eType,nenod,X,iwork,rwork,mass,ierr)
        integer , parameter   :: dp = kind(1.0D0)
        integer , intent(in)  :: eId, eType, nenod

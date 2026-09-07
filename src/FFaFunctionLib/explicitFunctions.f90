@@ -8,8 +8,9 @@
 !> @file explicitFunctions.f90
 !> @brief Global functions callable from C++ code.
 !>
-!> @details This file contains global function wrappers of subroutines from the
-!> explicitfunctionsmodule, such that they can be invoked from C++ or python.
+!> @details This file contains global function wrappers of subroutines in
+!> @ref explicitfunctionsmodule, such that they can be invoked from C++ code
+!> and python.
 
 !!==============================================================================
 !> @brief Evaluates an explicit function.
@@ -21,6 +22,8 @@
 !> @param[in] xArg Function argument value
 !> @param[out] ierr Error flag
 !> @return The function value
+!>
+!> @callgraph
 
 function getFunctionValue (baseID, intParams, realParams, nip, nrp, xArg, ierr)
 
@@ -52,6 +55,8 @@ end function getFunctionValue
 !> @param[in] xArg Function argument value
 !> @param[out] ierr Error flag
 !> @return The function derivative
+!>
+!> @callgraph
 
 function getFunctionDeriv (baseID, intParams, realParams, nip, nrp, xArg, ierr)
 
@@ -75,6 +80,7 @@ end function getFunctionDeriv
 
 !!==============================================================================
 !> @brief Returns the function type Id (enum) of the specified @a functionName.
+
 function getFunctionTypeID (functionName)
 
   use ExplicitFunctionsModule, only : maxFunc_p, funcType_p

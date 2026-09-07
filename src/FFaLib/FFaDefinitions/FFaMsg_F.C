@@ -5,6 +5,13 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaMsg_F.C
+  \brief Fortran wrapper for the FFaMsg::list method.
+  \details This file contains the implementation of the Fortran wrapper
+  ffamsginterface::ffamsg_list which is documented in FFaMsgInterface.f90.
+*/
+
 #include <cstdio>
 
 #include "FFaLib/FFaDefinitions/FFaMsg.H"

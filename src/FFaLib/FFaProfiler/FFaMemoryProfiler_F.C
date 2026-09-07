@@ -5,6 +5,19 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaMemoryProfiler_F.C
+  \brief Fortran wrapper for the FFaMemoryProfiler methods.
+  \details This file contains the implementation of the following
+  Fortran wrappers of the FFaMemoryProfiler module:
+
+  - ffaprofilerinterface::ffa_getmemusage
+  - ffaprofilerinterface::ffa_getphysmem
+
+  No further documentation is provided here.
+  The wrappers are documented in the FFaProfilerInterface.f90 file.
+*/
+
 #include "FFaLib/FFaProfiler/FFaMemoryProfiler.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 

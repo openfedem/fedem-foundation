@@ -8,23 +8,28 @@
 /*!
   \file FiUserElmPlugin_F.C
   \brief Fortran wrapper for the FiUserElmPlugin methods.
+  \details This file contains the implementation of the following
+  Fortran wrappers of the FiUserElmPlugin module:
+
+  - fiuserelminterface::fi_ude_init
+  - fiuserelminterface::fi_ude0
+  - fiuserelminterface::fi_ude1
+  - fiuserelminterface::fi_ude2
+  - fiuserelminterface::fi_ude3
+  - fiuserelminterface::fi_ude4
+  - fiuserelminterface::fi_ude5
+  - fiuserelminterface::fi_ude6
+
+  No further documentation is provided here.
+  The wrappers are documented in the FiUserElmInterface.f90 file.
 */
+
+#include <cstring>
 
 #include "FiUserElmPlugin/FiUserElmPlugin.H"
 #include "FFaLib/FFaString/FFaTokenizer.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
-#include <cstring>
 
-
-/*!
-  \brief Loads the user-defined element plugin library into memory.
-  \arg plugin - List of user-defined plugin libraries
-  \arg ncp   - Length of the \a plugin string
-  \arg gdata - Global parameters that applies to all element instances
-  \arg sign  - Text string containing a description of the loaded library
-  \arg nchar - Maximum length of the description string
-  \arg ierr  - Error flag
-*/
 
 SUBROUTINE (fi_ude_init,FI_UDE_INIT) (const char* plugin,
 #ifdef _NCHAR_AFTER_CHARARG
@@ -80,16 +85,6 @@ SUBROUTINE (fi_ude_init,FI_UDE_INIT) (const char* plugin,
 }
 
 
-/*!
-  \brief Returns the length of the work arrays needed by a user-defined element.
-  \arg eId    - Unique id identifying this element instance (the baseID)
-  \arg eType  - Unique id identifying the element type
-  \arg nenod  - Number of nodes in the element
-  \arg nedof  - Number of degrees of freedom in the element
-  \arg niwork - Required size of the integer work area for this element
-  \arg nrwork - Required size of the double precision work area for this element
-*/
-
 SUBROUTINE(fi_ude0,FI_UDE0) (const int& eId, const int& eType,
                              const int& nenod, const int& nedof,
                              int& niwork, int& nrwork)
@@ -97,19 +92,6 @@ SUBROUTINE(fi_ude0,FI_UDE0) (const int& eId, const int& eType,
   FiUserElmPlugin::instance()->init(eId,eType,nenod,nedof,niwork,nrwork);
 }
 
-
-/*!
-  \brief Initializes the constant (state-independent) part of the work areas.
-  \arg eId   - Unique id identifying this element instance (the baseID)
-  \arg eType - Unique id identifying the element type
-  \arg nenod - Number of nodes in the element
-  \arg nedof - Number of degrees of freedom in the element
-  \arg X     - Global coordinas of the element nodes (initial configuration)
-  \arg T     - Local coordinate systems of the element nodes
-  \arg iwork - Integer work area for this element
-  \arg rwork - Double precision work area for this element
-  \arg ierr  - Error flag
-*/
 
 SUBROUTINE(fi_ude1,FI_UDE1) (const int& eId, const int& eType,
                              const int& nenod, const int& nedof,
@@ -120,36 +102,6 @@ SUBROUTINE(fi_ude1,FI_UDE1) (const int& eId, const int& eType,
                                            X,T,iwork,rwork);
 }
 
-
-/*!
-  \brief Updates the state of a given user-defined element.
-  \arg eId   - Unique id identifying this element instance (the baseID)
-  \arg eType - Unique id identifying the element type
-  \arg nenod - Number of nodes in the element
-  \arg nedof - Number of degrees of freedom in the element
-  \arg X - Global nodal coordinates of the element (current configuration)
-  \arg T - Local nodal coordinate systems of the element (current configuration)
-  \arg V - Global nodal velocities of the element (current configuration)
-  \arg A - Global nodal accelerations of the element (current configuration)
-  \arg iwork - Integer work area for this element
-  \arg rwork - Real work area for this element
-  \arg K  - Tangent stiffness matrix
-  \arg C  - Damping matrix
-  \arg M  - Mass matrix
-  \arg Fs - Internal elastic forces
-  \arg Fd - Damping forces
-  \arg Fi - Intertia forces
-  \arg Q  - External forces
-  \arg t  - Current time
-  \arg dt - Time step size
-  \arg istep - Time step number
-  \arg iter  - Iteration number
-  \arg ierr  - Error flag
-
-  \details This function is invoked once within the Newton iteration loop for
-  each element.
-  It should evaluate the updated tangent matrices and associated force vectors.
-*/
 
 SUBROUTINE(fi_ude2,FI_UDE2) (const int& eId, const int& eType,
                              const int& nenod, const int& nedof,
@@ -167,25 +119,6 @@ SUBROUTINE(fi_ude2,FI_UDE2) (const int& eId, const int& eType,
 }
 
 
-/*!
-  \brief Calculates the local origin of a user-defined element.
-  \arg eId   - Unique id identifying this element instance (the baseID)
-  \arg eType - Unique id identifying the element type
-  \arg nenod - Number of element nodes
-  \arg X     - Global nodal coordinates of the element (current configuration)
-  \arg T     - Local nodal coordinate systems of the element (current config.)
-  \arg iwork - Integer work area for this element
-  \arg rwork - Real work area for this element
-  \arg Tlg   - Current local-to-global transformation matrix for the element
-  \arg ierr  - Error flag
-
-  \details This function is invoked only in pre- and post-processing tasks,
-  requiring the position of current element.
-  It does not affect the response simulation.
-  \note The user-defined element plugin does not need to contain this function.
-  If absent, the identity transformation matrix is assumed.
-*/
-
 SUBROUTINE(fi_ude3,FI_UDE3) (const int& eId, const int& eType, const int& nenod,
                              const double* X, const double* T,
                              int* iwork, double* rwork, double* Tlg, int& ierr)
@@ -194,22 +127,6 @@ SUBROUTINE(fi_ude3,FI_UDE3) (const int& eId, const int& eType, const int& nenod,
                                              iwork,rwork,Tlg);
 }
 
-
-/*!
-  \brief Returns the name of a result quantity of a user-defined element.
-  \arg eId   - Unique id identifying this element instance (the baseID)
-  \arg eType - Unique id identifying the element type
-  \arg idx   - Result quantity index
-  \arg iwork - Integer work area for this element
-  \arg rwork - Real work area for this element
-  \arg name  - Name of result quantity
-  \arg nchar - Maximum length of the result quantity name
-  \arg nvar  - Total number of result quantities for this element
-
-  \details This function is only invoked once as a pre-processing task.
-  \note The user-defined element plugin does not need to contain this function.
-  If absent, no output variables are defined.
-*/
 
 SUBROUTINE (fi_ude4,FI_UDE4) (const int& eId, const int& eType, const int& idx,
                               const int* iwork, const double* rwork,
@@ -230,22 +147,6 @@ SUBROUTINE (fi_ude4,FI_UDE4) (const int& eId, const int& eType, const int& idx,
 }
 
 
-/*!
-  \brief Returns a result quantity value of a user-defined element.
-  \arg eId   - Unique id identifying this element instance (the baseID)
-  \arg eType - Unique id identifying the element type
-  \arg idx   - Result quantity index
-  \arg iwork - Integer work area for this element
-  \arg rwork - Real work area for this element
-  \arg value - The result quantity value
-  \arg nvar  - Total number of result quantities for this element
-
-  \details This function is only invoked once as a post-processing task
-  after each time increment, when saving results to file.
-  \note The user-defined element plugin does not need to contain this function.
-  If absent, no output variables are defined.
-*/
-
 SUBROUTINE (fi_ude5,FI_UDE5) (const int& eId, const int& eType, const int& idx,
                               const int* iwork, const double* rwork,
                               double& value, int& nvar)
@@ -253,24 +154,6 @@ SUBROUTINE (fi_ude5,FI_UDE5) (const int& eId, const int& eType, const int& idx,
   nvar = FiUserElmPlugin::instance()->result(eId,eType,idx,iwork,rwork,value);
 }
 
-
-/*!
-  \brief Calculates the total mass of a user-defined element.
-  \arg eId   - Unique id identifying this element instance (the baseID)
-  \arg eType - Unique id identifying the element type
-  \arg nenod - Number of element nodes
-  \arg X     - Global nodal coordinates of the element (current configuration)
-  \arg iwork - Integer work area for this element
-  \arg rwork - Real work area for this element
-  \arg mass  - Total mass for the element
-  \arg ierr  - Error flag
-
-  \details This function is invoked only as a pre-processing task,
-  in the process of generating a total mass summary of the model.
-  It does not affect the response simulation.
-  \note The user-defined element plugin does not need to contain this function.
-  If absent, all user-defined elements are assumed to be mass-less.
-*/
 
 SUBROUTINE(fi_ude6,FI_UDE6) (const int& eId, const int& eType, const int& nenod,
                              const double* X, int* iwork, double* rwork,

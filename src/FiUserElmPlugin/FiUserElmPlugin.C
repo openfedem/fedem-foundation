@@ -15,26 +15,37 @@
 #include <cstring>
 
 
-/*!
-  \brief Static helper to replace trailing white-spaces a with null-character.
-  \details This function is needed when the user-defined element is implemented
-  in a Fortran library, from which an output character string is padded with
-  trailing spaces instead of being null-terminated.
-  \callergraph
-*/
-
-static void nullTerminate (char* str, int nchar)
+namespace
 {
-  while (--nchar > 0)
-    if (!isspace(str[nchar]))
-    {
-      str[nchar+1] = '\0';
-      return;
-    }
+  /*!
+    \brief Helper to replace trailing white-spaces a with null-character.
+    \details This is needed when the user-defined element is implemented
+    in a Fortran library, from which an output character string is padded with
+    trailing spaces instead of being null-terminated.
+  */
+  void nullTerminate(char* str, int nchar)
+  {
+    while (--nchar > 0)
+      if (!isspace(str[nchar]))
+      {
+        str[nchar+1] = '\0';
+        return;
+      }
+  }
+
+  //! \brief Function pointer Id's for internal cache.
+  enum { idUpdate = 0, idOrigin = 1, idResult = 2 };
 }
 
 
-//! \callergraph \callgraph
+/*!
+  This method is only used to detect whether the name shared object library
+  \a lib is a plugin containing user-defined element types or not.
+  The method returns \e true if that is the case, otherwise \a false.
+
+  \callgraph
+*/
+
 bool FiUserElmPlugin::validate(const std::string& lib, int nchar, char* sign)
 {
   if (nchar > 0 && sign) sign[0] = '\0';
@@ -47,7 +58,6 @@ bool FiUserElmPlugin::validate(const std::string& lib, int nchar, char* sign)
 }
 
 
-//! \callergraph \callgraph
 bool FiUserElmPlugin::getSign(int nchar, char* sign, bool silence)
 {
   if (!this->areLibsLoaded()) return false;
@@ -80,7 +90,6 @@ bool FiUserElmPlugin::getSign(int nchar, char* sign, bool silence)
 }
 
 
-//! \callergraph \callgraph
 int FiUserElmPlugin::getElementTypes(int maxUE, int* eType)
 {
   if (!this->areLibsLoaded()) return -99;
@@ -108,7 +117,6 @@ int FiUserElmPlugin::getElementTypes(int maxUE, int* eType)
 }
 
 
-//! \callergraph \callgraph
 int FiUserElmPlugin::getTypeName(int eType, int nchar, char* name)
 {
   if (!this->areLibsLoaded()) return -99;
@@ -142,7 +150,6 @@ int FiUserElmPlugin::getTypeName(int eType, int nchar, char* name)
 }
 
 
-//! \callergraph \callgraph
 int FiUserElmPlugin::init(const double* gdata)
 {
   LanguageBinding lang = Undefined;
@@ -168,7 +175,6 @@ int FiUserElmPlugin::init(const double* gdata)
     const double*,const double*,int*,double*
 //! \endcond
 
-//! \callergraph \callgraph
 int FiUserElmPlugin::init(int eId, int eType, int nenod, int nedof,
                           int& niwork, int& nrwork)
 {
@@ -203,7 +209,6 @@ int FiUserElmPlugin::init(int eId, int eType, int nenod, int nedof,
 }
 
 
-//! \callergraph \callgraph
 int FiUserElmPlugin::init(int eId, int eType, int nenod, int nedof,
                           const double* X, const double* T,
                           int* iwork, double* rwork)
@@ -237,7 +242,6 @@ int FiUserElmPlugin::init(int eId, int eType, int nenod, int nedof,
     const double*,int*,double*,double&
 //! \endcond
 
-//! \callergraph \callgraph
 int FiUserElmPlugin::mass(int eId, int eType, int nenod,
                           const double* X, int* iwork, double* rwork,
                           double& mass)
@@ -266,8 +270,6 @@ int FiUserElmPlugin::mass(int eId, int eType, int nenod,
 
 
 //! \cond DO_NOT_DOCUMENT
-enum { idUpdate = 0, idOrigin = 1, idResult = 2 };
-
 #define UPDATE_CARGS int,int,int,int, \
     const double*,const double*,const double*,const double*, \
     int*,double*,double*,double*,double*,double*,double*,double*,double*, \
@@ -282,8 +284,6 @@ enum { idUpdate = 0, idOrigin = 1, idResult = 2 };
   This function is invoked once per element within the Newton iteration loop.
   It evaluates the updated tangent matrices and associated force vectors
   of the current linearized dynamic equilibrium equation.
-
-  \callergraph \callgraph
 */
 
 int FiUserElmPlugin::update(int eId, int eType, int nenod, int nedof,
@@ -330,8 +330,6 @@ int FiUserElmPlugin::update(int eId, int eType, int nenod, int nedof,
   This function is invoked once per element in pre- and post-processing tasks,
   requiring the position of current element.
   It does not affect the response simulation.
-
- \callergraph \callgraph
 */
 
 int FiUserElmPlugin::origin(int eId, int eType, int nenod,
@@ -374,8 +372,6 @@ int FiUserElmPlugin::origin(int eId, int eType, int nenod,
 /*!
   This function is invoked once per element as a pre-processing task,
   when saving results to file.
-
-  \callergraph \callgraph
 */
 
 int FiUserElmPlugin::result(int eId, int eType, int idx,
@@ -407,8 +403,6 @@ int FiUserElmPlugin::result(int eId, int eType, int idx,
 /*!
   This function is invoked once as per element as a post-processing task
   after each time increment, when saving results to file.
-
-  \callergraph \callgraph
 */
 
 int FiUserElmPlugin::result(int eId, int eType, int idx,

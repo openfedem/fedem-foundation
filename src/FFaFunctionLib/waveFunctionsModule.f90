@@ -5,26 +5,32 @@
 !! This file is part of FEDEM - https://openfedem.org
 !!==============================================================================
 
-module WaveFunctionsModule
+!> @file waveFunctionsModule.f90
+!> @brief Subroutines for sea wave evaluation.
 
-  !!============================================================================
-  !! This module contains subroutines for initialization of real parameters for
-  !! the explicit wave function (FUNC4). It also has subroutines for evaluating
-  !! the wave function at a given point in time and space. The FUNC4 interface
-  !! of the ExplicitFunctionsModule only yields the free surface level at a
-  !! given time and x = 0, and infinite water depth, whereas the routines herein
-  !! can be used for any x and finite depth. Moreover, subroutines returning the
-  !! corresponding velocity and acceleration for any depth z <= 0 are provided.
-  !!============================================================================
+!!==============================================================================
+!> @brief Module with subroutines for sea wave evaluation.
+!>
+!> @details This module contains subroutines for initialization of real
+!> parameters for the explicit wave function (explicitfunctionsmodule::func4).
+!> It also has subroutines for evaluating the wave function at a given point
+!> in time and space. The FUNC4 interface of the @ref explicitfunctionsmodule
+!> only yields the free surface level at a given time and @a x = 0, and
+!> infinite water depth, whereas the subroutines herein can be used for any
+!> value of @a x and finite depth. Subroutines returning the corresponding
+!> velocity and acceleration for any depth @a z &le; 0 are provided as well.
+
+module WaveFunctionsModule
 
   implicit none
 
   private
 
-  integer , parameter :: dp = kind(1.0D0) ! 8-byte real (double)
-  real(dp), parameter :: pi = 3.141592653589793238_dp
-  real(dp), parameter :: twoPi = pi+pi
+  integer , parameter :: dp = kind(1.0D0)             !< 8-byte real (double)
+  real(dp), parameter :: pi = 3.141592653589793238_dp !< The value of &pi;
+  real(dp), parameter :: twoPi = pi+pi                !< The value of 2&pi;
 
+  !> @brief Initializes parameters of a sea wave function.
   interface initFUNC4
      module procedure initFUNC4fromFile
      module procedure initSpectrumDNV
@@ -39,22 +45,33 @@ module WaveFunctionsModule
 
 contains
 
-  subroutine initFUNC4fromFile (FNAME,G,D,RFUNC,IERR,RSEED)
+  !!============================================================================
+  !> @brief Initializes wave function parameters from the given file.
+  !>
+  !> @param[in] FNAME Name of file to read wave parameters from.
+  !> @param[in] G Gravity constant
+  !> @param[in] D Sea depth for finite depth waves
+  !> @param[out] RFUNC Real function parameters
+  !> @param[out] IERR Error flag
+  !> @param[in] RSEED Seed for random value generator
+  !>
+  !> @details The file may consist of either two, three or four columns of data.
+  !> The number of columns may be specified on the first line as `#ncol <ncol>`.
+  !> If the first line does not contain the keyword `#ncol`, a two-column file
+  !> is assumed. The phase shift is then generated randomly. The wave number
+  !> is calculated internally unless specified in the fourth column.
+  !> @code
+  !>   col #1 : Amplitude   [m]
+  !>   col #2 : Frequency   [Hz]
+  !>   col #3 : Phase shift [0,1]
+  !>   col #4 : Wave number [1/m]
+  !> @endcode
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 16 Jan 2007
 
-    !!==========================================================================
-    !! Initializes function parameters for a wave function from the given file.
-    !! The file may consist of either two, three or four columns of data.
-    !! The number of columns may be specified on the first line as #ncol <ncol>.
-    !! If the first line does not contain the keyword #ncol, a two-column file
-    !! is assumed. The phase shift is then generated randomly. The wave number
-    !! is calculated internally unless specified in the fourth column.
-    !!   col #1 : Amplitude   [m]
-    !!   col #2 : Frequency   [Hz]
-    !!   col #3 : Phase shift [0,1]
-    !!   col #4 : Wave number [1/m]
-    !!
-    !! Programmer : Knut Morten Okstad          date/rev : 16 January 2007 / 1.0
-    !!==========================================================================
+  subroutine initFUNC4fromFile (FNAME,G,D,RFUNC,IERR,RSEED)
 
     use FFaMsgInterface, only : ffamsg_list
 
@@ -153,28 +170,36 @@ contains
   end subroutine initFUNC4fromFile
 
 
-  subroutine initSpectrumOF (IOP,H3,T1,Gamma,Omega0,dOmega,g,D,RFUNC,IERR,RSEED)
+  !!============================================================================
+  !> @brief Initializes a wave function based on statistical parameters.
+  !>
+  !> @param[in] IOP Wave spectrum model:
+  !>  1. Pierson-Moskowitz with constant frequency intervals
+  !>  2. Pierson-Moskowitz with random frequency intervals
+  !>  3. JONSWAP spectrum with constant frequency intervals
+  !>  4. JONSWAP spectrum with random frequency intervals
+  !> @param[in] H3 Significant wave height (mean of the one third highest waves)
+  !> @param[in] T1 Mean wave period
+  !> @param[in] Gamma Spectral peakedness
+  !> @param[in] Omega0 Lowest frequency in wave spectrum
+  !> @param[in] dOmega Frequency increment between successive wave components
+  !> @param[in] g Gravity constant
+  !> @param[in] D Sea depth for finite depth waves
+  !> @param[out] RFUNC Real function parameters
+  !> @param[out] IERR Error flag
+  !> @param[in] RSEED Seed for random value generator
+  !>
+  !> @details This subroutine generates the wave function parameters from a
+  !> wave spectrum depending on the input argument @a IOP (see above).
+  !>
+  !> References:
+  !> -# O. Faltinsen, Sea Loads on Ships and Offshore Structures, pp. 23-26.
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 29 Jan 2007
 
-    !!==========================================================================
-    !! Initializes a wave function based on statistical parameters.
-    !! Ref: O. Faltinsen, Sea Loads on Ships and Offshore Structures, pp. 23-26.
-    !!
-    !! IOP    - Wave spectrum model
-    !!          = 1 : Pierson-Moskowitz with constant frequency intervals
-    !!          = 2 : Pierson-Moskowitz with random frequency intervals
-    !!          = 3 : JONSWAP spectrum with constant frequency intervals
-    !!          = 4 : JONSWAP spectrum with random frequency intervals
-    !! H3     - Significant wave height (mean of the one third highest waves)
-    !! T1     - Mean wave period
-    !! Gamma  - Spectral peakedness
-    !! Omega0 - Lowest frequency in wave spectrum
-    !! dOmega - Frequency increment between successive wave components
-    !! g      - Gravity constant
-    !! D      - Sea depth for finite depth waves
-    !! N      - Number of wave components
-    !!
-    !! Programmer : Knut Morten Okstad          date/rev : 29 January 2007 / 1.0
-    !!==========================================================================
+  subroutine initSpectrumOF (IOP,H3,T1,Gamma,Omega0,dOmega,g,D,RFUNC,IERR,RSEED)
 
     use FFaMsgInterface, only : ffamsg_list
 
@@ -279,33 +304,41 @@ contains
   end subroutine initSpectrumOF
 
 
+  !!============================================================================
+  !> @brief Initializes a wave function based on statistical parameters.
+  !>
+  !> @param[in] Hs Significant wave height (mean of the one third highest waves)
+  !> @param[in] Tp The wave period corresponding to the peak frequency
+  !> @param[in] Gamma Spectral peakedness (see below).
+  !> @param[in] Omega0 Lowest frequency in wave spectrum
+  !> (if &le; 0 use constant frequency intervals)
+  !> @param[in] dOmega Frequency increment between successive wave components
+  !> @param[in] g Gravity constant
+  !> @param[in] D Sea depth for finite depth waves
+  !> @param[out] RFUNC Real function parameters
+  !> @param[out] IERR Error flag
+  !> @param[in] RSEED Seed for random value generator
+  !> @param[in] NWdir Number of wave directions
+  !> @param[in] SprExp Wave spreading exponent (for @a Ndir &gt; 1)
+  !>
+  !> @details This subroutine generates the wave function parameters from a
+  !> wave spectrum. If @a Gamma &le; 1, a Pierson-Moskowitz spectrum is used,
+  !> otherwise a JONSWAP spectrum depending on @a Gamma is used.
+  !>
+  !> References:
+  !> -# DNV Recommended practice 205, October 2010.
+  !> -# S. K. Chakrabarti, "Hydrodynamics of Offshore Structures", pp. 113-116.
+  !>
+  !> @author Paul Anton Letnes
+  !>
+  !> @date 3 Jan 2013
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 20 Jul 2015
+
   subroutine initSpectrumDNV (Hs,Tp,Gamma,Omega0,dOmega,g,D,RFUNC,IERR, &
        &                      RSEED,NWdir,SprExp)
-
-    !!==========================================================================
-    !! Initializes a wave function based on statistical parameters.
-    !!
-    !! References:
-    !!    DNV Recommended practice 205, October 2010.
-    !!    S. K. Chakrabarti, Hydrodynamics of Offshore Structures, pp. 113-116.
-    !!
-    !! Hs     - Significant wave height (mean of the one third highest waves)
-    !! Tp     - The wave period corresponding to the peak frequency
-    !! Gamma  - Spectral peakedness
-    !!          = 1.0: Pierson-Moskowitz
-    !!          > 1.0: JONSWAP
-    !! Omega0 - Lowest frequency in wave spectrum
-    !!          <= 0.0: Use constant frequency intervals
-    !! dOmega - Frequency increment between successive wave components
-    !! g      - Gravity constant
-    !! D      - Sea depth for finite depth waves
-    !! N      - Number of wave components
-    !! Ndir   - Number of wave directions
-    !! SprExp - Wave spreading exponent (for Ndir > 1)
-    !!
-    !! Programmer : Paul Anton Letnes           date/rev : 03 January 2013 / 2.0
-    !!              Knut Morten Okstad          date/rev : 20 July    2015 / 2.1
-    !!==========================================================================
 
     use FFaMsgInterface, only : ffamsg_list
 
@@ -485,6 +518,7 @@ contains
 
   contains
 
+    !> @brief Returns a PiersonMoskowitz wave component amplitude.
     function PiersonMoskowitz (Hs,omega,omega_p) result(S)
       real(dp), intent(in) :: Hs, omega, omega_p
       real(dp)             :: S
@@ -492,6 +526,7 @@ contains
            * exp(-1.25_dp * (omega/omega_p)**(-4.0_dp))
     end function PiersonMoskowitz
 
+    !> @brief Returns a JONSWAP wave component amplitude.
     function JONSWAP (Hs,omega,omega_p,Gamma) result(S)
       real(dp), intent(in) :: Hs, omega, omega_p, Gamma
       real(dp)             :: S, sigma, A_gamma, Gamma_power
@@ -508,18 +543,25 @@ contains
   end subroutine initSpectrumDNV
 
 
-  function waveNumber (omega,g,d) result(k)
+  !!============================================================================
+  !> @brief Calculates the wave number for finite depth waves.
+  !>
+  !> @param[in] omega Angular frequency
+  !> @param[in] g Gravity constant
+  !> @param[in] d Water depth
+  !> @return The wave number @a k
+  !>
+  !> @details The wave number is calculated by solving a nonlinear equation by
+  !> Newton-Raphson iterations. If the water depth is zero, infinite depth is
+  !> assumed and the wave number is calculated explcitly.
+  !>
+  !> @callergraph
+  !>
+  !> @author Arne Rekdal
+  !>
+  !> @date 5 Oct 2010
 
-    !!==========================================================================
-    !! Calculates the wave number (k) for finite depth waves by Newton-Raphson.
-    !! If the water depth (d) is zero, infinite depth is assumed.
-    !!
-    !! omega - Angular frequency
-    !! g     - Gravity constant
-    !! d     - Water depth
-    !!
-    !! Programmer : Arne Rekdal                     date/rev : 05 Oct 2010 / 1.0
-    !!==========================================================================
+  function waveNumber (omega,g,d) result(k)
 
     real(dp), intent(in) :: omega, g, d
 
@@ -547,14 +589,19 @@ contains
   end function waveNumber
 
 
-  function checkDepth (d,k)
+  !!============================================================================
+  !> @brief Checks that the finite water depth does not cause cause overflow.
+  !>
+  !> @param[in] d Water depth
+  !> @param[in] k The wave number
+  !>
+  !> @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 25 Jan 2013
 
-    !!==========================================================================
-    !! Checks that the finite water depth is not too large to cause overflow.
-    !!
-    !! Programmer : Knut Morten Okstad              date/rev : 25 Jan 2013 / 1.0
-    !!              Knut Morten Okstad              date/rev : 02 Dec 2013 / 1.1
-    !!==========================================================================
+  function checkDepth (d,k)
 
     real(dp), intent(in) :: d, k
 
@@ -569,29 +616,40 @@ contains
   end function checkDepth
 
 
+  !!============================================================================
+  !> @brief Evaluates the deep water wave profile.
+  !>
+  !> @param[in] RFUNC Real wave data, output from wavefunctionsmodule::initfunc4
+  !> @param[in] g Gravity constant
+  !> @param[in] x Current horizontal position
+  !> @param[in] z Current vertical position
+  !> @param[in] t Current time
+  !> @param[in] atSurface If .true., evaluate at water surface instead of @a z
+  !> @param[in] noWheelerStretching If .true., switch off Wheeler stretching
+  !> @param[out] h Current wave height (depends on @a x and @a t only)
+  !> @param[out] u Current particle velocity in local @a x direction
+  !> @param[out] w Current particle velocity in local @a z direction
+  !> @param[out] du Current particle acceleration in local @a x direction
+  !> @param[out] dw Current particle acceleration in local @a z direction
+  !> @param[out] p Current dynamic pressure
+  !>
+  !> @details This subroutine evaluates the wave profile height and associated
+  !> particle velocity and acceleration at a given spatial point and time.
+  !> Assuming deep water waves, i.e., 2*depth &gt; largest wave length.
+  !> @a z=0 represents the mean free surface level and @a z is positive upwards.
+  !>
+  !> Reference:
+  !> -# O. M. Faltinsen, "Sea Loads on Ships and Offshore Structures",
+  !>    Table 2.1, page 16.
+  !>
+  !> @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 25 March 2009
+
   subroutine deepWave (RFUNC,g,x,z,t,atSurface,noWheelerStretching, &
        &               h,u,w,du,dw,p)
-
-    !!==========================================================================
-    !! Evaluates the wave profile and the associated particle velocity
-    !! and acceleration at a given spatial point {x,0,z} and time, t.
-    !! Assuming deep water waves, i.e., 2*depth > largest wave length.
-    !! z=0 represents the mean free surface level and z is positive upwards.
-    !!
-    !! Reference: O. M. Faltinsen,
-    !! "Sea Loads on Ships and Offshore Structures", Table 2.1, page 16.
-    !!
-    !! RFUNC  - Wave data, output from initFUNC4
-    !! g      - Gravity constant
-    !! x, z   - Current position
-    !! t      - Current time
-    !! h      - Current wave height above z=0 (depends on x and t only)
-    !! u, w   - Current particle velocity in local x and z directions
-    !! du, dw - Current particle acceleration in local x and z directions
-    !! p      - Current dynamic pressure (optional)
-    !!
-    !! Programmer : Knut Morten Okstad            date/rev : 25 March 2009 / 1.0
-    !!==========================================================================
 
     real(dp), intent(in)  :: RFUNC(:,:), g, x, z, t
     logical , intent(in)  :: atSurface, noWheelerStretching
@@ -666,30 +724,44 @@ contains
   end subroutine deepWave
 
 
+  !!============================================================================
+  !> @brief Evaluates the deep water wave profile.
+  !>
+  !> @param[in] RFUNC Real wave data, output from wavefunctionsmodule::initfunc4
+  !> @param[in] g Gravity constant
+  !> @param[in] x Current horizontal position
+  !> @param[in] y Current horizontal position normal to the @a x direction
+  !> @param[in] z Current vertical position
+  !> @param[in] t Current time
+  !> @param[in] atSurface If .true., evaluate at water surface instead of @a z
+  !> @param[in] noWheelerStretching If .true., switch off Wheeler stretching
+  !> @param[out] h Current wave height (depends on @a x, @a y and @a t only)
+  !> @param[out] u Current particle velocity in local @a x direction
+  !> @param[out] v Current particle velocity in local @a y direction
+  !> @param[out] w Current particle velocity in local @a z direction
+  !> @param[out] du Current particle acceleration in local @a x direction
+  !> @param[out] dv Current particle acceleration in local @a y direction
+  !> @param[out] dw Current particle acceleration in local @a z direction
+  !> @param[out] p Current dynamic pressure
+  !>
+  !> @details This subroutine evaluates the wave profile height and associated
+  !> particle velocity and acceleration at a given spatial point and time.
+  !> Assuming deep water waves, i.e., 2*depth &gt; largest wave length.
+  !> @a z=0 represents the mean free surface level and @a z is positive upwards.
+  !> This subroutine also accounts for wave spreading through an outer loop.
+  !>
+  !> Reference:
+  !> -# O. M. Faltinsen, "Sea Loads on Ships and Offshore Structures",
+  !>    Table 2.1, page 16.
+  !>
+  !> @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 15 July 2015
+
   subroutine deepWaves (RFUNC,g,x,y,z,t,atSurface,noWheelerStretching, &
        &                h,u,v,w,du,dv,dw,p)
-
-    !!==========================================================================
-    !! Evaluates the wave profile and the associated particle velocity
-    !! and acceleration at a given spatial point {x,y,z} and time, t.
-    !! Assuming deep water waves, i.e., 2*depth > largest wave length.
-    !! z=0 represents the mean free surface level and z is positive upwards.
-    !! This subroutine also accounts for wave spreading through an outer loop.
-    !!
-    !! Reference: O. M. Faltinsen,
-    !! "Sea Loads on Ships and Offshore Structures", Table 2.1, page 16.
-    !!
-    !! RFUNC      - Wave data, output from initFUNC4
-    !! g          - Gravity constant
-    !! x, y, z    - Current position
-    !! t          - Current time
-    !! h          - Current wave height above z=0 (depends on x, t and t only)
-    !! u, v, w    - Current particle velocity in local directions
-    !! du, dv, dw - Current particle acceleration in local directions
-    !! p          - Current dynamic pressure (optional)
-    !!
-    !! Programmer : Knut Morten Okstad             date/rev : 15 July 2015 / 1.0
-    !!==========================================================================
 
     real(dp), intent(in)  :: RFUNC(:,:,:), g, x, y, z, t
     logical , intent(in)  :: atSurface, noWheelerStretching
@@ -788,29 +860,41 @@ contains
   end subroutine deepWaves
 
 
+  !!============================================================================
+  !> @brief Evaluates the finite depth wave profile.
+  !>
+  !> @param[in] RFUNC Real wave data, output from wavefunctionsmodule::initfunc4
+  !> @param[in] g Gravity constant
+  !> @param[in] d Water depth
+  !> @param[in] x Current horizontal position
+  !> @param[in] z Current vertical position, positive upwards
+  !> (@a z= 0 means free surface level)
+  !> @param[in] t Current time
+  !> @param[in] atSurface If .true., evaluate at water surface instead of @a z
+  !> @param[in] noWheelerStretching If .true., switch off Wheeler stretching
+  !> @param[out] h Current wave height (depends on @a x and @a t only)
+  !> @param[out] u Current particle velocity in local @a x direction
+  !> @param[out] w Current particle velocity in local @a z direction
+  !> @param[out] du Current particle acceleration in local @a x direction
+  !> @param[out] dw Current particle acceleration in local @a z direction
+  !> @param[out] p Current dynamic pressure
+  !>
+  !> @details This subroutine evaluates the wave profile and the associated
+  !> particle velocity and acceleration at a given spatial point and time.
+  !> Assuming finite depth water waves and linear wave theory.
+  !>
+  !> References:
+  !> -# O. M. Faltinsen, "Sea Loads on Ships and Offshore Structures",
+  !>    Table 2.1, page 16.
+  !>
+  !> @callergraph
+  !>
+  !> @author Arne Rekdal
+  !>
+  !> @date 5 Oct 2010
+
   subroutine finiteDepthWave (RFUNC,g,d,x,z,t,atSurface,noWheelerStretching, &
        &                      h,u,w,du,dw,p)
-
-    !!==========================================================================
-    !! Evaluates the wave profile and the associated particle velocity
-    !! and acceleration at a given spatial point {x,0,z} and time, t.
-    !! Assuming finite depth water waves, linear wave theory.
-    !!
-    !! Reference: O. M. Faltinsen,
-    !! "Sea Loads on Ships and Offshore Structures", Table 2.1, page 16.
-    !!
-    !! RFUNC  - Wave data, output from initFUNC4
-    !! g      - Gravity constant
-    !! d      - Water depth
-    !! x, z   - Current position (z=0 mean free surface level, positive upwards)
-    !! t      - Current time
-    !! h      - Current wave height above z=0 (depends on x and t only)
-    !! u, w   - Current particle velocity in local x and z directions
-    !! du, dw - Current particle acceleration in local x and z directions
-    !! p      - Current dynamic pressure (optional)
-    !!
-    !! Programmer : Arne Rekdal                     date/rev : 05 Oct 2010 / 1.0
-    !!==========================================================================
 
     real(dp), intent(in)  :: RFUNC(:,:), g, d, x, z, t
     logical , intent(in)  :: atSurface, noWheelerStretching
@@ -901,31 +985,46 @@ contains
   end subroutine finiteDepthWave
 
 
+  !!============================================================================
+  !> @brief Evaluates the finite depth wave profile.
+  !>
+  !> @param[in] RFUNC Real wave data, output from wavefunctionsmodule::initfunc4
+  !> @param[in] g Gravity constant
+  !> @param[in] d Water depth
+  !> @param[in] x Current horizontal position
+  !> @param[in] y Current horizontal position normal to the @a x direction
+  !> @param[in] z Current vertical position, positive upwards
+  !> (@a z= 0 means free surface level)
+  !> @param[in] t Current time
+  !> @param[in] atSurface If .true., evaluate at water surface instead of @a z
+  !> @param[in] noWheelerStretching If .true., switch off Wheeler stretching
+  !> @param[out] h Current wave height (depends on @a x, @a y and @a t only)
+  !> @param[out] u Current particle velocity in local @a x direction
+  !> @param[out] v Current particle velocity in local @a y direction
+  !> @param[out] w Current particle velocity in local @a z direction
+  !> @param[out] du Current particle acceleration in local @a x direction
+  !> @param[out] dv Current particle acceleration in local @a y direction
+  !> @param[out] dw Current particle acceleration in local @a z direction
+  !> @param[out] p Current dynamic pressure
+  !>
+  !> @details This subroutine evaluates the wave profile and the associated
+  !> particle velocity and acceleration at a given spatial point and time.
+  !> Assuming finite depth water waves and linear wave theory.
+  !> This subroutine also accounts for wave spreading through an outer loop.
+  !>
+  !> References:
+  !> -# O. M. Faltinsen, "Sea Loads on Ships and Offshore Structures",
+  !>    Table 2.1, page 16.
+  !>
+  !> @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 15 Jul 2015
+
   subroutine finiteDepthWaves (RFUNC,g,d,x,y,z,t, &
        &                       atSurface,noWheelerStretching, &
        &                       h,u,v,w,du,dv,dw,p)
-
-    !!==========================================================================
-    !! Evaluates the wave profile and the associated particle velocity
-    !! and acceleration at a given spatial point {x,y,z} and time, t.
-    !! Assuming finite depth water waves, linear wave theory.
-    !! This subroutine also accounts for wave spreading through an outer loop.
-    !!
-    !! Reference: O. M. Faltinsen,
-    !! "Sea Loads on Ships and Offshore Structures", Table 2.1, page 16.
-    !!
-    !! RFUNC      - Wave data, output from initFUNC4
-    !! g          - Gravity constant
-    !! d          - Water depth
-    !! x, y, z    - Current position (z=0 mean free surface level)
-    !! t          - Current time
-    !! h          - Current wave height above z=0 (depends on x, y and t only)
-    !! u, v, w    - Current particle velocity in local directions
-    !! du, dv, dw - Current particle acceleration in local directions
-    !! p          - Current dynamic pressure (optional)
-    !!
-    !! Programmer : Knut Morten Okstad             date/rev : 15 July 2015 / 1.0
-    !!==========================================================================
 
     real(dp), intent(in)  :: RFUNC(:,:,:), g, d, x, y, z, t
     logical , intent(in)  :: atSurface, noWheelerStretching
@@ -1039,28 +1138,35 @@ contains
   end subroutine finiteDepthWaves
 
 
+  !!============================================================================
+  !> @brief Evaluates the wave profile according to 2nd order Stokes theory.
+  !>
+  !> @param[in] RFUNC Real wave data, output from wavefunctionsmodule::initfunc4
+  !> @param[in] g Gravity constant
+  !> @param[in] d Water depth
+  !> @param[in] x Current horizontal position
+  !> @param[in] z Current vertical position, positive upwards
+  !> (@a z= 0 means free surface level)
+  !> @param[in] t Current time
+  !> @param[in] atSurface If .true., evaluate at water surface instead of @a z
+  !> @param[in] noWheelerStretching If .true., switch off Wheeler stretching
+  !> @param[out] h Current wave height (depends on @a x, @a y and @a t only)
+  !> @param[out] u Current particle velocity in local @a x direction
+  !> @param[out] w Current particle velocity in local @a z direction
+  !> @param[out] du Current particle acceleration in local @a x direction
+  !> @param[out] dw Current particle acceleration in local @a z direction
+  !>
+  !> @details References:
+  !> -# J. F. Wilson, "Dynamics of Offshore Structures", Table 3.2, page 71.
+  !>
+  !> @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 4 Apr 2011
+
   subroutine stokes2Wave (RFUNC,g,d,x,z,t,atSurface,noWheelerStretching, &
        &                  h,u,w,du,dw)
-
-    !!==========================================================================
-    !! Evaluates the wave profile and the associated particle velocity
-    !! and acceleration at a given spatial point {x,0,z} and time, t.
-    !! Assuming 2nd order Stokes wave theory.
-    !!
-    !! Reference: J. F. Wilson,
-    !! "Dynamics of Offshore Structures", Table 3.2, page 71.
-    !!
-    !! RFUNC  - Wave data, output from initFUNC4
-    !! g      - Gravity constant
-    !! d      - Water depth
-    !! x, z   - Current position (z=0 mean free surface level, positive upwards)
-    !! t      - Current time
-    !! h      - Current wave height above z=0 (depends on x and t only)
-    !! u, w   - Current particle velocity in local x and z directions
-    !! du, dw - Current particle acceleration in local x and z directions
-    !!
-    !! Programmer : Knut Morten Okstad              date/rev : 04 Apr 2011 / 1.0
-    !!==========================================================================
 
     real(dp), intent(in)  :: RFUNC(:,:), g, d, x, z, t
     logical , intent(in)  :: atSurface, noWheelerStretching
@@ -1149,22 +1255,29 @@ contains
   end subroutine stokes2Wave
 
 
-  subroutine initFUNC7 (H,T,eps,g,D,RFUNC,ierr)
+  !!============================================================================
+  !> @brief Computes coefficients for 5th order Stokes waves.
+  !>
+  !> @param[in] H Wave height
+  !> @param[in] T Wave period
+  !> @param[in] eps Phase shift
+  !> @param[in] g Gravity constant
+  !> @param[in] D Water depth
+  !> @param[out] RFUNC Real function parameters
+  !> @param[out] ierr Error flag
+  !>
+  !> @details The subroutine stokes5 is from the code that was downloaded from
+  !> the following web-page:
+  !> http://www.civil.soton.ac.uk/hydraulics/download/downloadtable.htm
+  !> This web-page no longer exists (January 2015).
+  !>
+  !> @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 23 May 2011
 
-    !!==========================================================================
-    !! Computes coefficients for 5th order Stokes waves. The subroutine stokes5
-    !! is from the code that was downloaded from the following web-page:
-    !! http://www.civil.soton.ac.uk/hydraulics/download/downloadtable.htm
-    !! Note: This web-page no longer exists (January 2015).
-    !!
-    !! H   - Wave height
-    !! T   - Wave period
-    !! eps - Phase shift
-    !! g   - Gravity constant
-    !! D   - Water depth
-    !!
-    !! Programmer : Knut Morten Okstad              date/rev : 23 May 2011 / 1.0
-    !!==========================================================================
+  subroutine initFUNC7 (H,T,eps,g,D,RFUNC,ierr)
 
     use FFaMsgInterface, only : ffamsg_list
 
@@ -1231,27 +1344,33 @@ contains
   end subroutine initFUNC7
 
 
-  subroutine stokes5Wave (RFUNC,d,x,z,t,atSurface,h,u,w,du,dw)
+  !!============================================================================
+  !> @brief Evaluates the wave profile according to 5th order Stokes theory.
+  !>
+  !> @param[in] RFUNC Real wave data, output from wavefunctionsmodule::initfunc7
+  !> @param[in] d Water depth
+  !> @param[in] x Current horizontal position
+  !> @param[in] z Current vertical position, positive upwards
+  !> (@a z= 0 means free surface level)
+  !> @param[in] t Current time
+  !> @param[in] atSurface If .true., evaluate at water surface instead of @a z
+  !> @param[out] h Current wave height (depends on @a x and @a t only)
+  !> @param[out] u Current particle velocity in local @a x direction
+  !> @param[out] w Current particle velocity in local @a z direction
+  !> @param[out] du Current particle acceleration in local @a x direction
+  !> @param[out] dw Current particle acceleration in local @a z direction
+  !>
+  !> @details Based on code from j.r.chaplin@soton.ac.uk
+  !> See http://www.civil.soton.ac.uk/hydraulics/download/downloadtable.htm
+  !> Note: This web-page no longer exists (January 2015).
+  !>
+  !> @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 23 May 2011
 
-    !!==========================================================================
-    !! Evaluates the wave profile and the associated particle velocity
-    !! and acceleration at a given spatial point {x,0,z} and time, t.
-    !! Assuming 5nd order Stokes regular wave theory.
-    !!
-    !! Based on code from j.r.chaplin@soton.ac.uk
-    !! See http://www.civil.soton.ac.uk/hydraulics/download/downloadtable.htm
-    !! Note: This web-page no longer exists (January 2015).
-    !!
-    !! RFUNC  - Wave data, output from initFUNC7
-    !! d      - Water depth
-    !! x, z   - Current position (z=0 mean free surface level, positive upwards)
-    !! t      - Current time
-    !! h      - Current wave height above z=0 (depends on x and t only)
-    !! u, w   - Current particle velocity in local x and z directions
-    !! du, dw - Current particle acceleration in local x and z directions
-    !!
-    !! Programmer : Knut Morten Okstad              date/rev : 23 May 2011 / 1.0
-    !!==========================================================================
+  subroutine stokes5Wave (RFUNC,d,x,z,t,atSurface,h,u,w,du,dw)
 
     real(dp), intent(in)  :: RFUNC(:), d, x, z, t
     logical , intent(in)  :: atSurface
@@ -1303,22 +1422,29 @@ contains
   end subroutine stokes5Wave
 
 
-  subroutine initFUNC8 (H,T,eps,g,D,RFUNC,iOrder)
+  !!============================================================================
+  !> @brief Solves the streamline wave equation.
+  !>
+  !> @param[in] H Wave height
+  !> @param[in] T Wave period
+  !> @param[in] eps Phase shift
+  !> @param[in] g Gravity constant
+  !> @param[in] D Water depth
+  !> @param[out] RFUNC Real function parameters
+  !> @param[out] iOrder Wave theory order (negative on error)
+  !>
+  !> @details The subroutine cw260 is (a slightly modified version of)
+  !> the code that was downloaded from this web-page:
+  !> http://www.civil.soton.ac.uk/hydraulics/download/downloadtable.htm
+  !> Note: This web-page no longer exists (January 2015).
+  !>
+  !> @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 9 May 2011
 
-    !!==========================================================================
-    !! Solves the streamline wave equation. The subroutine cw260 is (a slightly
-    !! modified version of) the code that was downloaded from this web-page:
-    !! http://www.civil.soton.ac.uk/hydraulics/download/downloadtable.htm
-    !! Note: This web-page no longer exists (January 2015).
-    !!
-    !! H   - Wave height
-    !! T   - Wave period
-    !! eps - Phase shift
-    !! g   - Gravity constant
-    !! D   - Water depth
-    !!
-    !! Programmer : Knut Morten Okstad              date/rev : 09 May 2011 / 1.0
-    !!==========================================================================
+  subroutine initFUNC8 (H,T,eps,g,D,RFUNC,iOrder)
 
     use FFaMsgInterface, only : ffamsg_list
 
@@ -1397,27 +1523,37 @@ contains
   end subroutine initFUNC8
 
 
-  subroutine streamWave (RFUNC,d,x,z,t,atSurface,h,u,w,du,dw)
+  !!============================================================================
+  !> @brief Evaluates the nonlinear wave profile according to streamline theory.
+  !>
+  !> @param[in] RFUNC Real wave data, output from wavefunctionsmodule::initfunc8
+  !> @param[in] d Water depth
+  !> @param[in] x Current horizontal position
+  !> @param[in] z Current vertical position, positive upwards
+  !> (@a z= 0 means free surface level)
+  !> @param[in] t Current time
+  !> @param[in] atSurface If .true., evaluate at water surface instead of @a z
+  !> @param[out] h Current wave height (depends on @a x, @a y and @a t only)
+  !> @param[out] u Current particle velocity in local @a x direction
+  !> @param[out] w Current particle velocity in local @a z direction
+  !> @param[out] du Current particle acceleration in local @a x direction
+  !> @param[out] dw Current particle acceleration in local @a z direction
+  !>
+  !> @details This subroutine evaluates the wave profile and the associated
+  !> particle velocity and acceleration at a given spatial point and time.
+  !> Assuming nonlinear streamline wave theory.
+  !>
+  !> Based on code from j.r.chaplin@soton.ac.uk
+  !> See http://www.civil.soton.ac.uk/hydraulics/download/downloadtable.htm
+  !> Note: This web-page no longer exists (January 2015).
+  !>
+  !> @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 9 May 2011
 
-    !!==========================================================================
-    !! Evaluates the wave profile and the associated particle velocity
-    !! and acceleration at a given spatial point {x,0,z} and time, t.
-    !! Assuming nonlinear streamline wave theory.
-    !!
-    !! Based on code from j.r.chaplin@soton.ac.uk
-    !! See http://www.civil.soton.ac.uk/hydraulics/download/downloadtable.htm
-    !! Note: This web-page no longer exists (January 2015).
-    !!
-    !! RFUNC  - Wave data, output from initFUNC8
-    !! d      - Water depth
-    !! x, z   - Current position (z=0 mean free surface level, positive upwards)
-    !! t      - Current time
-    !! h      - Current wave height above z=0 (depends on x and t only)
-    !! u, w   - Current particle velocity in local x and z directions
-    !! du, dw - Current particle acceleration in local x and z directions
-    !!
-    !! Programmer : Knut Morten Okstad              date/rev : 09 May 2011 / 1.0
-    !!==========================================================================
+  subroutine streamWave (RFUNC,d,x,z,t,atSurface,h,u,w,du,dw)
 
     real(dp), intent(in)  :: RFUNC(:), d, x, z, t
     logical , intent(in)  :: atSurface
@@ -1484,15 +1620,42 @@ contains
   end subroutine streamWave
 
 
+  !!============================================================================
+  !> @brief Initializes an irregular wave function with embedded streamlines.
+  !>
+  !> @param[in] IOP Wave spectrum model:
+  !>  1. Pierson-Moskowitz with constant frequency intervals
+  !>  2. Pierson-Moskowitz with random frequency intervals
+  !>  3. JONSWAP spectrum with constant frequency intervals
+  !>  4. JONSWAP spectrum with random frequency intervals
+  !> @param[in] NR Number of data per irregular wave component
+  !> @param[in] NC Number of irregular wave components
+  !> @param[in] H3 Significant wave height (mean of the one third highest waves)
+  !> @param[in] T1 Mean wave period
+  !> @param[in] Gamma Spectral peakedness
+  !> @param[in] Omega0 Lowest frequency in wave spectrum
+  !> @param[in] dOmega Frequency increment between successive wave components
+  !> @param[in] g Gravity constant
+  !> @param[in] D Sea depth for finite depth waves
+  !> @param[in] ramp Ramping parameters
+  !> @param[in] embSLW Streanline data
+  !> @param[out] IFUNC Integer function parameters
+  !> @param[out] RFUNC Real function parameters
+  !> @param[out] IERR Error flag
+  !> @param[in] RSEED Seed for random value generator
+  !>
+  !> @details This subroutine generates and irregular wave function based on
+  !> statistical parameters (by using wavefunctionsmodule::initfunc4), with
+  !> embedded streamline wave components at specified time locations.
+  !>
+  !> @callgraph @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 16 May 2011
+
   subroutine initFUNC9 (IOP,NR,NC,H3,T1,Gamma,Omega0,dOmega,g,D,ramp,embSLW, &
        &                IFUNC,RFUNC,IERR,RSEED)
-
-    !!==========================================================================
-    !! Initializes an irregular wave function based on statistical parameters,
-    !! with embedded streamline waves at specified time locations.
-    !!
-    !! Programmer : Knut Morten Okstad              date/rev : 16 May 2012 / 1.0
-    !!==========================================================================
 
     use FFaMsgInterface, only : ffamsg_list
 
@@ -1553,6 +1716,7 @@ contains
 
   contains
 
+    !> @brief Converts a one-dimensional array to a two-dimensional matrix.
     function toMatrix (array,nr,nc)
       integer , intent(in)         :: nr, nc
       real(dp), intent(in), target :: array(nr,nc)
@@ -1563,16 +1727,36 @@ contains
   end subroutine initFUNC9
 
 
-  subroutine embeddedWave (IFUNC,RFUNC,g,d,x,z,t,atSurf,noWS,h,u,w,du,dw)
+  !!============================================================================
+  !> @brief Evaluates a wave function with embedded nonlinear components.
+  !>
+  !> @param[in] IFUNC Integer wave data from wavefunctionsmodule::initfunc9
+  !> @param[in] RFUNC Real wave data, output from wavefunctionsmodule::initfunc9
+  !> @param[in] g Gravity constant
+  !> @param[in] d Water depth
+  !> @param[in] x Current horizontal position
+  !> @param[in] z Current vertical position
+  !> @param[in] t Current time
+  !> @param[in] atSurf If .true., evaluate at water surface instead of @a z
+  !> @param[in] noWS If .true., switch off Wheeler stretching
+  !> @param[out] h Current wave height (depends on @a x and @a t only)
+  !> @param[out] u Current particle velocity in local @a x direction
+  !> @param[out] w Current particle velocity in local @a z direction
+  !> @param[out] du Current particle acceleration in local @a x direction
+  !> @param[out] dw Current particle acceleration in local @a z direction
+  !>
+  !> @details This subroutine evaluates the wave profile and the associated
+  !> particle velocity and acceleration at a given spatial point and time.
+  !> Assuming finite depth water waves, linear wave theory, with embedded
+  !> nonlinear streamline waves at user-defined times.
+  !>
+  !> @callgraph @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 16 May 2012
 
-    !!==========================================================================
-    !! Evaluates the wave profile and the associated particle velocity
-    !! and acceleration at a given spatial point {x,0,z} and time, t.
-    !! Assuming finite depth water waves, linear wave theory, with embedded
-    !! nonlinear streamline waves at user-defined times.
-    !!
-    !! Programmer : Knut Morten Okstad              date/rev : 16 May 2012 / 1.0
-    !!==========================================================================
+  subroutine embeddedWave (IFUNC,RFUNC,g,d,x,z,t,atSurf,noWS,h,u,w,du,dw)
 
     integer , intent(in)  :: IFUNC(:)
     real(dp), intent(in)  :: RFUNC(:), g, d, x, z, t
@@ -1643,14 +1827,32 @@ contains
   end subroutine embeddedWave
 
 
-  subroutine userDefinedWave (ikf,IFUNC,RFUNC,g,d,Xt,atSurf,h,u,du,ierr)
+  !!============================================================================
+  !> @brief Evaluates the user-defined wave profile.
+  !>
+  !> @param[in] IKF Function identifier
+  !> @param[in] IFUNC Integer wave data
+  !> @param[in] RFUNC Real wave data
+  !> @param[in] g Gravity constant
+  !> @param[in] d Water depth
+  !> @param[in] Xt Current position and time
+  !> @param[in] atSurf If .true., evaluate at water surface instead of @a z
+  !> @param[out] h Current wave height (depends on @a x and @a t only)
+  !> @param[out] u Current particle velocity
+  !> @param[out] du Current particle acceleration
+  !> @param[out] ierr Error flag
+  !>
+  !> @details This subroutine evaluates the wave height and associated particle
+  !> velocity and acceleration at a given spatial point and time, by invoking
+  !> a user-defined function from a separate plugin.
+  !>
+  !> @callgraph @callergraph
+  !>
+  !> @author Knut Morten Okstad
+  !>
+  !> @date 22 Jun 2016
 
-    !!==========================================================================
-    !! Evaluates the user-defined wave profile and the associated particle
-    !! velocity and acceleration at a given spatial point and time.
-    !!
-    !! Programmer : Knut Morten Okstad              date/rev : 22 Jun 2016 / 1.0
-    !!==========================================================================
+  subroutine userDefinedWave (ikf,IFUNC,RFUNC,g,d,Xt,atSurf,h,u,du,ierr)
 
     use FFaUserFuncInterface, only : ffauf_wave
     use FFaMsgInterface     , only : ffamsg_list

@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaFunctionProperties.C
+  \brief Smart-point evaluation for some closed-form explicit functions.
+*/
+
 #include "FFaFunctionProperties.H"
 #include "FFaFunctionManager.H"
 #include "FFaUserFuncPlugin.H"
@@ -17,17 +22,22 @@
 #endif
 
 
-static double evalFunc(int fType, double x, const std::vector<double>& realVars,
-                       int extrap, int& ierr)
+namespace
 {
-  return FFaFunctionManager::getValue(fType,fType,extrap,realVars,x,ierr);
-}
+  //! \brief Convenience wrapper
+  double evalFunc(int fType, double x, const std::vector<double>& realVars,
+                  int extrap, int& ierr)
+  {
+    return FFaFunctionManager::getValue(fType,fType,extrap,realVars,x,ierr);
+  }
 
 
-static double interpolate(bool fromLeft, double x,
-                          double x0, double y0, double x1, double y1)
-{
-  return x1 > x0 ? y0 + (x-x0)*(y1-y0)/(x1-x0) : (fromLeft ? y0 : y1);
+  //! \brief Linear interpolation between two points.
+  double interpolate(bool fromLeft, double x,
+                     double x0, double y0, double x1, double y1)
+  {
+    return x1 > x0 ? y0 + (x-x0)*(y1-y0)/(x1-x0) : (fromLeft ? y0 : y1);
+  }
 }
 
 

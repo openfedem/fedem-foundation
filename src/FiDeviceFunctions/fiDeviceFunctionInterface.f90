@@ -23,37 +23,51 @@ module fiDeviceFunctionInterface
 
   interface
 
+     !!=========================================================================
      !> @brief Opens a device function file for read access.
-     !> @param[in] fileName Name of device function file
-     !> @param fileId On input; integration order. On output; file handle.
+     !> @param[in] fileName Name of device function file to open
+     !> @param fileId Unique index (handle) for the opened file
      !> @param[out] err Error flag
+     !>
+     !> @details The extension of @a fileName is used to try to determine the
+     !> file type. If this does not succeed, ASCII is assumed.
+     !> @note On input, the @a fileId argument contains the channel index.
      subroutine fidf_open (fileName,fileId,err)
        character(len=*), intent(in)    :: fileName
        integer         , intent(inout) :: fileId
        integer         , intent(out)   :: err
      end subroutine fidf_open
 
+     !!=========================================================================
      !> @brief Opens a device function file for write access.
-     !> @param[in] fileName Name of device function file
+     !> @param[in] fileName Name of device function file to open
      !> @param[in] fileType Type of device function file
-     !> @param[out] fileId File handle
+     !> @param[out] fileId Unique index (handle) for the opened file
      !> @param[out] err Error flag
+     !>
+     !> @details The extension of @a fileName is used to try to determine the
+     !> file type if @a fileType is zero (unknown type). If this does not
+     !> succeed, a simple text file will be opened.
+     !> @note If the specified file already exists, it will be replaced.
      subroutine fidf_openwrite (fileName,fileType,fileId,err)
        character(len=*), intent(in)  :: fileName
        integer         , intent(in)  :: fileType
        integer         , intent(out) :: fileId, err
      end subroutine fidf_openwrite
 
+     !!=========================================================================
      !> @brief Closes a specified device function file.
      !> @param[in] fileId File handle
      subroutine fidf_close (fileId)
        integer, intent(in) :: fileId
      end subroutine fidf_close
 
+     !!=========================================================================
      !> @brief Closes all currently opened device function files.
      subroutine fidf_closeall ()
      end subroutine fidf_closeall
 
+     !!=========================================================================
      !> @brief Evaluates a device function at a given point.
      !> @param[in] fileId File handle
      !> @param[in] arg Function argument
@@ -62,6 +76,9 @@ module fiDeviceFunctionInterface
      !> @param[in] zeroAdj Flag for adjusting first function value to zero
      !> @param[in] vertShift Additional vertical shift of function values
      !> @param[in] scaleFac Scaling factor to apply on function values
+     !> @return The function value.
+     !>
+     !> @note Thus function is valid for read-only devices only.
      function fidf_getvalue (fileId,arg,err,channel,zeroAdj,vertShift,scaleFac)
        integer , parameter     :: dp = kind(1.0D0)
        real(dp)                :: fidf_getvalue
@@ -70,34 +87,44 @@ module fiDeviceFunctionInterface
        integer , intent(inout) :: err
      end function fidf_getvalue
 
+     !!=========================================================================
      !> @brief Assigns a value to a device function at a given point.
      !> @param[in] fileId File handle
      !> @param[in] arg Function argument
-     !> @param[in] val Function value to assign
+     !> @param[in] val Associated function value to assign
+     !>
+     !> @note This subroutine is valid for write-only devices only.
      subroutine fidf_setvalue (fileId,arg,val)
        integer , parameter  :: dp = kind(1.0D0)
        integer , intent(in) :: fileId
        real(dp), intent(in) :: arg, val
      end subroutine fidf_setvalue
 
-     !> @brief Sets the sampling frequency for a device function.
+     !!=========================================================================
+     !> @brief Defines the sampling frequency for a device function.
      !> @param[in] fileId File handle
-     !> @param[in] freq Sampling frequency
+     !> @param[in] freq Desired sampling frequency
+     !>
+     !> @note This subroutine is valid for write-only devices only.
      subroutine fidf_setfrequency (fileId,freq)
        integer , parameter  :: dp = kind(1.0D0)
        integer , intent(in) :: fileId
        real(dp), intent(in) :: freq
      end subroutine fidf_setfrequency
 
-     !> @brief Sets the sampling step size for a device function.
+     !!=========================================================================
+     !> @brief Defines the sampling step size for a device function.
      !> @param[in] fileId File handle
-     !> @param[in] step Sampling step size
+     !> @param[in] step Desired sampling step size
+     !>
+     !> @note This subroutine is valid for write-only devices only.
      subroutine fidf_setstep (fileId,step)
        integer , parameter  :: dp = kind(1.0D0)
        integer , intent(in) :: fileId
        real(dp), intent(in) :: step
      end subroutine fidf_setstep
 
+     !!=========================================================================
      !> @brief Returns the X-axis label for a device function.
      !> @param[in] fileId File handle
      !> @param[out] title X-axis description
@@ -107,6 +134,7 @@ module fiDeviceFunctionInterface
        character(len=*), intent(out) :: title, unit
      end subroutine fidf_getxaxis
 
+     !!=========================================================================
      !> @brief Returns the Y-axis label for a device function.
      !> @param[in] fileId File handle
      !> @param[out] title Y-axis description
@@ -116,6 +144,7 @@ module fiDeviceFunctionInterface
        character(len=*), intent(out) :: title, unit
      end subroutine fidf_getyaxis
 
+     !!=========================================================================
      !> @brief Sets the X-axis label for a device function.
      !> @param[in] fileId File handle
      !> @param[in] title X-axis description
@@ -125,6 +154,7 @@ module fiDeviceFunctionInterface
        character(len=*), intent(in) :: title, unit
      end subroutine fidf_setxaxis
 
+     !!=========================================================================
      !> @brief Sets the Y-axis label for a device function.
      !> @param[in] fileId File handle
      !> @param[in] title Y-axis description
@@ -134,10 +164,12 @@ module fiDeviceFunctionInterface
        character(len=*), intent(in) :: title, unit
      end subroutine fidf_setyaxis
 
+     !!=========================================================================
      !> @brief Dumps data about all defined device functions to console.
      subroutine fidf_dump ()
      end subroutine fidf_dump
 
+     !!=========================================================================
      !> @brief Opens a file for reading external function values.
      !> @param[out] Error flag
      !> @param[in] fileName Name of file
@@ -147,17 +179,26 @@ module fiDeviceFunctionInterface
        character(len=*), intent(in)  :: fileName, labels
      end subroutine fidf_extfunc
 
+     !!=========================================================================
      !> @brief Updates the external function values from file.
      !> @param[in] nstep Number of steps to read
+     !>
+     !> @note The internal step counter FiDeviceFunctionFactory::myExtFnStep
+     !> is not updated.
+
      subroutine fidf_extfunc_ff (nstep)
        integer, intent(in) :: nstep
      end subroutine fidf_extfunc_ff
 
+     !!=========================================================================
      !> @brief Stores/extracts external function values from in-core array.
      !> @param data Solution state array
      !> @param[in] ndat Length of the solution state array
-     !> @param[in] iop Option telling what to do (0=return required array size)
-     !> @param istat Running array offset, negative value indicates an error
+     !> @param[in] iop Option telling what to do:
+     !> - 0 : return required array size
+     !> - 1 : store new values
+     !> - 2 : restore values
+     !> @param istat Running array index, negative value indicates an error
      subroutine fidf_storeextfunc (data, ndat, iop, istat)
        integer , parameter     :: dp = kind(1.0D0)
        integer , intent(in)    :: ndat, iop
@@ -165,6 +206,7 @@ module fiDeviceFunctionInterface
        integer , intent(inout) :: istat
      end subroutine fidf_storeextfunc
 
+     !!=========================================================================
      !> @brief Initializes external function values from file or an array.
      !> @param data Array of external function values
      !> @param[in] ndat Length of the @a data array
@@ -180,6 +222,7 @@ module fiDeviceFunctionInterface
 
 contains
 
+  !!============================================================================
   !> @brief Returns the size of the external function values array.
   function fidf_extfuncsize () result(ndat)
     integer, parameter :: dp = kind(1.0D0)
