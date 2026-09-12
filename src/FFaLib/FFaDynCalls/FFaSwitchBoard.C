@@ -26,7 +26,7 @@ namespace
                                   FFaSlotList& slots,
                                   FFaSlotList::iterator slit)
   {
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 1
     std::cout <<"FFaSwitchBoard::eraseSlot("<< sender->getLabel()
               <<"): "<< subject <<" size="<< slots.size()
               <<" refCount="<< slit->refCount << std::endl;
@@ -111,7 +111,7 @@ void FFaSwitchBoard::removeAllSenderConnections(FFaSwitchBoardConnector* sender)
   SwitchBoardConnection::iterator sbcIter = ourConnections->find(sender);
   if (sbcIter == ourConnections->end()) return; // Nothing to do
 
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 1
   std::cout <<"FFaSwitchBoard::removeAllSenderConnections("
             << sender->getLabel() <<"): "<< ourConnections->size() << std::endl;
 #endif
@@ -145,7 +145,7 @@ void FFaSwitchBoard::removeAllOwnerConnections(FFaSwitchBoardConnector* owner)
 {
   if (!ourConnections) return;
 
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 1
   std::cout <<"FFaSwitchBoard::removeAllOwnerConnections("
             << owner->getLabel() <<"): "<< ourConnections->size() << std::endl;
 #endif
@@ -239,12 +239,12 @@ FFaSlotList::iterator
 FFaSwitchBoard::nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
                               FFaSwitchBoardConnector* sender, int subject)
 {
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 2
   size_t islot = 0, nslot = slots.size();
 #endif
   if (it == slots.end())
   {
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 2
     std::cout <<"FFaSwitchBoard: sender=\""<< sender->getLabel()
               <<"\" signal="<< subject <<" nslot="<< nslot << std::endl;
 #endif
@@ -252,13 +252,13 @@ FFaSwitchBoard::nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
   }
   else
   {
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 2
     for (FFaSlotList::iterator j = slots.begin(); j != it && j != slots.end(); ++j)
       ++islot;
 #endif
     if (it->refCount < 0 || !it->slotPt)
     {
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 2
       std::cout <<"\tErasing invalid slot "<< islot << std::endl;
 #endif
       it = slots.erase(it);
@@ -267,7 +267,7 @@ FFaSwitchBoard::nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
     {
       it->refCount--;
       ++it;
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 2
       ++islot;
 #endif
     }
@@ -277,12 +277,12 @@ FFaSwitchBoard::nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
     if (it->refCount >= 0 && it->slotPt)
     {
       it->refCount++;
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 2
       std::cout <<"\tUsing valid slot "<< islot << std::endl;
 #endif
       return it;
     }
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 2
     else
       ++islot;
 #endif
@@ -290,7 +290,7 @@ FFaSwitchBoard::nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
   if (slots.empty())
     cleanUpAfterSlot(sender,subject);
 
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 2
   if (nslot > 0)
     std::cout <<"\tNo valid slot "<< islot << std::endl;
 #endif
@@ -301,7 +301,7 @@ FFaSwitchBoard::nextValidSlot(FFaSlotList::iterator it, FFaSlotList& slots,
 FFaSwitchBoardConnector::FFaSwitchBoardConnector(const char* s) : label(s)
 {
   IAmDeletingMe = false;
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 1
   if (label)
     std::cout <<"FFaSwitchBoardConnector("<< label <<")"<< std::endl;
 #endif
@@ -310,7 +310,7 @@ FFaSwitchBoardConnector::FFaSwitchBoardConnector(const char* s) : label(s)
 
 FFaSwitchBoardConnector::~FFaSwitchBoardConnector()
 {
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 1
   std::cout <<"~FFaSwitchBoardConnector(";
   if (label) std::cout << label;
   std::cout <<"): "<< mySlots.size() << std::endl;
@@ -323,7 +323,7 @@ FFaSwitchBoardConnector::~FFaSwitchBoardConnector()
 
 FFaSlotBase::~FFaSlotBase()
 {
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 1
   std::cout <<"~FFaSlotBase("<< myTypeID <<"): "
             << mySwitchBoardLookups.size() << std::endl;
 #endif
@@ -355,7 +355,7 @@ bool FFaSlotBase::removeConnection(FFaSwitchBoardConnector* sender, int subject)
 {
   if (IAmDeletingMe) return false;
 
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 1
   std::cout <<"FFaSlotBase::removeConnection("<< sender->getLabel() <<"): "
             << subject <<" size="<< mySwitchBoardLookups.size() << std::endl;
 #endif
@@ -373,7 +373,7 @@ bool FFaSlotBase::removeConnection(FFaSwitchBoardConnector* sender, int subject)
 
   if (!mySwitchBoardLookups.empty()) return false;
 
-#ifdef FFA_DEBUG
+#if FFA_DEBUG > 1
   std::cout <<"\tdeleted."<< std::endl;
 #endif
   delete this;
