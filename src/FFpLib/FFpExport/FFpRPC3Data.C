@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFpRPC3Data.C
+  \brief Method for parsing some meta data from a RPC3-file.
+*/
+
 #include "FFpLib/FFpExport/FFpBatchExport.H"
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FiDeviceFunctions/FiRPC3File.H"
@@ -20,7 +25,7 @@ bool FFpRPC3Data::readDataFromFile(const std::string& rpcFile)
     return false;
   }
 
-  ListUI <<"\n===> Reading number of repeats, etc. from "<< rpcFile <<"\n";
+  ListUI <<"\n===> Reading number of repeats, etc., from "<< rpcFile <<"\n";
   repeats  = rpc.getRepeats();
   averages = rpc.getAverages();
   framePts = rpc.getFramePoints();

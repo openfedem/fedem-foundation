@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFpBatchExport.C
+  \brief Auto-export of curve data for batch executions.
+*/
+
 #include <fstream>
 #include <sstream>
 
@@ -20,6 +25,35 @@
 #include "FFaLib/FFaOperation/FFaBasicOperations.H"
 
 
+namespace
+{
+  //! \brief Recursive helper parsing a RESULT_STATUS_DATA model file entry.
+  bool processTokens (std::vector<std::string>& fNames,
+                      const std::vector<std::string>& tokens,
+                      const std::string& path)
+  {
+    if (tokens.size() < 2)
+    {
+      ListUI <<"  -> Syntax error in result status data - check model file.\n";
+      return false;
+    }
+
+    // First two are RSD info, use it to expand the file path
+    std::string newPath = FFaFilePath::appendFileNameToPath(path,tokens[0]);
+    newPath += FFaNumStr("_%04d",atoi(tokens[1].c_str()));
+
+    for (size_t i = 2; i < tokens.size(); i++)
+      if (tokens[i][0] == '<')
+        // The first char is a '<', i.e., we have a sub RSD-entry
+        processTokens(fNames,FFaTokenizer(tokens[i],'<','>'),newPath);
+      else if (FFaFilePath::isExtension(tokens[i],"frs"))
+        fNames.push_back(FFaFilePath::appendFileNameToPath(newPath,tokens[i]));
+
+    return !fNames.empty();
+  }
+}
+
+
 FFpBatchExport::FFpBatchExport (const std::vector<std::string>& frsFiles)
 {
   myExtractor = new FFrExtractor;
@@ -27,40 +61,12 @@ FFpBatchExport::FFpBatchExport (const std::vector<std::string>& frsFiles)
     myExtractor->addFiles(frsFiles,false,true);
 }
 
+
 FFpBatchExport::~FFpBatchExport ()
 {
   delete myExtractor;
   FFrExtractor::releaseMemoryBlocks(true);
   for (FFpCurveDef* curve : myCurves) delete curve;
-}
-
-
-/*!
-  Recursive function that parses a RESULT_STATUS_DATA model file entry.
-*/
-
-static bool processTokens (std::vector<std::string>& fNames,
-			   const std::vector<std::string>& tokens,
-			   const std::string& path)
-{
-  if (tokens.size() < 2)
-  {
-    ListUI <<"  -> Syntax error in result status data - check model file.\n";
-    return false;
-  }
-
-  // First two are RSD info, use it to expand the file path
-  std::string newPath = FFaFilePath::appendFileNameToPath(path,tokens[0]);
-  newPath += FFaNumStr("_%04d",atoi(tokens[1].c_str()));
-
-  for (size_t i = 2; i < tokens.size(); i++)
-    if (tokens[i][0] == '<')
-      // The first char is a '<', i.e., we have a sub RSD-entry
-      processTokens(fNames,FFaTokenizer(tokens[i],'<','>'),newPath);
-    else if (FFaFilePath::isExtension(tokens[i],"frs"))
-      fNames.push_back(FFaFilePath::appendFileNameToPath(newPath,tokens[i]));
-
-  return !fNames.empty();
 }
 
 
