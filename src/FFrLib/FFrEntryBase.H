@@ -135,6 +135,9 @@ public:
   virtual int recursiveReadPosData(const float* vals, int nvals, int arrayPos) const = 0;
   virtual int recursiveReadPosData(const int* vals, int nvals, int arrayPos) const = 0;
 
+  //! \brief Reads a variable from the results container for current time step.
+  template<class T> bool readVar(T& value);
+
 private:
   FFrEntryBase* myOwner;  //!< Parent of this entry in the RDB hierchy
   bool          myGlobal; //!< Global (extractor-level) or local (container level)

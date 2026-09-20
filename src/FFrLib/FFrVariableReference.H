@@ -23,7 +23,6 @@ public:
   virtual ~FFrVariableReference();
 #else
   FFrVariableReference(FFrVariable* var) : variableDescr(var) {}
-  virtual ~FFrVariableReference() {}
 #endif
 
   virtual const std::string& getDescription() const;
@@ -54,7 +53,7 @@ public:
     FFrVariableReference* next; // used in memory management
   };
 
-  typedef std::pair<FFrResultContainer*,size_t> FFrResultContainerRef;
+  using FFrResultContainerRef = std::pair<FFrResultContainer*,size_t>;
 
   std::vector<FFrResultContainerRef> containers;
 
@@ -74,6 +73,10 @@ protected:
   virtual int recursiveReadPosData(const double* vals, int nvals, int arrayPos) const;
   virtual int recursiveReadPosData(const float* vals, int nvals, int arrayPos) const;
   virtual int recursiveReadPosData(const int* vals, int nvals, int arrayPos) const;
+
+public:
+  //! \brief Reads a variable from the results container for current time step.
+  template<class T> bool readVariable(T& value);
 
 private:
   //! \brief Returns the index of the nearest container for the current setting.
