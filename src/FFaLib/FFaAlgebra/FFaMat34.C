@@ -5,17 +5,26 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaMat34.C
+  \brief Position matrices in 3D space.
+*/
+
 #include "FFaLib/FFaAlgebra/FFaMat34.H"
 
 
 /*!
-  Matrix layout :
+  \class FaMat34
+  \details Matrix layout:
+  \code
 
   [0][0]  [1][0]  [2][0]  [3][0]
 
   [0][1]  [1][1]  [2][1]  [3][1]
 
   [0][2]  [1][2]  [2][2]  [3][2]
+
+  \endcode
 */
 
 
@@ -244,10 +253,12 @@ FaMat34& FaMat34::makeCS_Z_XZ(const FaVec3& origin,
 ////////////////////////////////////////////////////////////////////////////////
 
 /*!
-  Writes a reduced homogenous transformation matrix. Format:
+  This method writes a reduced homogenous transformation matrix. Format:
+  \code
   R1x  R2x  R3x  Tx
   R1y  R2y  R3y  Ty
   R1z  R2z  R3z  Tz
+  \endcode
 */
 
 std::ostream& FaMat34::printStd(std::ostream& os) const
@@ -266,11 +277,13 @@ std::ostream& FaMat34::printStd(std::ostream& os) const
 
 
 /*!
-  Writes a reduced homogenous transformation matrix. Format:
+  This method writes a reduced homogenous transformation matrix. Format:
+  \code
   R1x  R1y  R1z
   R2x  R2y  R3z
   R3x  R3y  R3z
   Tx   Ty   Tz
+  \endcode
 */
 
 std::ostream& FaMat34::printRot(std::ostream& os) const
@@ -280,10 +293,12 @@ std::ostream& FaMat34::printRot(std::ostream& os) const
 
 
 /*!
-  Reads a reduced homogenous transformation matrix. Format:
+  This method reads a reduced homogenous transformation matrix. Format:
+  \code
   R1x  R2x  R3x  Tx
   R1y  R2y  R3y  Ty
   R1z  R2z  R3z  Tz
+  \endcode
 */
 
 bool FaMat34::readStd(std::istream& s)
@@ -296,11 +311,13 @@ bool FaMat34::readStd(std::istream& s)
 
 
 /*!
-  Reads a reduced homogenous transformation matrix. Format:
+  This method reads a reduced homogenous transformation matrix. Format:
+  \code
   R1x  R1y  R1z
   R2x  R2y  R3z
   R3x  R3y  R3z
   Tx   Ty   Tz
+  \endcode
 */
 
 bool FaMat34::readRot(std::istream& s)
@@ -315,6 +332,7 @@ bool FaMat34::readRot(std::istream& s)
 // Global operators
 //
 ////////////////////////////////////////////////////////////////////////////////
+//! \cond DO_NOT_DOCUMENT
 
 FaMat34 operator- (const FaMat34& a)
 {
@@ -327,9 +345,19 @@ FaMat34 operator+ (const FaMat34& a, const FaMat34& b)
   return FaMat34(a.r + b.r, a.p + b.p);
 }
 
+FaMat34 operator+ (const FaMat34& a, const FaVec3& b)
+{
+  return FaMat34(a.r, a.p + b);
+}
+
 FaMat34 operator- (const FaMat34& a, const FaMat34& b)
 {
   return FaMat34(a.r - b.r, a.p - b.p);
+}
+
+FaMat34 operator- (const FaMat34& a, const FaVec3& b)
+{
+  return FaMat34(a.r, a.p - b);
 }
 
 
@@ -338,12 +366,10 @@ FaMat34 operator* (const FaMat34& a, const FaMat34& b)
   return FaMat34(a.r*b.r, a.r*b.p + a.p);
 }
 
-
 FaMat34 operator* (const FaMat34& a, const FaMat33& b)
 {
   return FaMat34(a.r*b, a.p);
 }
-
 
 FaVec3 operator* (const FaMat34& a, const FaVec3& b)
 {
@@ -373,3 +399,5 @@ std::istream& operator>> (std::istream& s, FaMat34& m)
   if (m_tmp.readStd(s)) m = m_tmp;
   return s;
 }
+
+//! \endcond
