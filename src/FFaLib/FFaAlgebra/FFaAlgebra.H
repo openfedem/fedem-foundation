@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaAlgebra.H
+  \brief Auxiliary matrix-vector functions.
+*/
+
 #ifndef FFA_ALGEBRA_H
 #define FFA_ALGEBRA_H
 
@@ -18,7 +23,10 @@ class FaMat33;
 
 namespace FFaAlgebra
 {
+  //! \brief Performs eccentricity transformation of a 6&times;6 element matrix.
   void eccTransform6(double mat[6][6], const FaVec3& X);
+  //! \brief Performs congruence transformation of a symmetric
+  //! \a 3N&times;3N element matrix.
   bool congruenceTransform(double** mat, const FaMat33& T, int N, int node = 0);
 }
 

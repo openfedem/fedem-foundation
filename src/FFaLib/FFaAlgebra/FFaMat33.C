@@ -5,19 +5,28 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaMat33.C
+  \brief Point transformations in 3D space.
+*/
+
 #include "FFaLib/FFaAlgebra/FFaMat33.H"
 #include "FFaLib/FFaAlgebra/FFaMath.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
 
 
 /*!
-  Matrix layout :
+  \class FaMat33
+  \details Matrix layout:
+  \code
 
     [0][0]  [1][0]  [2][0]
 
     [0][1]  [1][1]  [2][1]
 
     [0][2]  [1][2]  [2][2]
+
+  \endcode
 */
 
 
@@ -56,15 +65,6 @@ FaMat33::FaMat33 (const FaVec3& v0, const FaVec3& v1, const FaVec3& v2)
 // Local operators
 //
 ////////////////////////////////////////////////////////////////////////////////
-
-FaMat33& FaMat33::operator= (const FaMat33& m)
-{
-  v[0] = m.v[0];
-  v[1] = m.v[1];
-  v[2] = m.v[2];
-  return *this;
-}
-
 
 FaMat33& FaMat33::operator+= (const FaMat33& m)
 {
@@ -119,8 +119,9 @@ FaMat33& FaMat33::operator/= (double d)
 // Special functions
 //
 ////////////////////////////////////////////////////////////////////////////////
-
+//! \cond DO_NOT_DOCUMENT
 #define THIS(i,j) this->operator()(i,j)
+//! \endcond
 
 FaMat33 FaMat33::inverse (double eps) const
 {
@@ -173,7 +174,7 @@ FaMat33& FaMat33::shift (int delta)
 {
   if (delta < -2 || delta%3 == 0) return *this;
 
-  // Perform a cyclic permutation of the matrix columns
+  // Cyclic permutation
   FaVec3 v1 = v[0];
   FaVec3 v2 = v[1];
   FaVec3 v3 = v[2];
@@ -185,6 +186,11 @@ FaMat33& FaMat33::shift (int delta)
   return *this;
 }
 
+
+/*!
+  The two matrices are considered identical if their respecive column vectors
+  are parallel and not in the opposite direction.
+*/
 
 bool FaMat33::isCoincident (const FaMat33& oMat, double tolerance) const
 {
@@ -292,10 +298,6 @@ FaMat33& FaMat33::makeGlobalizedCS (const FaVec3& v1, const FaVec3& v2,
 }
 
 
-/*!
-  Compute an incremental rotation tensor from the given Euler angles.
-*/
-
 FaMat33& FaMat33::eulerRotateZYX (const FaVec3& angles)
 {
   double ca = cos(angles(3));
@@ -319,10 +321,6 @@ FaMat33& FaMat33::eulerRotateZYX (const FaVec3& angles)
   return *this;
 }
 
-
-/*!
-  Return the Euler angles corresponding to an incremental rotation.
-*/
 
 FaVec3 FaMat33::getEulerZYX () const
 {
@@ -350,10 +348,11 @@ FaVec3 FaMat33::getEulerZYX () const
 
 
 /*!
-  Compute an incremental rotation tensor from the given rotation angles via a
-  quaternion representation of the rotation. This function is equivalent to
-  subroutine vec_to_mat in the Fortran module rotationModule (vpmUtilitiesF90).
-  The angles provided are those related to a Rodrigues parameterization.
+  The incremental rotation tensor is computed from the rotation angles using a
+  quaternion representation of the rotation. This function is equivalent to the
+  Fortran subroutine rotationmodule::vec_to_mat in the module
+  \ref rotationmodule (see the \ref src/vpmUtilities directory).
+  The \a angles provided are those related to a Rodrigues parameterization.
   Rotation axis, with length equal to the angle to rotate about that axis.
 */
 
@@ -385,9 +384,9 @@ FaMat33& FaMat33::incRotate (const FaVec3& angles)
 
 
 /*!
-  Return the rotation angles corresponding to an incremental rotation.
-  This function is equivalent to the Fortran subroutine mat_to_vec
-  in module rotationModule (vpmUtilitiesF90).
+  This function is equivalent to the Fortran subroutine
+  rotationmodule::mat_to_vec in the module \ref rotationmodule
+  (see the \ref src/vpmUtilities directory).
 */
 
 FaVec3 FaMat33::getRotation () const
@@ -482,6 +481,7 @@ FaMat33 FaMat33::makeXrotation (double rot)
 // Global operators
 //
 ////////////////////////////////////////////////////////////////////////////////
+//! \cond DO_NOT_DOCUMENT
 
 FaMat33 operator- (const FaMat33& a)
 {
@@ -519,15 +519,15 @@ FaMat33 operator* (double d, const FaMat33& a)
 }
 
 
-FaVec3 operator* (const FaMat33& m, const FaVec3& v1)
+FaVec3 operator* (const FaMat33& a, const FaVec3& b)
 {
-  return m.v[0]*v1[0] + m.v[1]*v1[1] + m.v[2]*v1[2];
+  return a.v[0]*b[0] + a.v[1]*b[1] + a.v[2]*b[2];
 }
 
 
-FaVec3 operator* (const FaVec3& v1, const FaMat33& m)
+FaVec3 operator* (const FaVec3& a, const FaMat33& b)
 {
-  return FaVec3(v1*m.v[0], v1*m.v[1], v1*m.v[2]);
+  return FaVec3(a*b.v[0], a*b.v[1], a*b.v[2]);
 }
 
 
@@ -576,6 +576,7 @@ std::istream& operator>> (std::istream& s, FaMat33& m)
 }
 
 
+//! \endcond
 ////////////////////////////////////////////////////////////////////////////////
 //
 // FORTRAN interface to selected functions
