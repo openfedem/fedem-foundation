@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaCheckSum.C
+  \brief CheckSum calculation.
+*/
+
 #include "FFaLib/FFaAlgebra/FFaCheckSum.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 
@@ -24,12 +29,12 @@ FFaCheckSum::FFaCheckSum()
     crc32_table[i] = c;
   }
 
-  // determine endian format
+  // Determine the Endianness of the running host
   int nl = 0x12345678;
   unsigned char* p = (unsigned char*)&nl; // 32-bit integer
   if (p[0] == 0x12 && p[1] == 0x34 && p[2] == 0x56 && p[3] == 0x78)
     isBigEndian = true;
-  else //if (p[0] == 0x78 && p[1] == 0x56 && p[2] == 0x34 && p[3] == 0x12)
+  else // (p[0] == 0x78 && p[1] == 0x56 && p[2] == 0x34 && p[3] == 0x12)
     isBigEndian = false;
 
 #if FFA_DEBUG > 1
@@ -75,6 +80,12 @@ unsigned int FFaCheckSum::doCRC(unsigned int data)
 }
 
 
+/*!
+  If \a precision &gt; 0, each value of \a e is rounded to \a precision
+  significant digits before the checksum is calculated.
+  Otherwise, we cast each value to float before calculating the checksum value.
+*/
+
 void FFaCheckSum::add(const FaVec3& e, int precision)
 {
 #if FFA_DEBUG > 2
@@ -118,6 +129,11 @@ template<> void FFaCheckSum::add(const std::vector<double>& v)
 #endif
 
 
+/*!
+  The last (4th) byte of the float word \a e containing the least significant
+  digits is omitted from the checksum calculation.
+*/
+
 void FFaCheckSum::add(float e)
 {
   unsigned char* p = (unsigned char*)&e;
@@ -149,6 +165,14 @@ void FFaCheckSum::add(float e)
   }
 }
 
+
+/*!
+  If \a precision &gt; 0, the value \a e is rounded to \a precision significant
+  digits, and the checksum is calculated from the mantissa and exponent
+  separately and then added together. Otherwise (if \a precision is zero),
+  the last two bytes (7th and 8th) of the double word \a e is omitted from
+  the checksum calculation.
+*/
 
 void FFaCheckSum::add(double e, int precision)
 {
@@ -184,12 +208,12 @@ void FFaCheckSum::add(double e, int precision)
     for (i = 0; i < 6; i++)
       checksum += doCRC(p[i]);
   }
-  else // LittleEndian, swap bytes
+  else // Little Endian, swap bytes
   {
     // check if only the sign bit is set, if so reset it to zero
     bool onlySignBit = (p[7] == 128);
     for (i = 6; onlySignBit && i > 1; i--)
-      if (p[i] > 0) onlySignBit = false;
+      if (p[i] != 0) onlySignBit = false;
     if (onlySignBit) p[7] = 0;
 
     for (i = 7; i > 1; i--)
