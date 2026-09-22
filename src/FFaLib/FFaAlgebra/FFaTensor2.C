@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaTensor2.C
+  \brief 2nd order symmetric tensors in 2D space.
+*/
+
 #include "FFaLib/FFaAlgebra/FFaTensor2.H"
 #include "FFaLib/FFaAlgebra/FFaTensor3.H"
 #include "FFaLib/FFaAlgebra/FFaTensor1.H"
@@ -37,18 +42,6 @@ FFaTensor2& FFaTensor2::operator= (const FFaTensor3& t)
 }
 
 
-FFaTensor2& FFaTensor2::operator= (const FFaTensor2& t)
-{
-  if (this != &t)
-  {
-    myT[0] = t.myT[0];
-    myT[1] = t.myT[1];
-    myT[2] = t.myT[2];
-  }
-  return *this;
-}
-
-
 FFaTensor2& FFaTensor2::operator= (const FFaTensor1& t)
 {
   myT[0] = t;
@@ -57,20 +50,12 @@ FFaTensor2& FFaTensor2::operator= (const FFaTensor1& t)
 }
 
 
-/*!
-  Rotate the tensor to the given CS.
-*/
-
 FFaTensor2& FFaTensor2::rotate(const double ex[2], const double ey[2])
 {
   FFaTensorTransforms::rotate(myT.data(), ex,ey, myT.data());
   return *this;
 }
 
-
-/*!
-  Get the von Mises value of the tensor.
-*/
 
 double FFaTensor2::vonMises() const
 {
@@ -79,23 +64,21 @@ double FFaTensor2::vonMises() const
 
 
 /*!
-  Get the max shear value of the tensor.
-  If it can't be found, HUGE_VAL will be returned.
+  HUGE_VAL will be returned if the max shear value can not be found.
 */
 
 double FFaTensor2::maxShear() const
 {
-  double max, min;
-  if (FFaTensorTransforms::principalValues(myT[0],myT[1],myT[2],max,min))
-    return FFaTensorTransforms::maxShearValue(max,min);
-  else
+  double princVal[3] = { 0.0, 0.0, 0.0 };
+  if (!FFaTensorTransforms::principalVals2D(myT[0],myT[1],myT[2],princVal))
     return HUGE_VAL;
+
+  return FFaTensorTransforms::maxShearValue(princVal[0],princVal[1]);
 }
 
 
 /*!
-  Get the max shear of the tensor as a directed vector.
-  If it can't be found, a 0-vector will be returned.
+  The vector is set to zero if the max shear directions can not be found.
 */
 
 void FFaTensor2::maxShear(FaVec3& v) const
@@ -113,52 +96,55 @@ void FFaTensor2::maxShear(FaVec3& v) const
 
 
 /*!
-  Get the (absolute) max principal of the tensor.
-  If it can't be found, HUGE_VAL will be returned.
+  HUGE_VAL will be returned if the principal value can not be found.
 */
 
 double FFaTensor2::maxPrinsipal(bool absMax) const
 {
-  double max, min;
-  if (FFaTensorTransforms::principalValues(myT[0],myT[1],myT[2],max,min))
-    return absMax ? (fabs(max) > fabs(min) ? max : min) : max;
-  else
+  double princVal[3] = { 0.0, 0.0, 0.0 };
+  if (!FFaTensorTransforms::principalVals2D(myT[0],myT[1],myT[2],princVal))
     return HUGE_VAL;
+
+  return princVal[absMax && fabs(princVal[1]) > fabs(princVal[0]) ? 1 : 0];
 }
 
 
 /*!
-  Get the min principal of the tensor.
-  If it can't be found, HUGE_VAL will be returned.
+  HUGE_VAL will be returned if the principal value can not be found.
 */
 
 double FFaTensor2::minPrinsipal() const
 {
-  double max, min;
-  if (FFaTensorTransforms::principalValues(myT[0],myT[1],myT[2],max,min))
-    return min;
-  else
+  double princVal[3] = { 0.0, 0.0, 0.0 };
+  if (!FFaTensorTransforms::principalVals2D(myT[0],myT[1],myT[2],princVal))
     return HUGE_VAL;
+
+  return princVal[1];
 }
 
 
 /*!
-  Get the principal values of the tensor.
-  If they can't be found, HUGE_VAL will be returned.
+  HUGE_VAL will be returned if the principal values can not be found.
 */
 
 void FFaTensor2::prinsipalValues(double& max, double& min) const
 {
-  if (!FFaTensorTransforms::principalValues(myT[0],myT[1],myT[2],max,min))
+  double princVal[3] = { 0.0, 0.0, 0.0 };
+  if (!FFaTensorTransforms::principalVals2D(myT[0],myT[1],myT[2],princVal))
     max = min = HUGE_VAL;
+  else
+  {
+    max = princVal[0];
+    min = princVal[1];
+  }
 }
 
 
 /*!
-  Get a valid rotation matrix corresponding to the principal axes of the tensor.
-  The associated principal values are also found in the corresponding order.
-  If the matrix can't be found, the identity will be returned,
-  along with a vector of HUGE_VAL.
+  A valid rotation matrix corresponding to the principal axes of the tensor
+  is calculated. The associated principal values are also found in the
+  corresponding order. If the rotation matrix can't be found,
+  the identity will be returned, along with a vector of HUGE_VAL.
 */
 
 void FFaTensor2::prinsipalValues(FaVec3& values, FaMat33& rotation) const
@@ -182,9 +168,10 @@ void FFaTensor2::prinsipalValues(FaVec3& values, FaMat33& rotation) const
 }
 
 
-/*!
-  Global operators.
-*/
+///////////////////
+// Global operators
+///////////////////
+//! \cond DO_NOT_DOCUMENT
 
 FFaTensor2 operator- (const FFaTensor2& t)
 {
@@ -284,3 +271,5 @@ std::istream& operator>> (std::istream& s, FFaTensor2& t)
   if (s) t = tmpT;
   return s;
 }
+
+//! \endcond

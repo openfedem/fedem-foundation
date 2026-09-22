@@ -41,28 +41,6 @@ namespace FFaTensorTransforms //! Various tensor transformation utilities
   bool principalVals3D(double s11, double s22, double s33,
                        double s12, double s13, double s23, double* pVal);
 
-  // For backward compatibility, purge these two later..
-  inline bool principalValues(double s11, double s22, double s12,
-                              double& p1, double& p2)
-  {
-    double p[3] = { 0.0, 0.0, 0.0 };
-    bool ok = principalVals2D(s11,s22,s12,p);
-    p1 = p[0];
-    p2 = p[1];
-    return ok;
-  }
-  inline bool principalValues(double s11, double s22, double s33,
-                              double s12, double s13, double s23,
-                              double& p1, double& p2, double& p3)
-  {
-    double p[3] = { 0.0, 0.0, 0.0 };
-    bool ok = principalVals3D(s11,s22,s33,s12,s13,s23,p);
-    p1 = p[0];
-    p2 = p[1];
-    p3 = p[2];
-    return ok;
-  }
-
   //! \brief Returns the maximum shear value.
   double maxShearValue(double pMax, double pMin);
   //! \brief Returns the direction of maximum shear.

@@ -309,6 +309,7 @@ FaVec3 FaVec3::getAsSphCoords (FFaVec3IdxEnum axis) const
 // Global operators
 //
 ////////////////////////////////////////////////////////////////////////////////
+//! \cond DO_NOT_DOCUMENT
 
 FaVec3 operator- (const FaVec3& a)
 {
@@ -392,3 +393,5 @@ std::istream& operator>> (std::istream& s, FaVec3& v)
   if (s) v = v_tmp;
   return s;
 }
+
+//! \endcond

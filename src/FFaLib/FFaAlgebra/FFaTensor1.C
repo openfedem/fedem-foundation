@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaTensor1.C
+  \brief 2nd order symmetric tensors in 1D space.
+*/
+
 #include "FFaLib/FFaAlgebra/FFaTensor1.H"
 #include "FFaLib/FFaAlgebra/FFaTensor2.H"
 #include "FFaLib/FFaAlgebra/FFaTensor3.H"
@@ -23,12 +28,6 @@ FFaTensor1::FFaTensor1(const FFaTensor3& t)
 }
 
 
-FFaTensor1& FFaTensor1::operator= (const FFaTensor1& t)
-{
-  if (this != &t) myT = t.myT;
-  return *this;
-}
-
 FFaTensor1& FFaTensor1::operator= (const FFaTensor2& t)
 {
   myT = t[0];
@@ -43,9 +42,10 @@ FFaTensor1& FFaTensor1::operator= (const FFaTensor3& t)
 }
 
 
-/*!
-  Global operators.
-*/
+///////////////////
+// Global operators
+///////////////////
+//! \cond DO_NOT_DOCUMENT
 
 FFaTensor1 operator- (const FFaTensor1& t)
 {
@@ -109,3 +109,5 @@ std::istream& operator>> (std::istream& s, FFaTensor1& t)
   if (s) t = tmpT;
   return s;
 }
+
+//! \endcond

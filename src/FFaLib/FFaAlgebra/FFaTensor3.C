@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaTensor3.C
+  \brief 2nd order symmetric tensors in 3D space.
+*/
+
 #include "FFaLib/FFaAlgebra/FFaTensor3.H"
 #include "FFaLib/FFaAlgebra/FFaTensor2.H"
 #include "FFaLib/FFaAlgebra/FFaTensor1.H"
@@ -38,14 +43,6 @@ FFaTensor3::FFaTensor3(const FaVec3& v)
 }
 
 
-FFaTensor3& FFaTensor3::operator= (const FFaTensor3& t)
-{
-  if (this != &t)
-    for (int i = 0; i < 6; i++)
-      myT[i] = t.myT[i];
-  return *this;
-}
-
 FFaTensor3& FFaTensor3::operator= (const FFaTensor2& t)
 {
   myT[0] = t[0];
@@ -63,10 +60,6 @@ FFaTensor3& FFaTensor3::operator= (const FFaTensor1& t)
   return *this;
 }
 
-
-/*!
-  Rotate the tensor to the given CS.
-*/
 
 FFaTensor3& FFaTensor3::rotate(const FaMat33& rotMx)
 {
@@ -91,8 +84,8 @@ FFaTensor3& FFaTensor3::rotate(const FaMat34& rotMx)
 
 
 /*!
-  Create the inertia tensor of a tetrahedron spanned by the origin (0,0,0)
-  and the given three points \a v1, \a v2 and \a v3.
+  This method create the inertia tensor of the tetrahedron spanned by
+  the origin (0,0,0) and the given three points \a v1, \a v2 and \a v3.
 */
 
 FFaTensor3& FFaTensor3::makeInertia(const FaVec3& v1, const FaVec3& v2,
@@ -120,10 +113,6 @@ FFaTensor3& FFaTensor3::makeInertia(const FaVec3& v1, const FaVec3& v2,
 }
 
 
-/*!
-  Translate an inertia tensor according to the parallel-axis theorem.
-*/
-
 FFaTensor3& FFaTensor3::translateInertia(const FaVec3& x, double mass)
 {
   double mx = mass*x.sqrLength();
@@ -137,10 +126,6 @@ FFaTensor3& FFaTensor3::translateInertia(const FaVec3& x, double mass)
 }
 
 
-/*!
-  Get the von Mises value of the tensor.
-*/
-
 double FFaTensor3::vonMises() const
 {
   return FFaTensorTransforms::vonMises(myT[0],myT[1],myT[2],
@@ -149,25 +134,22 @@ double FFaTensor3::vonMises() const
 
 
 /*!
-  Get the max shear value of the tensor.
-  If it can't be found, HUGE_VAL will be returned.
+  HUGE_VAL will be returned if the max shear value can not be found.
 */
 
 double FFaTensor3::maxShear() const
 {
-  double max, middle, min;
-  if (FFaTensorTransforms::principalValues(myT[0],myT[1],myT[2],
-                                           myT[3],myT[4],myT[5],
-                                           max,middle,min))
-    return FFaTensorTransforms::maxShearValue(max,min);
-  else
+  double princVal[3] = { 0.0, 0.0, 0.0 };
+  if (!FFaTensorTransforms::principalVals3D(myT[0],myT[1],myT[2],
+                                            myT[3],myT[4],myT[5],princVal))
     return HUGE_VAL;
+
+  return FFaTensorTransforms::maxShearValue(princVal[0],princVal[2]);
 }
 
 
 /*!
-  Get the max shear of the tensor as a directed vector.
-  If it can't be found, a 0-vector will be returned.
+  The vector is set to zero if the max shear directions can not be found.
 */
 
 void FFaTensor3::maxShear(FaVec3& v) const
@@ -184,75 +166,74 @@ void FFaTensor3::maxShear(FaVec3& v) const
 
 
 /*!
-  Get the (absolute) max principal of the tensor.
-  If it can't be found, HUGE_VAL will be returned.
+  HUGE_VAL will be returned if the principal value can not be found.
 */
 
 double FFaTensor3::maxPrinsipal(bool absMax) const
 {
-  double max, middle, min;
-  if (FFaTensorTransforms::principalValues(myT[0],myT[1],myT[2],
-                                           myT[3],myT[4],myT[5],
-                                           max,middle,min))
-    return absMax ? (fabs(max) > fabs(min) ? max : min) : max;
-  else
+  double princVal[3] = { 0.0, 0.0, 0.0 };
+  if (!FFaTensorTransforms::principalVals3D(myT[0],myT[1],myT[2],
+                                            myT[3],myT[4],myT[5],princVal))
     return HUGE_VAL;
+
+  return princVal[absMax && fabs(princVal[2]) > fabs(princVal[0]) ? 2 : 0];
 }
 
 
 /*!
-  Get the middle principal of the tensor.
-  If it can't be found, HUGE_VAL will be returned.
+  HUGE_VAL will be returned if the principal value can not be found.
 */
 
 double FFaTensor3::middlePrinsipal() const
 {
-  double max, middle, min;
-  if (FFaTensorTransforms::principalValues(myT[0],myT[1],myT[2],
-                                           myT[3],myT[4],myT[5],
-                                           max,middle,min))
-    return middle;
-  else
+  double princVal[3] = { 0.0, 0.0, 0.0 };
+  if (!FFaTensorTransforms::principalVals3D(myT[0],myT[1],myT[2],
+                                            myT[3],myT[4],myT[5],princVal))
     return HUGE_VAL;
+
+  return princVal[1];
 }
 
 
 /*!
-  Get the min principal of the tensor.
-  If it can't be found, HUGE_VAL will be returned.
+  HUGE_VAL will be returned if the principal value can not be found.
 */
 
 double FFaTensor3::minPrinsipal() const
 {
-  double max, middle, min;
-  if (FFaTensorTransforms::principalValues(myT[0],myT[1],myT[2],
-                                           myT[3],myT[4],myT[5],
-                                           max,middle,min))
-    return min;
-  else
+  double princVal[3] = { 0.0, 0.0, 0.0 };
+  if (!FFaTensorTransforms::principalVals3D(myT[0],myT[1],myT[2],
+                                            myT[3],myT[4],myT[5],princVal))
     return HUGE_VAL;
+
+  return princVal[2];
 }
 
 
 /*!
-  Get the principal values of the tensor.
-  If they can't be found, HUGE_VAL will be returned.
+  HUGE_VAL will be returned if the principal values can not be found.
 */
 
 void FFaTensor3::prinsipalValues(double& max, double& middle, double& min) const
 {
-  if (!FFaTensorTransforms::principalValues(myT[0],myT[1],myT[2],
-                                            myT[3],myT[4],myT[5],
-                                            max,middle,min))
+  double princVal[3] = { 0.0, 0.0, 0.0 };
+  if (!FFaTensorTransforms::principalVals3D(myT[0],myT[1],myT[2],
+                                            myT[3],myT[4],myT[5],princVal))
     max = middle = min = HUGE_VAL;
+  else
+  {
+    max    = princVal[0];
+    middle = princVal[1];
+    min    = princVal[2];
+  }
 }
 
 
 /*!
-  Get a valid rotation matrix corresponding to the principal axes of the tensor.
-  The associated principal values are also found in the corresponding order.
-  If the matrix can't be found, the identity will be returned,
-  along with a vector of HUGE_VAL.
+  A valid rotation matrix corresponding to the principal axes of the tensor
+  is calculated. The associated principal values are also found in the
+  corresponding order. If the rotation matrix can't be found,
+  the identity will be returned, along with a vector of HUGE_VAL.
 */
 
 void FFaTensor3::prinsipalValues(FaVec3& values, FaMat33& rotation) const
@@ -275,9 +256,10 @@ void FFaTensor3::prinsipalValues(FaVec3& values, FaMat33& rotation) const
 }
 
 
-/*!
-  Global operators.
-*/
+///////////////////
+// Global operators
+///////////////////
+//! \cond DO_NOT_DOCUMENT
 
 FFaTensor3 operator- (const FFaTensor3& t)
 {
@@ -395,3 +377,5 @@ std::istream& operator>> (std::istream& s, FFaTensor3& t)
   if (s) t = tmpT;
   return s;
 }
+
+//! \endcond
