@@ -5,6 +5,14 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaBodyParser.C
+  \brief Input and output of FFaBody objects from file.
+  \details This file contains the definition of some FFaBody methods that
+  deal with the parsing geometry files to create an instance. It also has
+  a method for exporting the object to Fedem's internal CAD file format.
+*/
+
 #include <functional>
 #include <fstream>
 #include <sstream>
@@ -17,121 +25,114 @@
 std::string FFaBody::prefix;
 
 
-/*!
-  Static helper for reading next keyword from a CAD file.
-*/
-
-static bool getIdentifier(std::istream& in, std::string& identifier,
-                          char endChar = '}')
+namespace
 {
-  identifier.clear();
-  if (!in) return false;
-
-  char c = ' ';
-  while (isspace(c) && in.get(c))
-    if (c == '#')
-    {
-      std::string comment;
-      std::getline(in,comment);
-      std::cout << comment << std::endl;
-      c = ' ';
-    }
-
-  while (in)
+  //! \brief Helper for reading next keyword from a CAD file.
+  bool getIdentifier(std::istream& in, std::string& identifier,
+                     char endChar = '}')
   {
-    if (c == endChar)
-      break;
-    else if (isalnum(c) || c == '_' || endChar == '"')
-      identifier += c;
-    else
+    identifier.clear();
+    if (!in) return false;
+
+    char c = ' ';
+    while (isspace(c) && in.get(c))
+      if (c == '#')
+      {
+        std::string comment;
+        std::getline(in,comment);
+        std::cout << comment << std::endl;
+        c = ' ';
+      }
+
+    while (in)
     {
-      in.putback(c);
-      break;
+      if (c == endChar)
+        break;
+      else if (isalnum(c) || c == '_' || endChar == '"')
+        identifier += c;
+      else
+      {
+        in.putback(c);
+        break;
+      }
+      in.get(c);
     }
-    in.get(c);
+
+    if (identifier.empty())
+      return false;
+#if FFA_DEBUG > 1
+    std::cout <<"Found identifier: \""<< identifier <<"\""<< std::endl;
+#endif
+    return true;
   }
 
-  if (identifier.empty()) return false;
-#if FFA_DEBUG > 1
-  std::cout <<"Found identifier: \""<< identifier <<"\""<< std::endl;
-#endif
-  return true;
-}
 
-
-/*!
-  Static helper for reading next keyword and label from a CAD file.
-*/
-
-static bool getIdentifier(std::istream& in, std::string& identifier,
-                          std::string& label, char& type)
-{
-  type = 'n';
-  if (!getIdentifier(in,identifier)) return false;
-
-  // Check for "DEF" or "USE" keyword
-  char d = ' ', c = ' ';
-  while (isspace(c) && in.get(c));
-
-  const char* DEF = " DEF";
-  const char* USE = " USE";
-  for (int i = 1; i < 4 && in; i++, d = c, in.get(c))
-    if (c == USE[i] && d == USE[i-1])
-      type = 'U';
-    else if (c == DEF[i] && d == DEF[i-1])
-      type = 'D';
-    else
-    {
-      type = 'n';
-      in.putback(c);
-      break;
-    }
-
-  if (type != 'n')
+  //! \brief Helper for reading next keyword and label from a CAD file.
+  bool getIdentifier(std::istream& in, std::string& identifier,
+                     std::string& label, char& type)
   {
-    if (!getIdentifier(in,label))
-      type = 'N';
+    type = 'n';
+    if (!getIdentifier(in,identifier))
+      return false;
+
+    // Check for "DEF" or "USE" keyword
+    char d = ' ', c = ' ';
+    while (isspace(c) && in.get(c));
+
+    const char* DEF = " DEF";
+    const char* USE = " USE";
+    for (int i = 1; i < 4 && in; i++, d = c, in.get(c))
+      if (c == USE[i] && d == USE[i-1])
+        type = 'U';
+      else if (c == DEF[i] && d == DEF[i-1])
+        type = 'D';
+      else
+      {
+        type = 'n';
+        in.putback(c);
+        break;
+      }
+
+    if (type != 'n')
+    {
+     if (!getIdentifier(in,label))
+       type = 'N';
 #if FFA_DEBUG > 1
-    else
-      std::cout <<'\t'<< type <<" \""<< label <<"\""<< std::endl;
+     else
+       std::cout <<'\t'<< type <<" \""<< label <<"\""<< std::endl;
 #endif
+    }
+    return true;
   }
-  return true;
-}
 
 
-/*!
-  Static helper moving file pointer to next \a beginChar.
-*/
-
-static void skipToData(std::istream& in, char beginChar = '{')
-{
-  in.ignore(std::numeric_limits<int>::max(), beginChar);
-}
+  //! \brief Helper moving file pointer to next \a beginChar.
+  void skipToData(std::istream& in, char beginChar = '{')
+  {
+    in.ignore(std::numeric_limits<int>::max(), beginChar);
+  }
 
 
-/*!
-  Static helper moving file pointer to next \a endChar.
-*/
+  //! \brief Helper moving file pointer to next \a endChar.
+  void skipToDataEnd(std::istream& in, char endChar = '}',
+                     bool skipAllData = false)
+  {
+    if (skipAllData)
+      in.ignore(std::numeric_limits<int>::max(), endChar == '}' ? '{' : '[');
 
-static void skipToDataEnd(std::istream& in, char endChar = '}',
-                          bool skipAllData = false)
-{
-  if (skipAllData)
-    in.ignore(std::numeric_limits<int>::max(), endChar == '}' ? '{' : '[');
-
-  // Handle possibly nested delimeter characters, TT #2892
-  for (int c = in.get(); c != endChar && in.good(); c = in.get())
-    if (c == '{' && endChar == '}')
-      skipToDataEnd(in,endChar);
-    else if (c == '[' && endChar == ']')
-      skipToDataEnd(in,endChar);
+    // Handle possibly nested delimeter characters, TT #2892
+    for (int c = in.get(); c != endChar && in.good(); c = in.get())
+      if (c == '{' && endChar == '}')
+        skipToDataEnd(in,endChar);
+      else if (c == '[' && endChar == ']')
+        skipToDataEnd(in,endChar);
+  }
 }
 
 
 /*!
   This method administers the input of a body definition from a file.
-  The body may either be defined on FT's internal CAD format,
+  The body may either be defined on Fedem's internal CAD format (.fcd),
   or on the external VRML or STL formats.
 */
 
@@ -275,6 +276,8 @@ FFaBody* FFaBody::readWRL(std::istream& in, int version)
   return newBody;
 }
 
+
+//! \cond DO_NOT_DOCUMENT
 
 void FFaBody::readWRL1(FFaBody*& newBody, std::istream& in)
 {
@@ -598,10 +601,8 @@ void FFaBody::readFaces(std::istream& in, char endChar)
   skipToDataEnd(in,endChar);
 }
 
-
-/*!
-  This method writes out the body definition on FT's internal CAD format.
-*/
+//! \endcond
+//! This method writes out the body definition on Fedem's internal CAD format.
 
 bool FFaBody::writeCAD(const std::string& fileName, const FaMat34& partCS) const
 {
