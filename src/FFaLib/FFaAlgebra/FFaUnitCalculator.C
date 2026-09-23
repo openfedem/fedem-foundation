@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaUnitCalculator.C
+  \brief Conversion of units.
+*/
+
 #include <fstream>
 #include <cstdlib>
 
@@ -22,9 +27,9 @@ bool FFaUnitCalculator::operator==(const FFaUnitCalculator& cal) const
   if (convGroup != cal.convGroup) return false;
   if (myConvFactors.size() != cal.myConvFactors.size()) return false;
 
-  SingleUnitMapIter it = myConvFactors.begin();
-  SingleUnitMapIter jt = cal.myConvFactors.begin();
-  for (; it != myConvFactors.end(); it++, jt++)
+  SingleUnitIter it = myConvFactors.begin();
+  SingleUnitIter jt = cal.myConvFactors.begin();
+  for (; it != myConvFactors.end(); ++it, ++jt)
     if (it->first != jt->first)
       return false;
     else if (it->second.factor != jt->second.factor)
@@ -41,7 +46,7 @@ bool FFaUnitCalculator::operator==(const FFaUnitCalculator& cal) const
 bool FFaUnitCalculator::convert(double& v, const std::string& aName,
                                 int prec) const
 {
-  SingleUnitMapIter it = myConvFactors.find(aName);
+  SingleUnitIter it = myConvFactors.find(aName);
   if (it == myConvFactors.end())
     return false;
 
@@ -64,20 +69,22 @@ void FFaUnitCalculator::addConversion(const std::string& propName, double sf,
 }
 
 
+//! \cond DO_NOT_DOCUMENT
+
 std::ostream& operator<<(std::ostream& os, const FFaUnitCalculator& ucal)
 {
+  using UnitMapItem = FFaUnitCalculator::SingleUnitMap::value_type;
+
   os <<  "<\""<< ucal.name
      <<"\",\""<< ucal.origGroup
      <<"\",\""<< ucal.convGroup
      <<"\"";
 
-  FFaUnitCalculator::SingleUnitMapIter cit;
-  for (cit = ucal.myConvFactors.begin(); cit != ucal.myConvFactors.end(); cit++)
-    os <<",\n    <"
-       << cit->first <<","
-       << cit->second.factor <<",\""
-       << cit->second.origUnit <<"\",\""
-       << cit->second.convUnit <<"\">";
+  for (const UnitMapItem& conv : ucal.myConvFactors)
+    os <<",\n    <"<< conv.first <<","
+       << conv.second.factor <<",\""
+       << conv.second.origUnit <<"\",\""
+       << conv.second.convUnit <<"\">";
   os << ">";
 
   return os;
@@ -95,8 +102,8 @@ std::istream& operator>>(std::istream& is, FFaUnitCalculator& ucal)
     FFaTokenizer tokens(is,'<','>');
     if (tokens.size() < 3)
     {
-       std::cerr <<"Error in unit conversion tokens - check token definition"
-                 << std::endl;
+       std::cerr <<" *** Error in unit conversion tokens"
+                 <<" - check token definition."<< std::endl;
        return is;
     }
 
@@ -109,8 +116,8 @@ std::istream& operator>>(std::istream& is, FFaUnitCalculator& ucal)
       // sub-tokens for units
       FFaTokenizer unitToken(tokens[i],'<','>');
       if (unitToken.size() != 4)
-        std::cerr <<"Error in unit conversion tokens - check token definition:"
-                  << "\n\t"<< tokens[i] << std::endl;
+        std::cerr <<" *** Error in unit conversion tokens"
+                  <<" - check token definition:\n\t"<< tokens[i] << std::endl;
       else
       {
         FFaUnitCalculator::SingleUnit readUnit;
@@ -124,6 +131,8 @@ std::istream& operator>>(std::istream& is, FFaUnitCalculator& ucal)
 
   return is;
 }
+
+//! \endcond
 
 
 //////////////////////////////////////////////////////////////////////
@@ -139,7 +148,8 @@ FFaUnitCalculatorProvider::getCalculator(const std::string& calcName) const
   if (it != myCalcs.end())
     return &(it->second);
 
-  std::cerr <<"Non-existing unit conversion \""<< calcName <<"\""<< std::endl;
+  std::cerr <<" *** Non-existing unit conversion \""<< calcName <<"\""
+            << std::endl;
   return NULL;
 }
 
@@ -164,22 +174,12 @@ void FFaUnitCalculatorProvider::getCalculatorNames(std::vector<std::string>& def
 }
 
 
-void FFaUnitCalculatorProvider::addCalculator(const FFaUnitCalculator& calc)
-{
-  if (calc.isValid())
-    myCalcs[calc.getName()] = calc;
-  else
-    std::cerr <<"  ** FFaUnitCalculatorProvider::addCalculator:"
-              <<" Invalid unit calculator (no name)."<< std::endl;
-}
-
-
 bool FFaUnitCalculatorProvider::readCalculatorDefs(const std::string& filename)
 {
   std::ifstream is(filename.c_str());
   if (!is)
   {
-    std::cerr <<"Can't open unit-conversion file "<< filename << std::endl;
+    std::cerr <<" *** Can't open unit-conversion file "<< filename << std::endl;
     return false;
   }
 
@@ -198,11 +198,13 @@ bool FFaUnitCalculatorProvider::readCalculatorDefs(const std::string& filename)
       is.putback(c);
       FFaUnitCalculator aCal;
       is >> aCal;
-      this->addCalculator(aCal);
+      if (aCal.isValid())
+	this->addCalculator(aCal);
     }
     else if (!is.eof())
     {
-      std::cerr <<"Error in calculator definition file"<< std::endl;
+      std::cerr <<" *** Error in calculator definition file"<< filename
+                << std::endl;
       is.ignore(BUFSIZ,'\n');
     }
   }
@@ -216,7 +218,7 @@ bool FFaUnitCalculatorProvider::printCalculatorDefs(const std::string& filename)
   std::ofstream os(filename.c_str());
   if (!os)
   {
-    std::cerr <<"Can't open unit conversion output file "<< filename
+    std::cerr <<" *** Can't open unit conversion output file "<< filename
               << std::endl;
     return false;
   }

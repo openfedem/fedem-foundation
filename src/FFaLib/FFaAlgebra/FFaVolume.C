@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaVolume.C
+  \brief Volume calculation for 3D shapes.
+*/
+
 #include "FFaLib/FFaAlgebra/FFaVolume.H"
 #include "FFaLib/FFaAlgebra/FFaTensor3.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
@@ -63,11 +68,6 @@ namespace
 }
 
 
-/*!
-  Volume calculation. The volume of an object is computed as a sum of
-  tetrahedron and pyramid contributions to account for possibly warped faces.
-*/
-
 void FFaVolume::tetVolume (const FaVec3& v1, const FaVec3& v2,
                            const FaVec3& v3, const FaVec3& v4, double& vol)
 {
@@ -75,6 +75,11 @@ void FFaVolume::tetVolume (const FaVec3& v1, const FaVec3& v2,
   vol = tet_volume(v1,v2,v3,v4);
 }
 
+
+/*!
+  The volume of a wedge object is computed as a sum of two tetrahedrons and
+  three pyramids defined by the six vertices and the center point.
+*/
 
 void FFaVolume::wedVolume (const FaVec3& v1, const FaVec3& v2,
                            const FaVec3& v3, const FaVec3& v4,
@@ -91,6 +96,11 @@ void FFaVolume::wedVolume (const FaVec3& v1, const FaVec3& v2,
     +   pyrVolume(v3,v6,v4,v1,v0);
 }
 
+
+/*!
+  The volume of a hexahedron object is computed as a sum of six pyramids
+  defined by the eight vertices and the center point.
+*/
 
 void FFaVolume::hexVolume (const FaVec3& v1, const FaVec3& v2,
                            const FaVec3& v3, const FaVec3& v4,
@@ -192,27 +202,31 @@ double FFaVolume::hexCenter (FaVec3& v1, FaVec3& v2,
 
 
 /*!
-  Calculation of volume moments (inertias). The input vertices
-  are here assumed to be relative to the objects volume center.
-  The moments are computed as a sum of pyramid and tetrahedron contributions,
-  where the first vertex is at the volume center and the four/three other
-  vertices are on a face.
+  The input vertices are assumed to be relative to the objects volume center.
+  The moments are computed as a sum of four tetrahedron contributions,
+  where the first vertex is at the volume center and the three other vertices
+  are on a face.
 */
 
 void FFaVolume::tetMoment (const FaVec3& v1, const FaVec3& v2,
                            const FaVec3& v3, const FaVec3& v4, FFaTensor3& vm)
 {
-  // Four tetrahedrons
   vm = FFaTensor3(v1,v3,v2) + FFaTensor3(v1,v2,v4)
      + FFaTensor3(v2,v3,v4) + FFaTensor3(v1,v4,v3);
 }
 
 
+/*!
+  The input vertices are assumed to be relative to the objects volume center.
+  The moments are computed as a sum of two tetrahedron and three pyramid
+  contributions, where the first vertex is at the volume center and the
+  three/four other vertices are on a face.
+*/
+
 void FFaVolume::wedMoment (const FaVec3& v1, const FaVec3& v2,
                            const FaVec3& v3, const FaVec3& v4,
                            const FaVec3& v5, const FaVec3& v6, FFaTensor3& vm)
 {
-  // Three pyramids and two tetrahedrons
   vm = FFaTensor3(v1,v3,v2)
     +  FFaTensor3(v4,v5,v6)
     +  pyrMoment(v1,v2,v5,v4)
@@ -221,12 +235,17 @@ void FFaVolume::wedMoment (const FaVec3& v1, const FaVec3& v2,
 }
 
 
+/*!
+  The input vertices are assumed to be relative to the objects volume center.
+  The moments are computed as a sum of six pyramid contributions, where the
+  first vertex is at the volume center and the four others are on a face.
+*/
+
 void FFaVolume::hexMoment (const FaVec3& v1, const FaVec3& v2,
                            const FaVec3& v3, const FaVec3& v4,
                            const FaVec3& v5, const FaVec3& v6,
                            const FaVec3& v7, const FaVec3& v8, FFaTensor3& vm)
 {
-  // Six pyramids
   vm = pyrMoment(v4,v3,v2,v1)
     +  pyrMoment(v5,v6,v7,v8)
     +  pyrMoment(v1,v2,v6,v5)
