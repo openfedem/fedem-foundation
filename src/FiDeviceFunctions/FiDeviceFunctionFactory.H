@@ -7,7 +7,7 @@
 
 /*!
   \file FiDeviceFunctionFactory.H
-  \brief External device function factory (functions from file).
+  \brief External device function management (functions from file).
 */
 
 #ifndef FI_DEVICE_FUNCTION_FACTORY_H
@@ -46,14 +46,16 @@ enum FiDevFormat {
 
 class FiDeviceFunctionFactory : public FFaSingelton<FiDeviceFunctionFactory>
 {
-protected:
-  //! \brief Default constructor.
+  //! \brief The constructor is private to allow singelton construction only.
   FiDeviceFunctionFactory() : myExtFnFile(0) { myExtFnStep = myNumExtFun = 0; }
-  //! \brief The destructor closes all opened files.
+  //! \brief The destructor is private to allow singelton destruction only.
   virtual ~FiDeviceFunctionFactory();
 
+  //! \brief To allow construction and destruction.
+  friend class FFaSingelton<FiDeviceFunctionFactory>;
+
 public:
-  //! \brief Opens the named file
+  //! \brief Opens the named file.
   //! \param[in] fileName Full path of the file to open
   //! \param[in] format Format of the file to open
   //! \param[in] status File opening mode
@@ -80,7 +82,7 @@ public:
   //! \return The function value
   double getValue(int fileIndex, double arg, int& stat, int channel = 0,
                   int zeroAd = 0, double shift = 0.0, double scale = 1.0) const;
-  //! \brief Evaluate the indexed function for the specified argument range.
+  //! \brief Evaluates the indexed function for the specified argument range.
   //! \param[in] fileIndex 1-based index to the function to evaluate
   //! \param[in] x0 Start value of argument range
   //! \param[in] x1 End value of argument range
@@ -162,7 +164,7 @@ public:
   void storeExtFuncValues(double* data, unsigned int ndat, int iop, int& offs);
 
 protected:
-  //! \brief Opens the named file, not already opened
+  //! \brief Opens the named file, if not already opened.
   //! \param[in] fileName Full path of the file to open
   //! \param[in] inputChannel Column index for multi-channel files
   //! \param[in] format Format of the file to open
@@ -179,9 +181,9 @@ public:
   static int myNumExtFun; //!< Number of external functions in current model
 
 private:
-  //! File name to device index mapping.
+  //! File name to device index mapping
   typedef std::map<std::string,size_t> FileMap;
-  //! File name and column index pair.
+  //! File name and column index pair
   typedef std::pair<std::string,int>   FileChannel;
   //! File name and column to device index mapping
   typedef std::map<FileChannel,size_t> FileChnMap;
@@ -195,8 +197,6 @@ private:
   std::vector<int>    myExtIndex;  //!< Associated file column indices
   FT_FILE             myExtFnFile; //!< External function value file handle
   int                 myExtFnStep; //!< Step counter for external functions file
-
-  friend class FFaSingelton<FiDeviceFunctionFactory>;
 };
 
 #endif

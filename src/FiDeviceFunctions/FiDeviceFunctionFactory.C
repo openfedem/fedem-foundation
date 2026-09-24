@@ -7,7 +7,7 @@
 
 /*!
   \file FiDeviceFunctionFactory.C
-  \brief External device function factory (functions from file).
+  \brief External device function management (functions from file).
 */
 
 #include <algorithm>

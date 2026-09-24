@@ -24,6 +24,14 @@
 class FFaUserFuncPlugin : public FFaDynamicLibraryBase,
                           public FFaSingelton<FFaUserFuncPlugin>
 {
+  //! \brief The constructor is private to allow singelton construction only.
+  FFaUserFuncPlugin() {}
+  //! \brief The destructor is private to allow singelton destruction only.
+  virtual ~FFaUserFuncPlugin() {}
+
+  //! \brief To allow construction and destruction.
+  friend class FFaSingelton<FFaUserFuncPlugin>;
+
 public:
   //! \brief Checks if the named library can be loaded as a plugin.
   //! \param[in] lib Full path to the dynamic library
@@ -110,9 +118,6 @@ public:
   int wave(int bId, int fId, double d, double g,
            const double* params, const double* args,
            double& h, double* u, double* du) const;
-
-private:
-  friend class FFaSingelton<FFaUserFuncPlugin>;
 };
 
 #endif

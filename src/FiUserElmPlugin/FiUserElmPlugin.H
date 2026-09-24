@@ -18,12 +18,20 @@
 
 
 /*!
-  \brief Singleton class for user-defined element plugins.
+  \brief Singleton class for user-defined elements plugins.
 */
 
 class FiUserElmPlugin : public FFaDynamicLibraryBase,
                         public FFaSingelton<FiUserElmPlugin>
 {
+  //! \brief The constructor is private to allow singelton construction only.
+  FiUserElmPlugin() {}
+  //! \brief The destructor is private to allow singelton destruction only.
+  virtual ~FiUserElmPlugin() {}
+
+  //! \brief To allow construction and destruction.
+  friend class FFaSingelton<FiUserElmPlugin>;
+
 public:
   //! \brief Checks if the named library can be loaded as a plugin.
   //! \param[in] lib Full path to the dynamic library
@@ -147,9 +155,6 @@ public:
   //! \return Zero, if \a idx is out of range
   int result(int eId, int eType, int idx,
              const int* iwork, const double* rwork, double& value);
-
-private:
-  friend class FFaSingelton<FiUserElmPlugin>;
 };
 
 #endif
