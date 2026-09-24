@@ -5,18 +5,24 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaSingelton.H
+  \brief Template for singleton classes.
+*/
+
 #ifndef FFA_SINGELTON_H
 #define FFA_SINGELTON_H
 
-
 /*!
-  \brief Template class for singleton classes.
+  \brief Template for singleton classes.
   \details This class is used as a wrapper for classes for which there should
-  only exist one instance. All referencing to the class members are then to
-  be done via the instance() method.
+  only exist one single instance (or none). All referencing to the class
+  members are then to be done via the instance() method. The instance is
+  heap-allocated on the first call to instance(), and can be explicitly
+  deleted by the removeInstance() method.
 */
 
-template <class T, class Container = T> class FFaSingelton
+template<class T, class Container = T> class FFaSingelton
 {
 protected:
   //! \brief The constructor is protected to allow objects of sub-classes only.
@@ -31,7 +37,7 @@ public:
   //! \details The instance is allocated dynamically in the first invocation.
   static T* instance()
   {
-    if (ourInstance == 0)
+    if (!ourInstance)
       ourInstance = new T();
     return ourInstance;
   }
@@ -40,8 +46,7 @@ public:
   //! \details This method is used to clean up memory before terminating.
   static void removeInstance()
   {
-    if (ourInstance != 0)
-      delete ourInstance;
+    delete ourInstance;
     ourInstance = 0;
   }
 
@@ -53,7 +58,7 @@ private:
 };
 
 
-template <class T, class Container>
+template<class T, class Container>
 T* FFaSingelton<T,Container>::ourInstance = 0;
 
 #endif
