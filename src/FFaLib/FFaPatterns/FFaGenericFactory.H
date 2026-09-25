@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaGenericFactory.H
+  \brief General object creation factory.
+*/
+
 #ifndef FFA_GENERIC_FACTORY_H
 #define FFA_GENERIC_FACTORY_H
 
@@ -19,25 +24,34 @@
 #include "FFaLib/FFaDynCalls/FFaDynCB.H"
 
 
+/*!
+  \brief Template singelton class defining a general object creation factory.
+  \details This class is used for managing methods for creating instances of
+  a varity of classes, such as finite element types, etc. Call back methods
+  creating an instance of a specific type are stored as function pointers in
+  a map with the object type name as lookup key.
+*/
+
 template <class T, class Key = std::string, class ArgType = int>
 class FFaGenericFactory : public FFaSingelton< FFaGenericFactory<T,Key,ArgType> >
 {
-  using CreatorCB   = FFaDynCB2<ArgType,T*&>;
-  using CreatorType = std::map<Key,CreatorCB>;
+  //! Type alias for object creation callback
+  using CreatorCB  = FFaDynCB2<ArgType,T*&>;
+  //! Key --> creator callback mapping
+  using CreatorMap = std::map<Key,CreatorCB>;
 
 public:
-  FFaGenericFactory() {}
-  virtual ~FFaGenericFactory() {}
-
+  //! \brief Registers a new object creation method on \a key.
   bool registerCreator(const Key& key, const CreatorCB& creator)
   {
-    return myCreatorMap.insert({ key, creator }).second;
+    return myCreatorMap.emplace(key,creator).second;
   }
 
+  //! \brief Invokes the object creation method for given \a key.
   T* create(const Key& key, ArgType id)
   {
     T* retVal = NULL;
-    typename CreatorType::iterator creator = myCreatorMap.find(key);
+    typename CreatorMap::iterator creator = myCreatorMap.find(key);
     if (creator != myCreatorMap.end())
       creator->second.invoke(id,retVal);
 #ifdef FFA_DEBUG
@@ -48,18 +62,20 @@ public:
     return retVal;
   }
 
+  //! \brief Gets a list of all registered object creator keys.
   void getKeys(std::vector<Key>& keys) const
   {
     keys.clear();
     keys.reserve(myCreatorMap.size());
-    for (const typename CreatorType::value_type& creator : myCreatorMap)
+    for (const typename CreatorMap::value_type& creator : myCreatorMap)
       keys.push_back(creator.first);
   }
 
+  //! \brief Clears the object creator map \ref myCreatorMap.
   void clear() { myCreatorMap.clear(); this->removeInstance(); }
 
 private:
-  CreatorType myCreatorMap;
+  CreatorMap myCreatorMap; //!< Object creator callbacks container
 };
 
 #endif

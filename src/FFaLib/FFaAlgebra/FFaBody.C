@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaBody.C
+  \brief Surface tesselation and intersection of volumetric objects.
+*/
+
 #include <algorithm>
 #include <set>
 #include <map>
@@ -14,25 +19,46 @@
 #include "FFaLib/FFaAlgebra/FFaMat34.H"
 
 
-/*!
-  Returns the area of a triangle spanned by tree vertices, \a v0, \a v1, \a v2.
-  The area is negative if its normal vector is opposite of \a planeNormal.
-*/
-
-static double getArea(const FaVec3& planeNormal,
-		      const FaVec3& v0, const FaVec3& v1, const FaVec3& v2)
+namespace
 {
-  FaVec3 vn = (v1-v0) ^ (v2-v0);
-  if (vn * planeNormal < 0.0)
-    return -0.5 * vn.length();
-  else
-    return 0.5 * vn.length();
+  /*!
+    Returns the area of a triangle spanned by tree points, \a v0, \a v1, \a v2.
+    The area is negative if its normal vector is opposite of \a planeNormal.
+  */
+  double getArea(const FaVec3& planeNormal,
+                 const FaVec3& v0, const FaVec3& v1, const FaVec3& v2)
+  {
+    FaVec3 vn = (v1-v0) ^ (v2-v0);
+    if (vn * planeNormal < 0.0)
+      return -0.5 * vn.length();
+    else
+      return 0.5 * vn.length();
+  }
+
+  /*!
+    Accumulates volume, volume centroid, and optionally volume inertia
+    with contributions from a tetrahedron defined by the given four vertices.
+  */
+  double accVol(FaVec3 v0, FaVec3 v1, FaVec3 v2, FaVec3 v3, FaVec3& Xvc,
+                FFaTensor3* I)
+  {
+    double Vol = (((v1-v0) ^ (v2-v0)) * (v3-v0)) / 6.0;
+    FaVec3 Xc  = (v0 + v1 + v2 + v3)/4.0;
+    if (I)
+    {
+      v0 -= Xc;
+      v1 -= Xc;
+      v2 -= Xc;
+      v3 -= Xc;
+      FFaTensor3 Iv = FFaTensor3(v0,v2,v1) + FFaTensor3(v0,v1,v3) +
+	              FFaTensor3(v1,v2,v3) + FFaTensor3(v0,v3,v2);
+      *I += Iv.translateInertia(-v0,Vol);
+    }
+    Xvc += Xc*Vol;
+    return Vol;
+  }
 }
 
-
-/*!
-  Default face constructor.
-*/
 
 FaFace::FaFace()
 {
@@ -42,10 +68,6 @@ FaFace::FaFace()
   IAmBelow = false;
 }
 
-
-/*!
-  Constructor defining a face spanned by three or four vertices.
-*/
 
 FaFace::FaFace(FFaBody* body, size_t i1, size_t i2, size_t i3, int i4)
 {
@@ -62,16 +84,14 @@ FaFace::FaFace(FFaBody* body, size_t i1, size_t i2, size_t i3, int i4)
 }
 
 
-/*!
-  Global stream operator printing the face definition.
-*/
-
+//! \cond DO_NOT_DOCUMENT
 std::ostream& operator<<(std::ostream& s, const FaFace& f)
 {
   s << f.myVertices.front();
   for (size_t i = 1; i < f.myVertices.size(); i++) s <<','<< f.myVertices[i];
   return s;
 }
+//! \endcond
 
 
 /*!
@@ -79,12 +99,12 @@ std::ostream& operator<<(std::ostream& s, const FaFace& f)
   defined by a \a normal vector and the distance \a z0 from the origin along the
   global z-axis. If the face is intersected, it is subdivided into two or
   three sub-faces with one or two new vertices.
-  \return {-4: Intersection of quadrilateral not implemented}
-  \return {-1: The triangle is entirely below the plane}
-  \return { 1: The triangle is entirely above the plane}
-  \return { 0: The triangle lies in the plane}
-  \return { 2: The triangle is intersected and divided in two sub-triangles}
-  \return { 3: The triangle is intersected and divided in three sub-triangles}
+  \return -4: Intersection of quadrilateral not implemented
+  \return -1: The triangle is entirely below the plane
+  \return  1: The triangle is entirely above the plane
+  \return  0: The triangle lies in the plane
+  \return  2: The triangle is intersected and divided in two sub-triangles
+  \return  3: The triangle is intersected and divided in three sub-triangles
 */
 
 int FaFace::intersect(const FaVec3& normal, double z0, double zeroTol)
@@ -343,9 +363,9 @@ int FaFace::quad2QuadTria(const char* status, const double* dist, bool oneAbove)
 
 
 /*!
-  Accumulates area and centroid with contributions from a triangle defined
-  by the two internal vertices of this face, the center vertex \a v0, and
-  the normal vector \a vn of the face.
+  This method accumulates area and centroid with contributions from a triangle
+  defined by the two internal vertices of this face, the center vertex \a v0,
+  and the normal vector \a vn of the face.
 */
 
 double FaFace::accumulateArea(const FaVec3& vn, const FaVec3& v0,
@@ -366,34 +386,7 @@ FaVec3 FaFace::getIntEdgeCoord() const
 
 
 /*!
-  Accumulates volume, volume centroid, and optionally volume inertia
-  with contributions from a tetrahedron defined by the given four vertices.
-*/
-
-static double accVol(FaVec3 v0, FaVec3 v1, FaVec3 v2, FaVec3 v3,
-                     FaVec3& Xvc, FFaTensor3* I)
-{
-  double Vol = (((v1-v0) ^ (v2-v0)) * (v3-v0)) / 6.0;
-  FaVec3 Xc  = (v0 + v1 + v2 + v3)/4.0;
-
-  if (I)
-  {
-    v0 -= Xc;
-    v1 -= Xc;
-    v2 -= Xc;
-    v3 -= Xc;
-    FFaTensor3 Iv = FFaTensor3(v0,v2,v1) + FFaTensor3(v0,v1,v3)
-                  + FFaTensor3(v1,v2,v3) + FFaTensor3(v0,v3,v2);
-    *I += Iv.translateInertia(-v0,Vol);
-  }
-
-  Xvc += Xc*Vol;
-  return Vol;
-}
-
-
-/*!
-  Accumulates volume, volume centroid, and optionally volume inertia
+  This method accumulates volume, volume centroid, and optionally volume inertia
   with contributions from a tetrahedron defined by this face
   and the center vertex \a v0.
 */
@@ -413,10 +406,6 @@ double FaFace::accumulateVolume(const FaVec3& v0,
 }
 
 
-/*!
-  Adds a face to the body definition.
-*/
-
 size_t FFaBody::addFace(int i1, int i2, int i3, int i4)
 {
 #if FFA_DEBUG > 2
@@ -426,10 +415,6 @@ size_t FFaBody::addFace(int i1, int i2, int i3, int i4)
   return myFaces.size()-1;
 }
 
-
-/*!
-  Adds a vertex to the body definition.
-*/
 
 size_t FFaBody::addVertex(const FaVec3& pos, double tol)
 {
@@ -457,10 +442,6 @@ size_t FFaBody::addVertex(const FaVec3& pos, double tol)
 }
 
 
-/*!
-  Computes the bounding box of the body.
-*/
-
 bool FFaBody::computeBoundingBox(FaVec3& minX, FaVec3& maxX) const
 {
   if (myVertices.empty()) return false;
@@ -476,10 +457,6 @@ bool FFaBody::computeBoundingBox(FaVec3& minX, FaVec3& maxX) const
   return true;
 }
 
-
-/*!
-  Computes the total volume, volume centroid, and optionally the volume inertia.
-*/
 
 bool FFaBody::computeTotalVolume(double& Vb, FaVec3& C0b, FFaTensor3* Ib) const
 {
@@ -529,9 +506,10 @@ bool FFaBody::computeTotalVolume(double& Vb, FaVec3& C0b, FFaTensor3* Ib) const
 
 
 /*!
-  Computes the volume and centroid of the portion of the body that is below the
-  plane defined by \a normal and \a z0. The area of the intersection surface and
-  the associated centroid is also computed, if the body is intersected.
+  This method computes the volume and centroid of the portion of the body that
+  is below the plane defined by \a normal and \a z0.
+  The area of the intersection surface and the associated centroid
+  is also computed, if the body is intersected by the plane.
 */
 
 bool FFaBody::computeVolumeBelow(double& Vb, double& As,
@@ -602,7 +580,7 @@ bool FFaBody::computeVolumeBelow(double& Vb, double& As,
 
 
 /*!
-  Saves the loop of vertices defining the current intersection surface.
+  This method saves the loop of vertices defining the current intersection.
   The vertex coordinates of the loop are transformed to global coordinates
   using \a cs to facilitate comparison with a previous configuration.
 */
@@ -651,9 +629,9 @@ bool FFaBody::saveIntersection(const FaMat34& cs)
 
 
 /*!
-  Computes the increment in the intersection area and the associated centroid.
-  It is assumed that \a computeVolumeBelow already has been invoked before
-  calling this method such that the current face intersections are available.
+  This method computes the increment in the intersection area and the associated
+  centroid, assuming that computeVolumeBelow() already has been invoked
+  such that the current face intersections are available.
 */
 
 bool FFaBody::computeIncArea(double& dAs, FaVec3& C0s,

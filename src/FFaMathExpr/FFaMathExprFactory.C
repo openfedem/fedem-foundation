@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaMathExprFactory.C
+  \brief Mathematical expression management.
+*/
+
 #include "FFaMathExpr/FFaMathExprFactory.H"
 #include "FFaMathExpr.H"
 #include "FFaMathVar.H"
@@ -13,12 +18,11 @@
 
 FFaMathExprFactory::FFaMathFunc::~FFaMathFunc()
 {
-  if (expr) delete expr;
-  for (size_t i = 0; i < args.size(); i++)
-  {
-    if (args[i]) delete args[i];
-    if (diff[i]) delete diff[i];
-  }
+  delete expr;
+  for (FFaMathVar* var : args)
+    delete var;
+  for (FFaMathExpr* ex : diff)
+    delete ex;
 }
 
 
@@ -49,8 +53,7 @@ size_t FFaMathExprFactory::countArgs(const std::string& expression,
 int FFaMathExprFactory::create(int id, const std::string& expression,
                                size_t nvar, const char** vars)
 {
-  IMIter im = myIndexMap.find(id);
-  if (im != myIndexMap.end())
+  if (IMIter im = myIndexMap.find(id); im != myIndexMap.end())
   {
     if (im->second.estr == expression && nvar == im->second.args.size())
       return im->first;

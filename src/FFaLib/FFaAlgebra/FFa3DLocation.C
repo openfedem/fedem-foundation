@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFa3DLocation.C
+  \brief Representation of object locations in 3D space.
+*/
+
 #include <cctype>
 
 #include "FFaLib/FFaAlgebra/FFa3DLocation.H"
@@ -71,10 +76,6 @@ bool FFa3DLocation::operator==(const FFa3DLocation& m) const
 }
 
 
-/*!
-  Converts the position representation in \a *this to the provided type.
-*/
-
 bool FFa3DLocation::changePosType(PosType newType)
 {
   if (newType == myPosTyp) return false;
@@ -84,10 +85,6 @@ bool FFa3DLocation::changePosType(PosType newType)
   return true;
 }
 
-
-/*!
-  Converts the rotational representation in \a *this to the provided type.
-*/
 
 bool FFa3DLocation::changeRotType(RotType newType)
 {
@@ -100,8 +97,8 @@ bool FFa3DLocation::changeRotType(RotType newType)
 
 
 /*!
-  Changes the imaginary reference CS for the translation numbers stored in this
-  3DLocation to \a newRef from \a oldRef. It is only a convenience method.
+  This is a convenience method which changes the imaginary reference coordinate
+  system for the position values stored in \a *this to \a newRef from \a oldRef.
 */
 
 FFa3DLocation& FFa3DLocation::changePosRefCS(const FaMat34& newRef,
@@ -125,8 +122,9 @@ FFa3DLocation& FFa3DLocation::changePosRefCS(const FaMat34& newRef,
 
 
 /*!
-  Changes the imaginary reference CS for the rotation numbers stored in this
-  3DLocation to \a newRef from \a oldRef. It is only a convenience method.
+  This is a convenience method which changes the imaginary reference coordinate
+  system for the orientation values stored in \a *this to \a newRef from
+  \a oldRef.
 */
 
 FFa3DLocation& FFa3DLocation::changeRotRefCS(const FaMat34& newRef,
@@ -151,9 +149,9 @@ FFa3DLocation& FFa3DLocation::changeRotRefCS(const FaMat34& newRef,
 
 
 /*!
-  Sets this to contain the position of \a globalPosition relative to \a posRelMx
-  stored as type \a p, and the rotation of \a globalPosition relative to
-  \a rotRelMx stored as type \a r.
+  This method sets \a *this to contain the position of \a globalPosition
+  relative to \a posRelMx stored as type \a p, and the orientation of
+  \a globalPosition relative to \a rotRelMx stored as type \a r.
 */
 
 FFa3DLocation& FFa3DLocation::set(PosType p, const FaMat34& posRelMx,
@@ -181,8 +179,8 @@ FFa3DLocation& FFa3DLocation::set(PosType p, const FaMat34& posRelMx,
 
 
 /*!
-  Sets this to be positioned and rotated as the provided matrix \a mx,
-  converting it to the provided storage types as needed.
+  This method sets \a *this to be positioned and oriented as the provided
+  matrix \a mx, converting it to the provided storage types \a p and \a r.
 */
 
 FFa3DLocation& FFa3DLocation::set(PosType p, RotType r, const FaMat34& mx)
@@ -194,8 +192,8 @@ FFa3DLocation& FFa3DLocation::set(PosType p, RotType r, const FaMat34& mx)
 
 
 /*!
-  Sets translaton of this to the provided cartesian position \a cartPos,
-  converting it to PosType \a p way of storing it.
+  This method sets the position in \a *this to the provided cartesian position
+  \a cartPos, converting it to position type \a p way of storing it.
 */
 
 FFa3DLocation& FFa3DLocation::setPos(PosType p, const FaVec3& cartPos)
@@ -236,10 +234,9 @@ FFa3DLocation& FFa3DLocation::setPos(PosType p, const FaVec3& cartPos)
 
 
 /*!
-  Sets rotation of this to the provided matrix rotation \a rotMat,
-  converting it to RotType \a r way of storing it.
-  The translation of the matrix is ignored. When needed,
-  the current position is fetched by calling this->translation().
+  This method sets the orientation in \a *this to the provided rotation matrix
+  \a rotMat, converting it to orientation type \a r way of storing it.
+  When needed, the current position is fetched by calling translation().
 */
 
 FFa3DLocation& FFa3DLocation::setRot(RotType r, const FaMat33& rotMat)
@@ -282,10 +279,6 @@ FFa3DLocation& FFa3DLocation::setRot(RotType r, const FaMat33& rotMat)
 }
 
 
-/*!
-  Returns the cartesian position of this 3DLocation.
-*/
-
 FaVec3 FFa3DLocation::translation() const
 {
   static FaVec3 cartPos, cylPos;
@@ -323,10 +316,6 @@ FaVec3 FFa3DLocation::translation() const
 }
 
 
-/*!
-  Returns the rotation of this 3DLocation as a rotation matrix.
-*/
-
 FaMat33 FFa3DLocation::direction() const
 {
   static FaMat33 result;
@@ -359,10 +348,6 @@ FaMat33 FFa3DLocation::direction() const
 }
 
 
-/*!
-  Get a FaMat34 representation of the 3DLocation.
-*/
-
 FaMat34 FFa3DLocation::getMatrix() const
 {
   return FaMat34(this->direction(),this->translation());
@@ -370,10 +355,10 @@ FaMat34 FFa3DLocation::getMatrix() const
 
 
 /*!
-  Utility method that returns a FaMat34 that represents the global position of
-  this 3DLocation data if this is placed relative to the two matrices provided.
+  This is a utility method returning a FaMat34 object that represents the global
+  position of *this as if it was placed relative to the two matrices provided.
 
-  return FaMat34([rotRelMx * 3DLoc.rotation], [posRelMx * 3DLoc.pos])
+  return FaMat34( rotRelMx * this->direction(), posRelMx * this->translation() )
 */
 
 FaMat34 FFa3DLocation::getMatrix(const FaMat34& posRelMx,
@@ -383,10 +368,6 @@ FaMat34 FFa3DLocation::getMatrix(const FaMat34& posRelMx,
                  posRelMx * this->translation());
 }
 
-
-/*!
-  Check that the current data represent a valid location.
-*/
 
 bool FFa3DLocation::isValid() const
 {
@@ -451,6 +432,8 @@ std::ostream& FFa3DLocation::print(std::ostream& s,
 }
 
 
+//! \cond DO_NOT_DOCUMENT
+
 std::ostream& operator<<(std::ostream& s, const FFa3DLocation& m)
 {
   return m.print(s,m.saveNumericalData);
@@ -480,3 +463,5 @@ std::istream& operator>>(std::istream& s, FFa3DLocation& m)
   if (s) m = m_tmp;
   return s;
 }
+
+//! \endcond

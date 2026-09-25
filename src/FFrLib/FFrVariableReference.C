@@ -8,6 +8,7 @@
 #include "FFrLib/FFrVariableReference.H"
 #include "FFrLib/FFrResultContainer.H"
 #include "FFrLib/FFrReadOp.H"
+#include "FFaLib/FFaAlgebra/FFaMat34.H"
 #include <float.h>
 #include <math.h>
 
@@ -142,61 +143,58 @@ int FFrVariableReference::getNearestContainer() const
 
 int FFrVariableReference::recursiveReadPosData(const double* vals, int nvals, int arrayPos) const
 {
-  // find the closest position (Switching faster than if)
-  // (Ugly look to preserve line nrs. during optimization)
-  switch (containers.size()){
-  case 0: return arrayPos;
-  case 1: return arrayPos + containers.front().first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
-										 containers.front().second, variableDescr->dataSize,
-										 variableDescr->getRepeats());
-  default:{
-    int closestContainer = this->getNearestContainer();
-    if (closestContainer < 0) return arrayPos;
-    return arrayPos + containers[closestContainer].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
-										     containers[closestContainer].second,
-										     variableDescr->dataSize, variableDescr->getRepeats());
+  switch (containers.size()) {
+  case 0: break;
+  case 1: arrayPos += containers.front().first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
+                                                                           containers.front().second,
+                                                                           variableDescr->dataSize,
+                                                                           variableDescr->getRepeats()); break;
+  default:
+    if (int idx = this->getNearestContainer(); idx >= 0)
+      arrayPos += containers[idx].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
+                                                                    containers[idx].second,
+                                                                    variableDescr->dataSize,
+                                                                    variableDescr->getRepeats());
   }
-  }
+  return arrayPos;
 }
 
 
 int FFrVariableReference::recursiveReadPosData(const float* vals, int nvals, int arrayPos) const
 {
-  // find the closest position (Switching faster than if)
-  // (Ugly look to preserve line nrs. during optimization)
-  switch (containers.size()){
-  case 0: return arrayPos;
-  case 1: return arrayPos + containers.front().first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
-										 containers.front().second, variableDescr->dataSize,
-										 variableDescr->getRepeats());
-  default:{
-    int closestContainer = this->getNearestContainer();
-    if (closestContainer < 0) return arrayPos;
-    return arrayPos + containers[closestContainer].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
-										     containers[closestContainer].second,
-										     variableDescr->dataSize, variableDescr->getRepeats());
+  switch (containers.size()) {
+  case 0: break;
+  case 1: arrayPos += containers.front().first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
+                                                                           containers.front().second,
+                                                                           variableDescr->dataSize,
+                                                                           variableDescr->getRepeats()); break;
+  default:
+    if (int idx = this->getNearestContainer(); idx >= 0)
+      arrayPos += containers[idx].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
+                                                                    containers[idx].second,
+                                                                    variableDescr->dataSize,
+                                                                    variableDescr->getRepeats());
   }
-  }
+  return arrayPos;
 }
 
 
 int FFrVariableReference::recursiveReadPosData(const int* vals, int nvals, int arrayPos) const
 {
-  // find the closest position (Switching faster than if)
-  // (Ugly look to preserve line nrs. during optimization)
-  switch (containers.size()){
-  case 0: return arrayPos;
-  case 1: return arrayPos + containers.front().first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
-										 containers.front().second, variableDescr->dataSize,
-										 variableDescr->getRepeats());
-  default:{
-    int closestContainer = this->getNearestContainer();
-    if (closestContainer < 0) return arrayPos;
-    return arrayPos + containers[closestContainer].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
-										     containers[closestContainer].second,
-										     variableDescr->dataSize, variableDescr->getRepeats());
+  switch (containers.size()) {
+  case 0: break;
+  case 1: arrayPos += containers.front().first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
+                                                                           containers.front().second,
+                                                                           variableDescr->dataSize,
+                                                                           variableDescr->getRepeats()); break;
+  default:
+    if (int idx = this->getNearestContainer(); idx >= 0)
+      arrayPos += containers[idx].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
+                                                                    containers[idx].second,
+                                                                    variableDescr->dataSize,
+                                                                    variableDescr->getRepeats());
   }
-  }
+  return arrayPos;
 }
 
 
@@ -220,16 +218,15 @@ unsigned int FFrVariableReference::getTimeStamp() const
       return 0;
     case 1:
       return containers.front().first->getDate();
-    default:
-    {
-      // Not trivially found. Check the closest container
-      unsigned int lastDate = containers.front().first->getDate();
-      for (size_t i = 1; i < containers.size(); i++)
-	if (containers[i].first->getDate() > lastDate)
-	  lastDate = containers[i].first->getDate();
-      return lastDate;
-    }
   }
+
+  // Not trivially found. Check the closest container
+  unsigned int lastDate = containers.front().first->getDate();
+  for (size_t i = 1; i < containers.size(); i++)
+    if (containers[i].first->getDate() > lastDate)
+      lastDate = containers[i].first->getDate();
+
+  return lastDate;
 }
 
 
@@ -241,18 +238,16 @@ double FFrVariableReference::getDistanceFromResultPoint(const bool usePositioned
       return DBL_MAX;
     case 1:
       return containers.front().first->getDistanceFromPosKey(usePositionedKey);
-    default:
-    {
-      // Not trivially found. Check the closest container
-      double closestDist = containers.front().first->getDistanceFromPosKey(usePositionedKey);
-      for (size_t i = 1; i < containers.size(); i++)
-      {
-	double dist = containers[i].first->getDistanceFromPosKey(usePositionedKey);
-	if (fabs(dist) < fabs(closestDist)) closestDist = dist;
-      }
-      return closestDist;
-    }
   }
+
+  // Not trivially found. Check the closest container
+  double closestDist = containers.front().first->getDistanceFromPosKey(usePositionedKey);
+  for (size_t i = 1; i < containers.size(); i++)
+    if (double dist = containers[i].first->getDistanceFromPosKey(usePositionedKey);
+        fabs(dist) < fabs(closestDist))
+      closestDist = dist;
+
+  return closestDist;
 }
 
 
@@ -357,5 +352,80 @@ void FFrVariableReference::releaseMemBlocks()
   std::vector<FFrVariableReference*> empty;
   memBlocks.swap(empty);
 }
-
 #endif
+
+
+template<class T> bool FFrVariableReference::readVariable(T& value)
+{
+  bool ok = false;
+  if (FFaOperationBase* readOp = this->getReadOperation(); readOp)
+  {
+    if (FFaOperation<T>* op = dynamic_cast<FFaOperation<T>*>(readOp); op)
+      ok = op->evaluate(value);
+
+    readOp->unref();
+  }
+
+  if (!ok)
+    std::cerr <<" *** FFrVariableReference: Invalid read operation for \""
+              << this->getDescription() <<"\"."<< std::endl;
+  return ok;
+}
+
+template bool FFrVariableReference::readVariable<FaVec3>(FaVec3&);
+template bool FFrVariableReference::readVariable<FaMat34>(FaMat34&);
+
+//! Specialization for double variables - also accounting for float data.
+template<> bool FFrVariableReference::readVariable<double>(double& value)
+{
+  using DblOper = FFaOperation<double>;
+  using FltOper = FFaOperation<float>;
+
+  bool ok = false;
+  if (FFaOperationBase* readOp = this->getReadOperation(); readOp)
+  {
+    if (DblOper* op = dynamic_cast<DblOper*>(readOp); op)
+      ok = op->evaluate(value);
+    else if (FltOper* op = dynamic_cast<FltOper*>(readOp); op)
+      if (float floatVal; (ok = op->evaluate(floatVal)))
+        value = static_cast<double>(floatVal);
+
+    readOp->unref();
+  }
+
+  if (!ok)
+    std::cerr <<" *** FFrVariableReference: Invalid read operation for \""
+              << this->getDescription() <<"\"."<< std::endl;
+  return ok;
+}
+
+
+using Vec3Vec = std::vector<FaVec3>;
+
+//! Specialization for array for FaVec3 objects - reading from a 1D array.
+template<> bool FFrVariableReference::readVariable<Vec3Vec>(Vec3Vec& value)
+{
+  using DoubleVec  = std::vector<double>;
+  using DblVecOper = FFaOperation<DoubleVec>;
+
+  bool ok = false;
+  if (FFaOperationBase* readOp = this->getReadOperation(); readOp)
+  {
+    if (DblVecOper* op = dynamic_cast<DblVecOper*>(readOp); op)
+      if (DoubleVec data; (ok = op->evaluate(data)))
+      {
+        value.resize(data.size()/3);
+        DoubleVec::const_iterator dit = data.begin();
+        for (FaVec3& X : value)
+          for (int i = 0; i < 3; i++, ++dit)
+            X[i] = *dit;
+      }
+
+    readOp->unref();
+  }
+
+  if (!ok)
+    std::cerr <<" *** FFrVariableReference: Invalid read operation for \""
+              << this->getDescription() <<"\"."<< std::endl;
+  return ok;
+}

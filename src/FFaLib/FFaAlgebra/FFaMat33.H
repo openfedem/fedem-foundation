@@ -5,86 +5,133 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaMat33.H
+  \brief Point transformations in 3D space.
+*/
+
 #ifndef FFA_MAT33_H
 #define FFA_MAT33_H
 
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 
 
+/*!
+  \brief Class for point transformations in 3D space.
+  \details This class is a 3&times;3 matrix representing the coordinate system
+  axes or a transformation of 3D point vectors. The class is equipped with many
+  convenience methods for the most common operations on such objects.
+*/
+
 class FaMat33
 {
-  FaVec3 v[3];
-
 public:
-
-  // Constructors
-
+  //! \brief Default constructor creating an identity matrix.
   FaMat33() { this->setIdentity(); }
+  //! \brief Constructor creating a matrix from a float array.
   FaMat33(const float* mat);
+  //! \brief Constructor creating a matrix from a double array.
   FaMat33(const double* mat);
+  //! \brief Constructor creating a matrix from 3 column vectors.
   FaMat33(const FaVec3& v0, const FaVec3& v1, const FaVec3& v2);
-  FaMat33(const FaMat33& m) { for (int i = 0; i < 3; i++) v[i] = m.v[i]; }
 
-  // Local operators
-
-  FaMat33& operator=  (const FaMat33& m);
+  //! \brief Addition operator.
   FaMat33& operator+= (const FaMat33& m);
+  //! \brief Subtraction operator.
   FaMat33& operator-= (const FaMat33& m);
+  //! \brief Scaling operator (multiplication by a scalar).
   FaMat33& operator*= (double d);
+  //! \brief Scaling operator (division by a scalar).
   FaMat33& operator/= (double d);
 
-  // Indexing
-
+  //! \brief Zero-based indexing operator accessing a matrix column (read only).
   const FaVec3& operator[] (int i) const;
+  //! \brief Zero-based indexing operator accessing a column (for update).
   FaVec3&       operator[] (int i);
 
+  //! \brief One-based indexing operator accessing a matrix element (read only).
   const double& operator() (int i, int j) const;
+  //! \brief One-based indexing operator accessing an element (for update).
   double&       operator() (int i, int j);
 
   // Special functions
 
+  //! \brief Returns the inverse of the matrix.
+  //! \param[in] eps Zero tolerance for the matrix determinant
   FaMat33  inverse(double eps = 1.0e-16) const;
+  //! \brief Initializes the matrix to the identity matrix.
   FaMat33& setIdentity();
+  //! \brief Returns the transpose of matrix.
   FaMat33  transpose() const;
+  //! \brief Performs a cyclic permutation of the matrix columns.
   FaMat33& shift(int delta);
 
+  //! \brief Returns \e true if the matrix \a m equals \a *this
+  //! within the given \a tolerance.
   bool isCoincident(const FaMat33& m, double tolerance = 1.0e-10) const;
 
+  //! \brief Computes a globalized coordinate system from an X-axis vector.
   FaMat33& makeGlobalizedCS(const FaVec3& v1);
+  //! \brief Computes a globalized coordinate system from two in-plane vectors.
   FaMat33& makeGlobalizedCS(const FaVec3& v1, const FaVec3& v2);
+  //! \brief Computes a globalized coordinate system from three vectors.
   FaMat33& makeGlobalizedCS(const FaVec3& v0,
                             const FaVec3& v1, const FaVec3& v2);
+  //! \brief Computes a globalized coordinate system from four vectors.
   FaMat33& makeGlobalizedCS(const FaVec3& v1, const FaVec3& v2,
                             const FaVec3& v3, const FaVec3& v4);
 
+  //! \brief Compute an incremental rotation tensor from the given Euler angles.
   FaMat33& eulerRotateZYX(const FaVec3& angles);
+  //! \brief Computes an incremental rotation tensor from the given \a angles.
   FaMat33& incRotate(const FaVec3& angles);
 
+  //! \brief Returns the Euler angles corresponding to an incremental rotation.
   FaVec3 getEulerZYX() const;
+  //! \brief Returns the angles corresponding to an incremental rotation.
   FaVec3 getRotation() const;
 
+  //! \brief Returns the matrix representing a rotation about the Z-axis.
   static FaMat33 makeZrotation(double angle);
+  //! \brief Returns the matrix representing a rotation about the Y-axis.
   static FaMat33 makeYrotation(double angle);
+  //! \brief Returns the matrix representing a rotation about the X-axis.
   static FaMat33 makeXrotation(double angle);
 
   // Global operators
 
-  friend FaMat33  operator-  (const FaMat33& a);
-  friend FaMat33  operator+  (const FaMat33& a, const FaMat33& b);
-  friend FaMat33  operator-  (const FaMat33& a, const FaMat33& b);
+  //! \brief Unary negation operator.
+  friend FaMat33 operator- (const FaMat33& a);
+  //! \brief Global addition operator.
+  friend FaMat33 operator+ (const FaMat33& a, const FaMat33& b);
+  //! \brief Global subtraction operator.
+  friend FaMat33 operator- (const FaMat33& a, const FaMat33& b);
 
-  friend FaMat33  operator*  (const FaMat33& a, const FaMat33& b);
-  friend FaMat33  operator*  (const FaMat33& a, double d);
-  friend FaMat33  operator*  (double d, const FaMat33& a);
-  friend FaVec3   operator*  (const FaMat33& a, const FaVec3&  b);
-  friend FaVec3   operator*  (const FaVec3&  a, const FaMat33& b);
-  friend FaMat33  operator/  (const FaMat33& a, double d);
+  //! \brief Multiplication of two matrices.
+  friend FaMat33 operator* (const FaMat33& a, const FaMat33& b);
+  //! \brief Scaling operator, multiplication of a matrix and a scalar.
+  friend FaMat33 operator* (const FaMat33& a, double d);
+  //! \brief Scaling operator, multiplication of a scalar and a matrix.
+  friend FaMat33 operator* (double d, const FaMat33& a);
+  //! \brief Multiplication of a matrix and a point vector.
+  friend FaVec3  operator* (const FaMat33& a, const FaVec3&  b);
+  //! \brief Multiplication of a point vector and matrix.
+  friend FaVec3  operator* (const FaVec3&  a, const FaMat33& b);
+  //! \brief Scaling operator, division by a scalar.
+  friend FaMat33 operator/ (const FaMat33& a, double d);
 
-  friend int      operator== (const FaMat33& a, const FaMat33& b);
-  friend int      operator!= (const FaMat33& a, const FaMat33& b);
+  //! \brief Equality operator.
+  friend int operator== (const FaMat33& a, const FaMat33& b);
+  //! \brief Inequality operator.
+  friend int operator!= (const FaMat33& a, const FaMat33& b);
 
+  //! \brief Printing operator.
   friend std::ostream& operator<< (std::ostream& s, const FaMat33& m);
+  //! \brief Reading operator.
   friend std::istream& operator>> (std::istream& s, FaMat33& m);
+
+private:
+  FaVec3 v[3]; //!< Columns of the 3&times;3 matrix
 };
 
 

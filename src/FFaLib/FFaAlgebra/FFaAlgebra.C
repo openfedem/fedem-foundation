@@ -5,20 +5,24 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaAlgebra.C
+  \brief Auxiliary matrix-vector functions.
+*/
+
 #include "FFaLib/FFaAlgebra/FFaMat33.H"
 #include "FFaLib/FFaAlgebra/FFaAlgebra.H"
 
 
 /*!
-  Performs an eccentricity transformation of a 6x6 element matrix.
+  The implementation of this function is based on the Fortran routine trix30()
+  in the file src/Femlib/beamaux.f
+  \note The vector \a X is here assumed to point FROM the nodal point location
+  TO the actual element location (this is opposite to the case in trix30()).
 */
 
 void FFaAlgebra::eccTransform6 (double mat[6][6], const FaVec3& X)
 {
-  // The following code is based on the fortran routine TRIX30
-  // from the file vpmBase/Femlib/beamaux.f
-  // Note: The vector X is here assumed to point FROM the nodal point location
-  // TO the actual element location (this is opposite to the case in beamaux.f)
 
   int i;
 
@@ -39,20 +43,20 @@ void FFaAlgebra::eccTransform6 (double mat[6][6], const FaVec3& X)
 
 
 /*!
-  Performs a congruence transformation of a symmetric (3*N)x(3*N) matrix.
-  The transformation matrix consists of a 3*3 submatrix T, which is
-  repeated along the diagonal (when node == 0).
-  If node > 0, the transformation matrix equals the identity matrix, but with
-  the submatrix T inserted on the diagonal at position 3*(node-1)+1 to 3*node.
+  The transformation matrix consists of a 3&times;3 submatrix \b T, which is
+  repeated along the diagonal (when \a node == 0).
+  If \a node &gt; 0, the transformation matrix equals the identity matrix,
+  but with the submatrix \b T inserted on the diagonal at position
+  3*(\a node-1)+1 to 3*\a node.
+
+  The implementation of this function is based on the Fortran routine mpro30()
+  in the file src/Femlib/beamaux.f
 */
 
 bool FFaAlgebra::congruenceTransform (double** mat, const FaMat33& T,
 				      int N, int node)
 {
   if (N < 1 || node > N) return false;
-
-  // The following code is based on the fortran routine MPRO30
-  // from the file vpmBase/Femlib/beamaux.f
 
   int i, j, iA, jA, kA;
   double tmp, B[3][3];

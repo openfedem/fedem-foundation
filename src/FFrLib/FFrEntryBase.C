@@ -6,7 +6,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "FFrLib/FFrEntryBase.H"
+#include "FFrLib/FFrVariableReference.H"
 #include "FFaLib/FFaDefinitions/FFaResultDescription.H"
+#include "FFaLib/FFaAlgebra/FFaMat34.H"
 
 
 #if FFR_DEBUG > 2
@@ -68,7 +70,36 @@ FFaResultDescription FFrEntryBase::getEntryDescription() const
     }
     else
       descr.varDescrPath.insert(descr.varDescrPath.begin(),
-				entry->getDescription());
+                                entry->getDescription());
 
   return descr;
 }
+
+
+template<class T> bool FFrEntryBase::readVar(T& value)
+{
+  FFrVariableReference* vRef = dynamic_cast<FFrVariableReference*>(this);
+  if (!vRef)
+    std::cerr <<" *** FFrEntryBase::readVar(): Logic error,"
+              <<" expected a variable reference, found \""
+              << this->getDescription() <<"\""<< std::endl;
+
+  else if (vRef->hasDataForCurrentKey(true)) // use the positioned time step
+    return vRef->readVariable(value);
+
+#ifdef FFR_DEBUG
+  else
+    std::cerr <<" *** FFrEntryBase::readVar(): \""<< this->getDescription()
+              <<"\" has no data at the requested time, distance = "
+              << vRef->getDistanceFromResultPoint() << std::endl;
+#endif
+
+  return false;
+}
+
+using Vec3Vec = std::vector<FaVec3>;
+
+template bool FFrEntryBase::readVar<double>(double&);
+template bool FFrEntryBase::readVar<FaVec3>(FaVec3&);
+template bool FFrEntryBase::readVar<FaMat34>(FaMat34&);
+template bool FFrEntryBase::readVar<Vec3Vec>(Vec3Vec&);
