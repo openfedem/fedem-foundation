@@ -61,4 +61,4 @@ foreach ( FILE ${SOURCE_FILE_LIST} )
 endforeach ( FILE ${SOURCE_FILE_LIST} )
 
 add_library ( ${LIB_ID} ${CPP_SOURCE_FILES} ${HPP_HEADER_FILES} )
-target_link_libraries ( ${LIB_ID} FFlVisualization )
+target_link_libraries ( ${LIB_ID} FFlVisualization FFrLib )
