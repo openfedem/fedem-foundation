@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFrVariableReference.C
+  \brief Class representing a variable reference in a result file hierarchy.
+*/
+
 #include "FFrLib/FFrVariableReference.H"
 #include "FFrLib/FFrResultContainer.H"
 #include "FFrLib/FFrReadOp.H"
@@ -24,7 +29,7 @@ FFrVariableReference::FFrVariableReference(FFrVariable* v) : variableDescr(v)
 }
 
 FFrVariableReference::FFrVariableReference(const FFrVariableReference& varRef)
-  : variableDescr(varRef.variableDescr)
+  : FFrEntryBase(varRef), variableDescr(varRef.variableDescr)
 {
   std::cout <<"Copying variable reference #"<< (myCount = ++count)
             <<" <== #" << varRef.myCount;
@@ -230,6 +235,11 @@ unsigned int FFrVariableReference::getTimeStamp() const
 }
 
 
+/*!
+  If \a usePositionedKey is \e true, the current physical position of the
+  owning extractor object is used, otherwise the requested position is used.
+*/
+
 double FFrVariableReference::getDistanceFromResultPoint(const bool usePositionedKey) const
 {
   switch (containers.size())
@@ -250,6 +260,11 @@ double FFrVariableReference::getDistanceFromResultPoint(const bool usePositioned
   return closestDist;
 }
 
+
+/*!
+  If \a usePositionedKey is \e true, the current physical position of the
+  owning extractor object is used, otherwise the requested position is used.
+*/
 
 bool FFrVariableReference::hasDataForCurrentKey(const bool usePositionedKey) const
 {
