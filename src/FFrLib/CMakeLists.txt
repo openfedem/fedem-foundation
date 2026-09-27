@@ -18,6 +18,8 @@ message ( STATUS "INFORMATION : Processing unit ${UNIT_ID}" )
 
 if ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
   string ( APPEND CMAKE_CXX_FLAGS_DEBUG " -DFFR_DEBUG=1" )
+elseif ( "${APPLICATION_ID}" STREQUAL "fedemFoundation" )
+  string ( APPEND CMAKE_CXX_FLAGS_DEBUG " -DFFR_DEBUG=3" )
 elseif ( "${APPLICATION_ID}" STREQUAL "fedemGui" )
   string ( APPEND CMAKE_CXX_FLAGS " -DFFR_LISTVIEW" )
 endif ( "${APPLICATION_ID}" STREQUAL "fedemKernel" )
