@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaResultDescription.C
+  \brief Result variable description.
+*/
+
 #include "FFaLib/FFaDefinitions/FFaResultDescription.H"
 #include "FFaLib/FFaString/FFaTokenizer.H"
 #include "FFaLib/FFaString/FFaStringExt.H"
@@ -81,6 +86,9 @@ bool FFaResultDescription::operator==(const FFaResultDescription& entry) const
   return true;
 }
 
+
+//////////////////////////
+// Global stream operators
 
 std::ostream& operator<<(std::ostream& s, const FFaResultDescription& descr)
 {
