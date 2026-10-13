@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaViewItem.H
+  \brief Abstract interface for list view items.
+*/
+
 #ifndef FFA_VIEW_ITEM_H
 #define FFA_VIEW_ITEM_H
 
@@ -49,12 +54,6 @@ public:
   static int compareDescr3w(FFaViewItem* i1, FFaViewItem* i2);
   //! \brief Three-way lexicographical comparison of user IDs.
   static int compareID3w(FFaViewItem* i1, FFaViewItem* i2);
-
-private:
-  //! \brief Binary comparison of two strings.
-  static bool stringCompare(const std::string& s1, const std::string& s2);
-  //! \brief Three-way lexicographical comparison of two strings.
-  static int stringCompare3w(const std::string& s1, const std::string& s2);
 };
 
 #endif
