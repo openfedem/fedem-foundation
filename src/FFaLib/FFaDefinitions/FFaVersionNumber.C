@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaVersionNumber.C
+  \brief Fedem version number representation.
+*/
+
 #include "FFaLib/FFaDefinitions/FFaVersionNumber.H"
 #include "FFaLib/FFaString/FFaStringExt.H"
 #include <cstdlib>

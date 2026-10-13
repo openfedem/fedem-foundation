@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaListViewItem.C
+  \brief Base class for list view items.
+*/
+
 #include "FFaLib/FFaDefinitions/FFaListViewItem.H"
 
 

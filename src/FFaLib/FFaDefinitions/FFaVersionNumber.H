@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaVersionNumber.H
+  \brief Fedem version number representation.
+*/
+
 #ifndef FFA_VERSION_NUMBER_H
 #define FFA_VERSION_NUMBER_H
 
@@ -12,7 +17,7 @@
 
 
 /*!
-  \brief A class to keep Fedem version numbers.
+  \brief A class to represent Fedem version numbers.
 
   \details Used to enable automatic conversion of older model files, etc.
   Version numbers like R2.5m3-i4 are stored as d1=2 d2=5 d3=3 internal=4.
