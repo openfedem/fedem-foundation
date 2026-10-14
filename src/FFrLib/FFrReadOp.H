@@ -5,15 +5,15 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFrReadOp.H
+  \brief Operation for reading result variables from the results database.
+*/
+
 #ifndef FFR_READ_OP_H
 #define FFR_READ_OP_H
 
-#ifdef FFA_DEBUG
-#include <iostream>
-#endif
-
 #include "FFaLib/FFaOperation/FFaOperation.H"
-#include "FFaLib/FFaPatterns/FFaGenericFactory.H"
 #ifdef FT_USE_MEMPOOL
 #include "FFaLib/FFaPatterns/FFaMemPool.H"
 #endif
@@ -21,51 +21,31 @@
 class FFrVariableReference;
 
 
-class ReadOpCreatorType
-{
-public:
-  ReadOpCreatorType(const std::string& t, int s = -1) : dataType(t), dataSize(s) {}
-
-  friend bool operator< (const ReadOpCreatorType& op1, const ReadOpCreatorType& op2)
-  {
-    if (op1.dataType == op2.dataType)
-      return op1.dataSize < op2.dataSize;
-    else
-      return op1.dataType < op2.dataType;
-  }
-
-#ifdef FFA_DEBUG
-  friend std::ostream& operator<< (std::ostream& os, const ReadOpCreatorType& op)
-  {
-    return os << op.dataType <<":"<< op.dataSize;
-  }
-#endif
-
-private:
-  std::string dataType;
-  int dataSize;
-};
-
+/*!
+  \brief Template class representing an operation for reading a result variable.
+*/
 
 template <class RetType>
 class FFrReadOp : public FFaOperation<RetType>
 {
-public:
-  FFrReadOp(FFrVariableReference* vr) : myRdbVar(vr) {}
+protected:
+  //! \brief The constructor initializes \ref myRdbVar.
+  explicit FFrReadOp(FFrVariableReference* vr) : myRdbVar(vr) {}
 
+public:
+  //! \brief Static method for instantiating a read operation for \a rdbVar.
   static void create(FFrVariableReference* rdbVar, FFaOperationBase*& created)
   {
     created = new FFrReadOp<RetType>(rdbVar);
   }
 
-  virtual bool hasData() const;
-  virtual bool evaluate(RetType& value);
-
-protected:
-  virtual ~FFrReadOp() {}
+  //! \brief Checks if this operation will retun any data,
+  bool hasData() const override;
+  //! \brief Invokes the actual read operation.
+  bool evaluate(RetType& value) override;
 
 private:
-  FFrVariableReference* myRdbVar;
+  FFrVariableReference* myRdbVar; //!< The variable to receive the data read
 
 #ifdef FT_USE_MEMPOOL
   FFA_MAKE_MEMPOOL;
@@ -79,8 +59,5 @@ FFaMemPool FFrReadOp<RetType>::ourMemPool = FFaMemPool(sizeof(FFrReadOp<RetType>
 						       FFaOperationBase::getMemPoolMgr());
 //! \endcond
 #endif
-
-
-typedef FFaGenericFactory<FFaOperationBase,ReadOpCreatorType,FFrVariableReference*> OperationFactory;
 
 #endif

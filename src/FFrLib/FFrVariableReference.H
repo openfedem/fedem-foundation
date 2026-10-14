@@ -37,14 +37,18 @@ public:
   //! \brief Destructor with some debug messages.
   virtual ~FFrVariableReference();
 #else
-  //! \brief The constructor initializes \ref variableDescr.
-  explicit FFrVariableReference(FFrVariable* var) : variableDescr(var) {}
+  //! \brief The constructor initializes \ref myVariable.
+  explicit FFrVariableReference(FFrVariable* var) : myVariable(var) {}
 #endif
 
   //! \brief Returns the variable name.
   virtual const std::string& getDescription() const;
   //! \brief Returns the variable type, e.g., SCALAR, VEC3, etc.
   virtual const std::string& getType() const;
+  //! \brief Returns the word length (in bits) of the variable.
+  size_t getWordLength() const;
+  //! \brief Returns the total number of words in the variable.
+  size_t getNumWords() const;
 
   //! \brief Returns \e true if this variable contain float data.
   virtual bool isVariableFloat() const;
@@ -54,6 +58,7 @@ public:
   virtual bool isEmpty() const { return containers.empty(); }
 
   //! \brief Creates an operation reading the data of the variable from file.
+  //! \note This method is defined in FFaReadOpImpl.C
   FFaOperationBase* getReadOperation();
 
   //! \brief Returns the (most recent) time stamp of this variable.
@@ -69,12 +74,6 @@ public:
 
   //! \brief Prints out the positioning data of this variable.
   virtual void printPosition(std::ostream& os) const;
-
-  //! \brief Shared data memory segment for \ref variableDescr and \ref next.
-  union {
-    FFrVariable* variableDescr; //!< Points to the actual variable with data
-    FFrVariableReference* next; //!< Used in memory management
-  };
 
   //! Convenience type alias
   using FFrResultContainerRef = std::pair<FFrResultContainer*,size_t>;
@@ -106,6 +105,12 @@ private:
   //! \brief Returns the index of the nearest container for the current setting.
   //! \details Returns -1 if no containers are found.
   int getNearestContainer() const;
+
+  //! \brief Shared data memory segment for \ref myVariable and \ref next.
+  union {
+    FFrVariable*    myVariable; //!< Points to the actual variable with data
+    FFrVariableReference* next; //!< Used in memory management
+  };
 
 #ifdef FFR_NEWALLOC
   //! \cond MEMORY_MANAGEMENT

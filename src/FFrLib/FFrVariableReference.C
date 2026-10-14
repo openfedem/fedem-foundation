@@ -12,8 +12,8 @@
 
 #include "FFrLib/FFrVariableReference.H"
 #include "FFrLib/FFrResultContainer.H"
-#include "FFrLib/FFrReadOp.H"
 #include "FFaLib/FFaAlgebra/FFaMat34.H"
+#include "FFaLib/FFaOperation/FFaOperation.H"
 #include <float.h>
 #include <math.h>
 
@@ -21,26 +21,26 @@
 long int FFrVariableReference::count = 0;
 
 
-FFrVariableReference::FFrVariableReference(FFrVariable* v) : variableDescr(v)
+FFrVariableReference::FFrVariableReference(FFrVariable* v) : myVariable(v)
 {
   std::cout <<"Creating variable reference #"<< (myCount = ++count);
-  if (variableDescr) std::cout <<": "<< variableDescr->name;
+  if (myVariable) std::cout <<": "<< myVariable->name;
   std::cout << std::endl;
 }
 
 FFrVariableReference::FFrVariableReference(const FFrVariableReference& varRef)
-  : FFrEntryBase(varRef), variableDescr(varRef.variableDescr)
+  : FFrEntryBase(varRef), myVariable(varRef.myVariable)
 {
   std::cout <<"Copying variable reference #"<< (myCount = ++count)
             <<" <== #" << varRef.myCount;
-  if (variableDescr) std::cout <<": "<< variableDescr->name;
+  if (myVariable) std::cout <<": "<< myVariable->name;
   std::cout << std::endl;
 }
 
 FFrVariableReference::~FFrVariableReference()
 {
   std::cout <<"Destroying variable reference #"<< myCount;
-  if (variableDescr) std::cout <<": "<< variableDescr->name;
+  if (myVariable) std::cout <<": "<< myVariable->name;
   std::cout << std::endl;
 }
 #endif
@@ -48,13 +48,25 @@ FFrVariableReference::~FFrVariableReference()
 
 const std::string& FFrVariableReference::getDescription() const
 {
-  return variableDescr->name;
+  return myVariable->name;
 }
 
 
 const std::string& FFrVariableReference::getType() const
 {
-  return variableDescr->dataClass;
+  return myVariable->dataClass;
+}
+
+
+size_t FFrVariableReference::getWordLength() const
+{
+  return myVariable->dataSize;
+}
+
+
+size_t FFrVariableReference::getNumWords() const
+{
+  return myVariable->repeats;
 }
 
 
@@ -69,7 +81,7 @@ int FFrVariableReference::traverse(FFrResultContainer* resultCont,
   FFrVariableReference* vRef = static_cast<FFrVariableReference*>(objToBeMod);
 
   vRef->containers.emplace_back(resultCont,binPos);
-  binPos += vRef->variableDescr->getTotalDataSize();
+  binPos += vRef->myVariable->getTotalDataSize();
 
   return binPos;
 }
@@ -90,14 +102,14 @@ bool FFrVariableReference::merge(FFrEntryBase* obj)
 bool FFrVariableReference::equal(const FFrEntryBase* obj) const
 {
   const FFrVariableReference* that = dynamic_cast<const FFrVariableReference*>(obj);
-  return that ? this->variableDescr->equal(that->variableDescr) : false;
+  return that ? this->myVariable->equal(that->myVariable) : false;
 }
 
 
 bool FFrVariableReference::less(const FFrEntryBase* obj) const
 {
   const FFrVariableReference* that = dynamic_cast<const FFrVariableReference*>(obj);
-  return that ? this->variableDescr->less(that->variableDescr) : false;
+  return that ? this->myVariable->less(that->myVariable) : false;
 }
 
 
@@ -152,14 +164,14 @@ int FFrVariableReference::recursiveReadPosData(const double* vals, int nvals, in
   case 0: break;
   case 1: arrayPos += containers.front().first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
                                                                            containers.front().second,
-                                                                           variableDescr->dataSize,
-                                                                           variableDescr->getRepeats()); break;
+                                                                           myVariable->dataSize,
+                                                                           myVariable->repeats); break;
   default:
     if (int idx = this->getNearestContainer(); idx >= 0)
       arrayPos += containers[idx].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
                                                                     containers[idx].second,
-                                                                    variableDescr->dataSize,
-                                                                    variableDescr->getRepeats());
+                                                                    myVariable->dataSize,
+                                                                    myVariable->repeats);
   }
   return arrayPos;
 }
@@ -171,14 +183,14 @@ int FFrVariableReference::recursiveReadPosData(const float* vals, int nvals, int
   case 0: break;
   case 1: arrayPos += containers.front().first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
                                                                            containers.front().second,
-                                                                           variableDescr->dataSize,
-                                                                           variableDescr->getRepeats()); break;
+                                                                           myVariable->dataSize,
+                                                                           myVariable->repeats); break;
   default:
     if (int idx = this->getNearestContainer(); idx >= 0)
       arrayPos += containers[idx].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
                                                                     containers[idx].second,
-                                                                    variableDescr->dataSize,
-                                                                    variableDescr->getRepeats());
+                                                                    myVariable->dataSize,
+                                                                    myVariable->repeats);
   }
   return arrayPos;
 }
@@ -190,14 +202,14 @@ int FFrVariableReference::recursiveReadPosData(const int* vals, int nvals, int a
   case 0: break;
   case 1: arrayPos += containers.front().first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
                                                                            containers.front().second,
-                                                                           variableDescr->dataSize,
-                                                                           variableDescr->getRepeats()); break;
+                                                                           myVariable->dataSize,
+                                                                           myVariable->repeats); break;
   default:
     if (int idx = this->getNearestContainer(); idx >= 0)
       arrayPos += containers[idx].first->readPositionedTimestepData(&vals[arrayPos], nvals - arrayPos,
                                                                     containers[idx].second,
-                                                                    variableDescr->dataSize,
-                                                                    variableDescr->getRepeats());
+                                                                    myVariable->dataSize,
+                                                                    myVariable->repeats);
   }
   return arrayPos;
 }
@@ -205,13 +217,7 @@ int FFrVariableReference::recursiveReadPosData(const int* vals, int nvals, int a
 
 bool FFrVariableReference::isVariableFloat() const
 {
-  return (variableDescr->dataType == FFrVariable::FLOAT && variableDescr->dataSize == 32);
-}
-
-
-FFaOperationBase* FFrVariableReference::getReadOperation()
-{
-  return OperationFactory::instance()->create(ReadOpCreatorType(variableDescr->dataClass, variableDescr->dataSize), this);
+  return (myVariable->dataType == FFrVariable::FLOAT && myVariable->dataSize == 32);
 }
 
 
@@ -287,18 +293,18 @@ void FFrVariableReference::getValidKeys(std::set<double>& validValues) const
 void FFrVariableReference::printPosition(std::ostream& os) const
 {
 #if FFR_DEBUG > 2
-  os <<"\nVariable reference #"<< myCount <<": "<< variableDescr->name;
+  os <<"\nVariable reference #"<< myCount <<": "<< myVariable->name;
 #else
-  os <<"\nName: "<< variableDescr->name;
+  os <<"\nName: "<< myVariable->name;
 #endif
   for (const FFrResultContainerRef& cref : containers)
     os <<"\nContainer: "<< cref.first->getFileName()
        <<"\nHeader size: "<< cref.first->getHeaderSize()
        <<"\nTimestep size: "<< cref.first->getStepSize()
        <<"\nPosition: "<< (cref.second >> 3);
-  os <<"\nSize: "<< (variableDescr->getTotalDataSize() >> 3)
-     <<"\nType: "<< variableDescr->dataClass <<"("<< variableDescr->dataType
-     <<")\nUnit: "<< variableDescr->unit << std::endl;
+  os <<"\nSize: "<< (myVariable->getTotalDataSize() >> 3)
+     <<"\nType: "<< myVariable->dataClass <<"("<< myVariable->dataType
+     <<")\nUnit: "<< myVariable->unit << std::endl;
 }
 
 
