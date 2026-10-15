@@ -111,7 +111,7 @@ public:
   //! \brief Reads variable reference data from the hierarhcy under this entry.
   template<class T>
   int readPositionedTimestepData(const T* values, int nvals) const
-  { return this->recursiveReadPosData(values, nvals, 0); }
+  { return this->readPosData(values,nvals); }
 
   //! \brief Prints out the positioning data of this entry.
   virtual void printPosition(std::ostream& os) const = 0;
@@ -161,18 +161,18 @@ public:
   //! \brief Merges another entry into \a *this.
   virtual bool merge(FFrEntryBase* objToMergeFrom) = 0;
   //! \brief Returns \e true if \a *this equals another specified entry.
-  virtual bool compare(const FFrEntryBase*) const { return false; }
+  virtual bool comp(const FFrEntryBase*) const { return false; }
   //! \brief Returns \e true if \a *this and \a *obj are considered equal.
   virtual bool equal(const FFrEntryBase* obj) const = 0;
   //! \brief Returns \e true if \a *this is ordered before \a *obj.
   virtual bool less(const FFrEntryBase* obj) const = 0;
 
   //! \brief Reads double data from the hierarhcy under this entry.
-  virtual int recursiveReadPosData(const double* vals, int nvals, int arrayPos) const = 0;
+  virtual int readPosData(const double* vals, int nvals, int pos = 0) const = 0;
   //! \brief Reads float data from the hierarhcy under this entry.
-  virtual int recursiveReadPosData(const float* vals, int nvals, int arrayPos) const = 0;
+  virtual int readPosData(const float* vals, int nvals, int pos = 0) const = 0;
   //! \brief Reads integer data from the hierarhcy under this entry.
-  virtual int recursiveReadPosData(const int* vals, int nvals, int arrayPos) const = 0;
+  virtual int readPosData(const int* vals, int nvals, int pos = 0) const = 0;
 
   //! \brief Reads a variable from the results container for current time step.
   template<class T> bool readVar(T& value);

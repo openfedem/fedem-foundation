@@ -89,7 +89,7 @@ int FFrVariableReference::traverse(FFrResultContainer* resultCont,
 
 bool FFrVariableReference::merge(FFrEntryBase* obj)
 {
-  if (!this->compare(obj))
+  if (!this->comp(obj))
     return false;
 
   // Assume (without checking) the object we are merging from has only one file reference
@@ -158,7 +158,7 @@ int FFrVariableReference::getNearestContainer() const
 }
 
 
-int FFrVariableReference::recursiveReadPosData(const double* vals, int nvals, int arrayPos) const
+int FFrVariableReference::readPosData(const double* vals, int nvals, int arrayPos) const
 {
   switch (containers.size()) {
   case 0: break;
@@ -177,7 +177,7 @@ int FFrVariableReference::recursiveReadPosData(const double* vals, int nvals, in
 }
 
 
-int FFrVariableReference::recursiveReadPosData(const float* vals, int nvals, int arrayPos) const
+int FFrVariableReference::readPosData(const float* vals, int nvals, int arrayPos) const
 {
   switch (containers.size()) {
   case 0: break;
@@ -196,7 +196,7 @@ int FFrVariableReference::recursiveReadPosData(const float* vals, int nvals, int
 }
 
 
-int FFrVariableReference::recursiveReadPosData(const int* vals, int nvals, int arrayPos) const
+int FFrVariableReference::readPosData(const int* vals, int nvals, int arrayPos) const
 {
   switch (containers.size()) {
   case 0: break;

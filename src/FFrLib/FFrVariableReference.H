@@ -88,14 +88,14 @@ public:
 		       int binPos);
 
   virtual bool merge(FFrEntryBase* obj);
-  virtual bool compare(const FFrEntryBase* obj) const { return this->equal(obj); }
   virtual bool equal(const FFrEntryBase* obj) const;
+  virtual bool comp(const FFrEntryBase* obj) const { return this->equal(obj); }
   virtual bool less(const FFrEntryBase* obj) const;
 
 protected:
-  virtual int recursiveReadPosData(const double* vals, int nvals, int arrayPos) const;
-  virtual int recursiveReadPosData(const float* vals, int nvals, int arrayPos) const;
-  virtual int recursiveReadPosData(const int* vals, int nvals, int arrayPos) const;
+  virtual int readPosData(const double* vals, int nvals, int arrayPos) const;
+  virtual int readPosData(const float* vals, int nvals, int arrayPos) const;
+  virtual int readPosData(const int* vals, int nvals, int arrayPos) const;
 
 public:
   //! \brief Reads a variable from the results container for current time step.
