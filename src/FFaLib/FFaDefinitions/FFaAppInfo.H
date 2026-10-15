@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaAppInfo.H
+  \brief Utilities for retrieving information about the running application.
+*/
+
 #ifndef FFA_APPLICATION_INFO_H
 #define FFA_APPLICATION_INFO_H
 
@@ -43,7 +48,7 @@ namespace FFaAppInfo
   //! \brief Returns the program path.
   const std::string& getProgramPath();
 
-  //! \brief Returns the current working directory of the program
+  //! \brief Returns the current working directory of the program.
   std::string getCWD();
   //! \brief Returns whether this program is in current working dir or not.
   bool isInCwd();

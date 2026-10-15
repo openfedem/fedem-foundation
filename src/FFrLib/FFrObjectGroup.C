@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFrObjectGroup.C
+  \brief Class representing mechanism objects in a result file hierarchy.
+*/
+
 #include "FFrLib/FFrObjectGroup.H"
 #include "FFrLib/FFrResultContainer.H"
 #include "FFaLib/FFaString/FFaTokenizer.H"
@@ -20,7 +25,7 @@ FFrObjectGroup::FFrObjectGroup()
   if (undefined.empty())
     undefined.insert("(undefined)");
 
-  id = baseId = 0;
+  userId = baseId = 0;
   typeIt = undefined.begin();
 
 #if FFR_DEBUG > 2
@@ -32,7 +37,7 @@ FFrObjectGroup::~FFrObjectGroup()
 {
 #if FFR_DEBUG > 2
   std::cout <<"Destroying object group #"<< myCount <<" "<< this->getType()
-	    <<" "<< id <<" "<< this->getDescription() << std::endl;
+	    <<" "<< userId <<" "<< this->getDescription() << std::endl;
 #endif
 }
 
@@ -61,10 +66,6 @@ FFrStatus FFrObjectGroup::create(FILE* varStream, FFrCreatorData& cd,
 }
 
 
-/*!
-  Parses one variable entry.
-*/
-
 int FFrObjectGroup::fillObject(const std::vector<std::string>& tokens,
 			       FFrCreatorData& cd)
 {
@@ -80,11 +81,11 @@ int FFrObjectGroup::fillObject(const std::vector<std::string>& tokens,
 
   this->typeIt      = cd.dict->insert(tokens[0]).first;
   this->baseId      = atoi(tokens[1].c_str());
-  this->id          = atoi(tokens[2].c_str());
+  this->userId      = atoi(tokens[2].c_str());
   this->description = tokens[3];
 #if FFR_DEBUG > 2
   std::cout <<"Resolving object group #"<< myCount <<": "<< *typeIt
-            <<" {"<< baseId <<"} ["<< id <<"] "<< description << std::endl;
+            <<" {"<< baseId <<"} ["<< userId <<"] "<< description << std::endl;
 #endif
 
   // Resolve the references and return zero if everything OK

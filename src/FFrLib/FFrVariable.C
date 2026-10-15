@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFrVariable.C
+  \brief Class representing a physical variable in the result file hierarchy.
+*/
+
 #include <sstream>
 
 #include "FFrLib/FFrVariable.H"
@@ -27,6 +32,13 @@ FFrVariable::~FFrVariable()
 }
 #endif
 
+
+/*!
+  If the parsing succedes, a new FFrVariable instance is created and inserted
+  into the the container \a cd, unless a matching entry already exists.
+  The method may also detect references to variable and then creates a
+  FFrVariableReference for it.
+ */
 
 FFrStatus FFrVariable::create(FILE* varStream, FFrCreatorData& cd,
                               bool dataBlocks)
@@ -175,6 +187,7 @@ void FFrVariable::dump(std::ostream& os) const
   os << std::endl;
 }
 
+//! \cond DO_NOT_DOCUMENT
 
 bool FFrVariable::equal(const FFrVariable* that) const
 {
@@ -204,3 +217,5 @@ bool FFrVariable::less(const FFrVariable* that) const
   return false;
 #undef COMPARE_VARIABLE
 }
+
+//! \endcond

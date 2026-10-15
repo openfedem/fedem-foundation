@@ -5,20 +5,31 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaMsg.C
+  \brief Interface for various user feedback.
+*/
+
 #include <cstdio>
+#include <map>
 
 #include "FFaLib/FFaDefinitions/FFaMsg.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 
-std::stack<std::string>             FFaMsg::ourStatuses;
-std::map<FFaMsg::FFaDialogType,int> FFaMsg::ourToAllAnswer;
-FFaMsg*                             FFaMsg::ourCurrentMessager = NULL;
+
+namespace
+{
+  //! Pointer to current message handler.
+  FFaMsg* ourCurrentMessager = NULL;
+
+  //! Caches the answer for each dialog type to apply for multiple queries.
+  std::map<FFaMsg::FFaDialogType,int> ourToAllAnswer;
+}
 
 
 void FFaMsg::setMessager(FFaMsg* messager)
 {
-  if (ourCurrentMessager)
-    delete ourCurrentMessager;
+  delete ourCurrentMessager;
   ourCurrentMessager = messager;
 }
 
@@ -32,8 +43,22 @@ FFaMsg& FFaMsg::getMessager()
 }
 
 
+bool FFaMsg::usingDefault()
+{
+  return ourCurrentMessager == NULL;
+}
+
+
+void FFaMsg::resetToAllAnswer(const FFaDialogType type)
+{
+  if (type == _ALL_)
+    ourToAllAnswer.clear();
+  else
+    ourToAllAnswer.erase(type);
+}
+
+
 /*!
-  \brief Shows a dialog according to the dialog type.
   \return For the OK_CANCEL dialog: 1 for "Ok" and 0 for "Cancel".
   \return For the YES_NO dialog: 1 for "Yes" and 0 for "No".
   \return For the YES_NO_CANCEL dialog: 1, 0 and 2, respectively.
@@ -132,22 +157,6 @@ int FFaMsg::dialog(const std::string& statusText, const FFaDialogType type,
 }
 
 
-void FFaMsg::resetToAllAnswer(const FFaDialogType type)
-{
-  if (type == _ALL_)
-    ourToAllAnswer.clear();
-  else
-    ourToAllAnswer.erase(type);
-}
-
-
-int FFaMsg::dialog(const std::string& message,
-		   const FFaDialogType type,
-		   const std::vector<std::string>& buttonTexts)
-{
-  return getMessager().dialogVt(message, type, buttonTexts);
-}
-
 int FFaMsg::dialog(int& returnedSelectionIdx,
 		   const std::string& message,
 		   const FFaDialogType type,
@@ -242,6 +251,10 @@ void FFaMsg::disableProgress()
 }
 
 
+///////////////////////////
+// Global stream operators
+//! \cond DO_NOT_DOCUMENT
+
 FFaMsg& operator<< (FFaMsg& messager, const std::string& str)
 {
   messager.listVt(str);
@@ -295,6 +308,7 @@ FFaMsg& operator<< (FFaMsg& messager, size_t i)
   return messager;
 }
 
+//! \endcond
 
 // Default implementations of the virtual methods.
 // These are used when the program is run in terminal mode, without GUI.
@@ -351,14 +365,4 @@ void FFaMsg::listVt(const std::string& str, bool)
 void FFaMsg::tipVt(const std::string& str)
 {
   std::cout <<"Tip: "<< str << std::endl;
-}
-
-
-void FFaMsg::showStatus()
-{
-  if (ourStatuses.empty()) return;
-
-  std::cout <<"Status "<< ourStatuses.size() <<": ";
-  for (size_t i = 1; i < ourStatuses.size(); i++) std::cout <<" ";
-  std::cout << ourStatuses.top() << std::endl;
 }

@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaViewItemUtils.C
+  \brief Sorting utilities for FFaViewItem objects.
+*/
+
 #include <functional>
 #include <algorithm>
 #include <cctype>
@@ -12,20 +17,65 @@
 #include "FFaLib/FFaDefinitions/FFaViewItem.H"
 
 
+namespace
+{
+  //! \brief Binary comparison of two strings.
+  bool stringCompare(const std::string& s1, const std::string& s2)
+  {
+    // Lambda function doing case-insensitive comparison of two characters.
+    std::function<bool(char,char)> charCompare = [](char c1, char c2) -> bool
+    {
+      int lc1 = tolower(static_cast<unsigned char>(c1));
+      int lc2 = tolower(static_cast<unsigned char>(c2));
+      return lc1 < lc2;
+    };
+
+    return std::lexicographical_compare(s1.begin(), s1.end(),
+                                        s2.begin(), s2.end(),
+                                        charCompare);
+  }
+
+  //! \brief Does the main work for the lexicographical string comparison.
+  int compare3way(const std::string& s1, const std::string& s2)
+  {
+    // Lambda function doing case-insensitive 3-way comparison of 2 characters.
+    std::function<int(char,char)> charCmp = [](char c1, char c2) -> int
+    {
+      int lc1 = tolower(static_cast<unsigned char>(c1));
+      int lc2 = tolower(static_cast<unsigned char>(c2));
+      return lc1 < lc2 ? -1 : (lc1 > lc2 ? 1 : 0);
+    };
+
+    std::pair<std::string::const_iterator,std::string::const_iterator> p;
+    p = std::mismatch(s1.begin(), s1.end(), s2.begin(), std::not_fn(charCmp));
+    if (p.first == s1.end())
+      return p.second == s2.end() ? 0 : -1;
+
+    return charCmp(*p.first,*p.second);
+  }
+
+  //! \brief Three-way lexicographical comparison of two strings.
+  int stringCompare3w(const std::string& s1, const std::string& s2)
+  {
+    return s1.size() <= s2.size() ? compare3way(s1,s2) : -compare3way(s2,s1);
+  }
+}
+
+
 /*!
-  Returns true if i1's description precedes i2's. Case insensitive.
-  If strings are equal, sort on id.
+  Returns \e true if the description \a *i1 precedes that of *i2.
+  Case insensitive comparison.
+  If the strings are equal, the ID of the two objects are compared instead.
+  If either \a i1 or \a i2 is NULL, return as if the NULL-pointer is first.
 */
 
 bool FFaViewItem::compareDescr(FFaViewItem* i1, FFaViewItem* i2)
 {
-  // If any of the pointers are NULL, return as if the NULL-pointer is first
-
   if (!(i1 && i2))
     return !i1;
 
-  // Binary compare descriptions
-  // If descriptions are equal, compare by ID, unless both are zero
+  // Binary compare descriptions.
+  // If descriptions are equal, compare by ID, unless both are zero.
 
   std::string s1(i1->getItemDescr());
   std::string s2(i2->getItemDescr());
@@ -43,13 +93,12 @@ bool FFaViewItem::compareDescr(FFaViewItem* i1, FFaViewItem* i2)
 
 
 /*!
-  Returns true if i1's id precedes i2's.
+  Returns \e true if the ID of \a i1 precedes that of \a i2.
+  If either \a i1 or \a i2 is NULL, return as if the NULL-pointer is first.
 */
 
 bool FFaViewItem::compareID(FFaViewItem* i1, FFaViewItem* i2)
 {
-  // If any of the pointers are NULL, return as if the NULL-pointer is first
-
   if (!(i1 && i2))
     return !i1;
 
@@ -68,13 +117,11 @@ bool FFaViewItem::compareID(FFaViewItem* i1, FFaViewItem* i2)
 
 
 /*!
-  Three-way lexicographical comparison of i1 and i2's descriptions.
+  If either \a i1 or \a i2 is NULL, return as if the NULL-pointer is first.
 */
 
 int FFaViewItem::compareDescr3w(FFaViewItem* i1, FFaViewItem* i2)
 {
-  // If any of the pointers are NULL, return as if the NULL-pointer is first
-
   if (!(i1 && i2))
   {
     if (i1 == i2)
@@ -90,13 +137,11 @@ int FFaViewItem::compareDescr3w(FFaViewItem* i1, FFaViewItem* i2)
 
 
 /*!
-  Three way comparison of i1 and i2's ids.
+  If either \a i1 or \a i2 is NULL, return as if the NULL-pointer is first.
 */
 
 int FFaViewItem::compareID3w(FFaViewItem* i1, FFaViewItem* i2)
 {
-  // If any of the pointers are NULL, return as if the NULL-pointer is first
-
   if (!(i1 && i2))
   {
     if (i1 == i2)
@@ -116,52 +161,4 @@ int FFaViewItem::compareID3w(FFaViewItem* i1, FFaViewItem* i2)
     return 1;
   else
     return 0;
-}
-
-
-/*!
-  \brief Does all the work for the lexicographical string comparison.
-*/
-
-static int stringCompare3wImpl(const std::string& s1, const std::string& s2)
-{
-  // Lambda function doing case-insensitive 3-way comparison of two characters.
-  std::function<int(char,char)> charCompare = [](char c1, char c2) -> int
-  {
-    int lc1 = tolower(static_cast<unsigned char>(c1));
-    int lc2 = tolower(static_cast<unsigned char>(c2));
-    return lc1 < lc2 ? -1 : (lc1 > lc2 ? 1 : 0);
-  };
-
-  std::pair<std::string::const_iterator,std::string::const_iterator> p;
-  p = std::mismatch(s1.begin(), s1.end(), s2.begin(), std::not_fn(charCompare));
-  if (p.first == s1.end())
-    return p.second == s2.end() ? 0 : -1;
-
-  return charCompare(*p.first,*p.second);
-}
-
-
-bool FFaViewItem::stringCompare(const std::string& s1, const std::string& s2)
-{
-  // Lambda function doing case-insensitive comparison of two characters.
-  std::function<bool(char,char)> charCompare = [](char c1, char c2) -> bool
-  {
-    int lc1 = tolower(static_cast<unsigned char>(c1));
-    int lc2 = tolower(static_cast<unsigned char>(c2));
-    return lc1 < lc2;
-  };
-
-  return std::lexicographical_compare(s1.begin(), s1.end(),
-                                      s2.begin(), s2.end(),
-                                      charCompare);
-}
-
-
-int FFaViewItem::stringCompare3w(const std::string& s1, const std::string& s2)
-{
-  if (s1.size() <= s2.size())
-    return stringCompare3wImpl(s1, s2);
-  else
-    return -stringCompare3wImpl(s2, s1);
 }

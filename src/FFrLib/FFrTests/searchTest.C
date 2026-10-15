@@ -10,9 +10,11 @@
   \brief Unit testing for FFrLib.
 */
 
+#include "FFrLib/FFrReadOpInit.H"
 #include "FFrLib/FFrExtractor.H"
 #include "FFrLib/FFrVariableReference.H"
 #include "FFaLib/FFaDefinitions/FFaResultDescription.H"
+#include "FFaLib/FFaAlgebra/FFaMat34.H"
 #include <iostream>
 
 #include "gtest/gtest.h"
@@ -217,4 +219,35 @@ TEST(TestFFr, Restart)
   delete res;
   FFrExtractor::releaseMemoryBlocks();
   std::cout <<"\nDone."<< std::endl;
+}
+
+
+/*!
+  \brief Creates a test that searches for and reads a variable from an frs-file.
+*/
+
+TEST(TestFFr, ReadVar)
+{
+  ASSERT_FALSE(srcdir.empty());
+
+  std::string fileName = srcdir + "response_0001/timehist_prim_0001/th_p_1.frs";
+
+  FFr::initReadOps();
+  FFrExtractor* res = new FFrExtractor("RDB reader");
+  ASSERT_TRUE(res->addFile(fileName,true));
+
+  FFaResultDescription tVar("Triad",15,5);
+  tVar.varDescrPath = { "Position matrix" };
+  tVar.varRefType   =   "TMAT34";
+  std::cout <<"\nSearching for "<< tVar << std::flush;
+  FFrEntryBase* rVar = res->search(tVar);
+  ASSERT_TRUE(rVar != NULL);
+
+  FaMat34 posMat;
+  ASSERT_TRUE(rVar->readVar(posMat));
+  std::cout <<"\nPosition matrix for this triad:"<< posMat << std::endl;
+
+  delete res;
+  FFrExtractor::releaseMemoryBlocks();
+  FFr::clearReadOps();
 }

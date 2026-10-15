@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFrVariableReference.H
+  \brief Class representing a variable reference in a result file hierarchy.
+*/
+
 #ifndef FFR_VARIABLE_REFERENCE_H
 #define FFR_VARIABLE_REFERENCE_H
 
@@ -14,47 +19,65 @@ class FFaOperationBase;
 class FFrVariable;
 
 
+/*!
+  \brief Class representing a variable reference in a result file hierarchy.
+  \details This class does not represent the variable itself, but a reference
+  to one through a pointer. There may be many references pointing to the same
+  physical variable, which are represented by the FFrVariable class.
+*/
+
 class FFrVariableReference : public FFrEntryBase
 {
 public:
 #if FFR_DEBUG > 2
-  FFrVariableReference(FFrVariable* var);
-  FFrVariableReference(const FFrVariableReference& varRef);
+  //! \brief Constructor with some debug messages.
+  explicit FFrVariableReference(FFrVariable* var);
+  //! \brief Copy constructor with some debug messages.
+  explicit FFrVariableReference(const FFrVariableReference& varRef);
+  //! \brief Destructor with some debug messages.
   virtual ~FFrVariableReference();
 #else
-  FFrVariableReference(FFrVariable* var) : variableDescr(var) {}
+  //! \brief The constructor initializes \ref myVariable.
+  explicit FFrVariableReference(FFrVariable* var) : myVariable(var) {}
 #endif
 
+  //! \brief Returns the variable name.
   virtual const std::string& getDescription() const;
+  //! \brief Returns the variable type, e.g., SCALAR, VEC3, etc.
   virtual const std::string& getType() const;
+  //! \brief Returns the word length (in bits) of the variable.
+  size_t getWordLength() const;
+  //! \brief Returns the total number of words in the variable.
+  size_t getNumWords() const;
 
+  //! \brief Returns \e true if this variable contain float data.
   virtual bool isVariableFloat() const;
+  //! \brief Returns \e true since this entry is a Variable Reference.
   virtual bool isVarRef() const { return true; }
+  //! \brief Returns \e true if this variable has no result data.
   virtual bool isEmpty() const { return containers.empty(); }
 
+  //! \brief Creates an operation reading the data of the variable from file.
+  //! \note This method is defined in FFaReadOpImpl.C
   FFaOperationBase* getReadOperation();
 
   //! \brief Returns the (most recent) time stamp of this variable.
   unsigned int getTimeStamp() const;
 
-  // If usePositionedKey is true, the current physical position of the
-  // owning extractor object is used in the following two functions.
-  // If usePositionedKey is false, the requested position is used.
+  //! \brief Returns the smallest distance to current extraxtor position.
   double getDistanceFromResultPoint(const bool usePositionedKey = false) const;
+  //! \brief Checks if this entry has any data at current extractor position.
   bool hasDataForCurrentKey(const bool usePositionedKey = false) const;
 
+  //! \brief Extracts a list of time steps for which this entry has data.
   void getValidKeys(std::set<double>& validValues) const;
 
   //! \brief Prints out the positioning data of this variable.
   virtual void printPosition(std::ostream& os) const;
 
-  union {
-    FFrVariable* variableDescr;
-    FFrVariableReference* next; // used in memory management
-  };
-
+  //! Convenience type alias
   using FFrResultContainerRef = std::pair<FFrResultContainer*,size_t>;
-
+  //! List of result file containers in which this variable exists
   std::vector<FFrResultContainerRef> containers;
 
   virtual void removeContainers(const std::set<FFrResultContainer*>& cont);
@@ -65,14 +88,14 @@ public:
 		       int binPos);
 
   virtual bool merge(FFrEntryBase* obj);
-  virtual bool compare(const FFrEntryBase* obj) const { return this->equal(obj); }
   virtual bool equal(const FFrEntryBase* obj) const;
+  virtual bool comp(const FFrEntryBase* obj) const { return this->equal(obj); }
   virtual bool less(const FFrEntryBase* obj) const;
 
 protected:
-  virtual int recursiveReadPosData(const double* vals, int nvals, int arrayPos) const;
-  virtual int recursiveReadPosData(const float* vals, int nvals, int arrayPos) const;
-  virtual int recursiveReadPosData(const int* vals, int nvals, int arrayPos) const;
+  virtual int readPosData(const double* vals, int nvals, int arrayPos) const;
+  virtual int readPosData(const float* vals, int nvals, int arrayPos) const;
+  virtual int readPosData(const int* vals, int nvals, int arrayPos) const;
 
 public:
   //! \brief Reads a variable from the results container for current time step.
@@ -83,7 +106,14 @@ private:
   //! \details Returns -1 if no containers are found.
   int getNearestContainer() const;
 
+  //! \brief Shared data memory segment for \ref myVariable and \ref next.
+  union {
+    FFrVariable*    myVariable; //!< Points to the actual variable with data
+    FFrVariableReference* next; //!< Used in memory management
+  };
+
 #ifdef FFR_NEWALLOC
+  //! \cond MEMORY_MANAGEMENT
 public:
   // overloading the new & delete operators
   static void* operator new(size_t size);
@@ -95,9 +125,11 @@ private:
   static size_t newed;
   static FFrVariableReference* headOfFreeList;
   static std::vector<FFrVariableReference*> memBlocks;
+  //! \endcond
 #endif
+
 #if FFR_DEBUG > 2
-  static long int count;
+  static long int count; //!< Internal counter, for debug usage
 #endif
 };
 

@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFrFieldEntryBase.C
+  \brief Generic base class for non-leaf result file entries.
+*/
+
 #include "FFrLib/FFrFieldEntryBase.H"
 #include "FFrLib/FFrItemGroup.H"
 #include "FFrLib/FFrVariable.H"
@@ -43,8 +48,9 @@ bool FFrFieldEntryBase::isVariableFloat() const
 
 
 /*!
-  Resolves the references string (the last string in object- and item groups)
-  to variable references or item group references.
+  This method resolves the \a references string (typically the last string in
+  object- and item group definitions) into variable references or item group
+  references which are stored in \ref dataFields.
 */
 
 bool FFrFieldEntryBase::resolve(const std::string& references,
@@ -135,7 +141,7 @@ bool FFrFieldEntryBase::resolve(const std::string& references,
 void FFrFieldEntryBase::removeContainers(const std::set<FFrResultContainer*>& cont)
 {
   // Check all children, remove references if empty
-  std::vector<FFrEntryBase*> tmp;
+  FFrEntries tmp;
   tmp.reserve(dataFields.size());
   for (FFrEntryBase* field : dataFields)
   {
@@ -181,9 +187,8 @@ bool FFrFieldEntryBase::merge(FFrEntryBase* objToMergeFrom)
 			   this->dataFields.front()->isIG() &&
 			   this->dataFields.front()->hasUserID());
 
-  std::vector<FFrEntryBase*> added;
-  std::vector<FFrEntryBase*>::iterator thisFieldIt = this->dataFields.begin();
-  std::vector<FFrEntryBase*>::iterator mergeFieldsIt;
+  FFrEntries added;
+  FFrEntries::iterator mergeFieldsIt, thisFieldIt = this->dataFields.begin();
 
   // Run over all fields in the object which we are merging from
   for (mergeFieldsIt = field->dataFields.begin();
@@ -195,7 +200,7 @@ bool FFrFieldEntryBase::merge(FFrEntryBase* objToMergeFrom)
     // Check if this field is in our container
     bool found = false;
     for (; thisFieldIt != this->dataFields.end(); ++thisFieldIt)
-      if ((found = (*thisFieldIt)->compare(*mergeFieldsIt)))
+      if ((found = (*thisFieldIt)->comp(*mergeFieldsIt)))
         break;
       else if (optMergeMyFields && (*thisFieldIt)->getUserID() > (*mergeFieldsIt)->getUserID())
         break;
@@ -256,31 +261,28 @@ bool FFrFieldEntryBase::less(const FFrEntryBase* obj) const
 }
 
 
-int FFrFieldEntryBase::recursiveReadPosData(const double* vals, int nvals, int arrayPos) const
+int FFrFieldEntryBase::readPosData(const double* vals, int nvals, int pos) const
 {
-  int valsRead = arrayPos;
   for (FFrEntryBase* field : dataFields)
-    valsRead = field->recursiveReadPosData(vals, nvals, valsRead);
+    pos = field->readPosData(vals, nvals, pos);
 
-  return valsRead;
+  return pos;
 }
 
-int FFrFieldEntryBase::recursiveReadPosData(const float* vals, int nvals, int arrayPos) const
+int FFrFieldEntryBase::readPosData(const float* vals, int nvals, int pos) const
 {
-  int valsRead = arrayPos;
   for (FFrEntryBase* field : dataFields)
-    valsRead = field->recursiveReadPosData(vals, nvals, valsRead);
+    pos = field->readPosData(vals, nvals, pos);
 
-  return valsRead;
+  return pos;
 }
 
-int FFrFieldEntryBase::recursiveReadPosData(const int* vals, int nvals, int arrayPos) const
+int FFrFieldEntryBase::readPosData(const int* vals, int nvals, int pos) const
 {
-  int valsRead = arrayPos;
   for (FFrEntryBase* field : dataFields)
-    valsRead = field->recursiveReadPosData(vals, nvals, valsRead);
+    pos = field->readPosData(vals, nvals, pos);
 
-  return valsRead;
+  return pos;
 }
 
 

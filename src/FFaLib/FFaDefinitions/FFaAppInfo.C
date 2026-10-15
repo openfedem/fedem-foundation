@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaAppInfo.C
+  \brief Utilities for retrieving information about the running application.
+*/
+
 #include "FFaLib/FFaDefinitions/FFaAppInfo.H"
 #include "Admin/FedemAdmin.H"
 #if defined(win32) || defined(win64)

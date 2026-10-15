@@ -72,8 +72,6 @@ class FFaTimeDescription : public FFaResultDescription
 public:
   //! \brief Default constructor.
   FFaTimeDescription();
-  //! \brief Empty destructor.
-  virtual ~FFaTimeDescription() {}
 };
 
 

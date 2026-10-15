@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFrEntryBase.C
+  \brief Base class for result file entries.
+*/
+
 #include "FFrLib/FFrEntryBase.H"
 #include "FFrLib/FFrVariableReference.H"
 #include "FFaLib/FFaDefinitions/FFaResultDescription.H"

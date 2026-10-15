@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFrSuperObjectGroup.C
+  \brief Class representing top level entries in a result file hierarchy.
+*/
+
 #include "FFrLib/FFrSuperObjectGroup.H"
 
 #if FFR_DEBUG > 2

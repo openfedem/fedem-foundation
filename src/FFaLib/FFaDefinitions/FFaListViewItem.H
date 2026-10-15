@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaListViewItem.H
+  \brief Base class for list view items.
+*/
+
 #ifndef FFA_LIST_VIEW_ITEM_H
 #define FFA_LIST_VIEW_ITEM_H
 
@@ -49,9 +54,9 @@ public:
 
 private:
   //! Position in list view and whether the item is expanded or not
-  typedef std::pair<int,bool>                 FFaPosExpPair;
+  using FFaPosExpPair = std::pair<int,bool>;
   //! List view name to position and whether the item is expanded mapping
-  typedef std::map<char const*,FFaPosExpPair> FFaPosExpMap;
+  using FFaPosExpMap  = std::map<char const*,FFaPosExpPair>;
 
   FFaPosExpMap* posExpInfo; //!< Position and expand status mapping
 };

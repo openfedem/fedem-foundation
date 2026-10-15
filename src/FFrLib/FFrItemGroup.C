@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFrItemGroup.C
+  \brief Class representing an item group in a result file hierarchy.
+*/
+
 #include "FFrLib/FFrItemGroup.H"
 #include "FFrLib/FFrResultContainer.H"
 #include "FFaLib/FFaString/FFaTokenizer.H"
@@ -22,8 +27,8 @@ FFrItemGroup::FFrItemGroup(bool inlined) : isInlined(inlined)
 
   myId = 0;
   myNameIt = undefined.begin();
-  // Set the global flag for inlined item groups to avoid it is garbage-collected
-  // while traversing the hierarchy
+  // Set the global flag for inlined item groups
+  // to avoid it is garbage-collected while traversing the hierarchy
   if (isInlined) this->FFrEntryBase::setGlobal();
 #if FFR_DEBUG > 2
   std::cout <<"Creating item group #"<< (myCount = ++count);
@@ -129,10 +134,10 @@ FFrStatus FFrItemGroup::create(FILE* varStream, FFrCreatorData& cd,
 
 
 /*!
-  Puts the data into this item group.
-  Returns -1 on error, and 0 if no id could be read [id;name/num;references].
-  That would mean an inlined item group which can occur both in the VARIABLES
-  and in the DATABLOCKS section. It also resolves the references.
+  Returns -1 on error, and 0 if no ID could be read.
+  The format is assumed [id;name/num;references]. If id is absent,
+  that would mean an inlined item group which can occur both in the VARIABLES
+  and in the DATABLOCKS section. The method also resolves the references.
 */
 
 int FFrItemGroup::fillObject(const std::vector<std::string>& tokens,
@@ -172,11 +177,8 @@ int FFrItemGroup::fillObject(const std::vector<std::string>& tokens,
 }
 
 
-/*!
-  Comparator functor. Returns true if first argument is less than the second.
-*/
-
-bool FFrItemGroup::Less::operator()(const FFrItemGroup* first, const FFrItemGroup* sec) const
+bool FFrItemGroup::Less::operator()(const FFrItemGroup* first,
+                                    const FFrItemGroup* sec) const
 {
   if (first->myId < 0 && sec->myId < 0)
   {
@@ -185,7 +187,8 @@ bool FFrItemGroup::Less::operator()(const FFrItemGroup* first, const FFrItemGrou
       return *first->myNameIt < *sec->myNameIt;
   }
 
-  // Integer-identified item groups are defined to be "less" than string-identified ones
+  // Integer-identified item groups are defined to be "less" than
+  // those identified by a string
   else if (first->myId < 0)
     return false;
   else if (sec->myId < 0)
@@ -195,8 +198,8 @@ bool FFrItemGroup::Less::operator()(const FFrItemGroup* first, const FFrItemGrou
   else if (first->myId != sec->myId)
     return first->myId < sec->myId;
 
-  // Only if the id is equal, we compare the data fields recursively to
-  // determine which is the lesser item. We don't compare the arrays themselves as before,
+  // Only if the id is equal we compare the data fields recursively to determine
+  // which is the lesser item. We don't compare the arrays themselves as before,
   // as that will only compare the pointers which may be somewhat random.
   return first->FFrFieldEntryBase::less(sec);
 }
@@ -235,7 +238,7 @@ void FFrItemGroup::setGlobal()
 }
 
 
-bool FFrItemGroup::compare(const FFrEntryBase* obj) const
+bool FFrItemGroup::comp(const FFrEntryBase* obj) const
 {
   const FFrItemGroup* varObj = dynamic_cast<const FFrItemGroup*>(obj);
   if (!varObj) return false;
@@ -249,7 +252,7 @@ bool FFrItemGroup::compare(const FFrEntryBase* obj) const
 
 bool FFrItemGroup::equal(const FFrEntryBase* obj) const
 {
-  return this->compare(obj) ? this->FFrFieldEntryBase::equal(obj) : false;
+  return this->comp(obj) ? this->FFrFieldEntryBase::equal(obj) : false;
 }
 
 
