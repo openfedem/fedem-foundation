@@ -5,11 +5,18 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaFieldBase.C
+  \brief Base class for all model database fields.
+*/
+
 #include <cstdio>
 #include <climits>
 
 #include "FFaLib/FFaContainers/FFaFieldBase.H"
 
+
+//! \cond DO_NOT_DOCUMENT
 
 std::ostream& operator<< (std::ostream& os, const FFaFieldBase& field)
 {
@@ -23,6 +30,8 @@ std::istream& operator>> (std::istream& is, FFaFieldBase& field)
   field.read(is);
   return is;
 }
+
+//! \endcond
 
 
 void FFaFieldBase::writeString (std::ostream& os, const std::string& str,

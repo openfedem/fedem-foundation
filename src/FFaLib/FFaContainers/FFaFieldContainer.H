@@ -13,7 +13,6 @@
 #include <list>
 #include <vector>
 #include <string>
-#include "FFaLib/FFaContainers/FFaQueryBase.H"
 #include "FFaLib/FFaPatterns/FFaSingelton.H"
 #include "FFaLib/FFaTypeCheck/FFaTypeCheck.H"
 #include "FFaLib/FFaDynCalls/FFaDynCB.H"
@@ -23,7 +22,7 @@ class FFaReferenceBase;
 class FFaReferenceListBase;
 
 
-class FFaFieldContainer : public FFaQueryBase
+class FFaFieldContainer
 {
   Fmd_BASE_HEADER_INIT();
 

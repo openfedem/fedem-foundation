@@ -17,7 +17,7 @@ set ( COMPONENT_FILE_LIST FFaFieldBase FFaFieldContainer
                           FFaReferenceList FFaReference )
 
 ## Pure header files, i.e., header files without a corresponding source file
-set ( HEADER_FILE_LIST FFaField FFaQueryBase )
+set ( HEADER_FILE_LIST FFaField )
 
 
 foreach ( FILE ${COMPONENT_FILE_LIST} )
