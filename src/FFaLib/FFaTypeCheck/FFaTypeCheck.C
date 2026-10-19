@@ -5,21 +5,30 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <string>
-#include <cstring>
+/*!
+  \file FFaTypeCheck.C
+  \brief Type checking control.
+*/
+
 #include <map>
+#include <string>
 #include <iostream>
 
 #include "FFaLib/FFaTypeCheck/FFaTypeCheck.H"
 
 
-int FFaTypeCheck::counter = 0;
-
-
-static std::map<std::string,int>& getFFaTypeCheckTypNmToIDMap()
+namespace
 {
-  static std::map<std::string,int> ourTypeNameToID;
-  return ourTypeNameToID;
+  int counter = 0;  //!< Running type ID counter
+
+  using TypeIdMap = std::map<std::string,int>; //!< Convenience type alias
+
+  //! \brief Helper to create a static type name to ID container.
+  TypeIdMap& getTypeIdMap()
+  {
+    static TypeIdMap ourMap;
+    return ourMap;
+  }
 }
 
 
@@ -27,7 +36,7 @@ int FFaTypeCheck::getNewTypeID(const char* typeName)
 {
   if (!typeName) return counter; // Only return the number of types so far
 
-  std::map<std::string,int>& typeNameToID = getFFaTypeCheckTypNmToIDMap();
+  TypeIdMap& typeNameToID = getTypeIdMap();
   if (typeNameToID.emplace(typeName,counter+1).second)
     ++counter;
   else
@@ -40,29 +49,14 @@ int FFaTypeCheck::getNewTypeID(const char* typeName)
 
 int FFaTypeCheck::getTypeIDFromName(const char* typeName)
 {
-  if (!typeName) return NO_TYPE_ID;
-
-  const std::map<std::string,int>& typeNameToID = getFFaTypeCheckTypNmToIDMap();
-  std::map<std::string,int>::const_iterator tit = typeNameToID.find(typeName);
-  if (tit != typeNameToID.end()) return tit->second;
-
-  std::cerr <<"FFaTypeCheck: Unknown typeName "<< typeName << std::endl;
-
-  // Temporary fix of flawed Fc-typenames in Fedem R5.1i1 and R5.1i2.
-  // This is needed only as long as model files written with these two
-  // internal releases are present.
-  if (!strcmp(typeName, "FcSTRAIGHTMASTER"))
-    return getTypeIDFromName("FcMASTER_LINE");
-  else if (!strcmp(typeName, "FcARCSEGMENTMASTER"))
-    return getTypeIDFromName("FcMASTER_ARC_SEGMENT");
-  else if (!strcmp(typeName, "FcELEMENTGROUPPROXY"))
-    return getTypeIDFromName("FcELEMENT_GROUP");
-  else if (!strcmp(typeName, "FcFILEREFERENCE"))
-    return getTypeIDFromName("FcFILE_REFERENCE");
-  else if (!strcmp(typeName, "FcGENERICDBOBJECT"))
-    return getTypeIDFromName("FcGENERIC_DB_OBJECT");
-  else if (!strcmp(typeName, "FcPIPESTRINGDATAEXPORTER"))
-    return getTypeIDFromName("FcPIPE_STRING_DATA_EXPORTER");
+  if (typeName)
+  {
+    const TypeIdMap& typeNameToID = getTypeIdMap();
+    if (TypeIdMap::const_iterator tit = typeNameToID.find(typeName);
+        tit != typeNameToID.end())
+      return tit->second;
+    std::cerr <<"FFaTypeCheck: Unknown type name "<< typeName << std::endl;
+  }
 
   return NO_TYPE_ID;
 }
@@ -70,13 +64,10 @@ int FFaTypeCheck::getTypeIDFromName(const char* typeName)
 
 const char* FFaTypeCheck::getTypeNameFromID(int typeID)
 {
-  const std::map<std::string,int>& typeNameToID = getFFaTypeCheckTypNmToIDMap();
-  std::map<std::string,int>::const_iterator tit = typeNameToID.begin();
-  while (tit != typeNameToID.end())
-    if (tit->second == typeID)
-      return tit->first.c_str();
-    else
-      ++tit;
+  const TypeIdMap& typeNameToID = getTypeIdMap();
+  for (const TypeIdMap::value_type& tid : typeNameToID)
+    if (tid.second == typeID)
+      return tid.first.c_str();
 
   return "(unknown)";
 }
