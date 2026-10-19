@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaReferenceList.H
+  \brief Classes representing lists of guarded pointers.
+*/
+
 #ifndef FFA_REFERENCE_LIST_H
 #define FFA_REFERENCE_LIST_H
 
@@ -16,8 +21,8 @@
 /*!
   \brief The base class for FFaReferenceList.
 
-  When #IAmAutoSizing is \e true, the entries in the list are deleted when
-  the object pointed to is deleted. If \a false, the reference is set to zero.
+  \details When #autoSizing is \e true, the entries in the list are deleted when
+  the object pointed to is deleted. Otherwise, the reference is set to zero.
 
   The context name of a reference list is used when doing topological browsing
   to know why a reference is referring to a certain FFaFieldContainer object.
@@ -27,77 +32,117 @@
 
 class FFaReferenceListBase
 {
-  // Remove implicitly defined copy constructor and assignment operator
+  //! \brief Remove implicitly defined copy constructor.
   FFaReferenceListBase(const FFaReferenceListBase&) = delete;
+  //! \brief Remove implicitly defined assignment operator,
   FFaReferenceListBase& operator=(const FFaReferenceListBase&) = delete;
 
 protected:
-  FFaReferenceListBase();
-  virtual ~FFaReferenceListBase();
+  //! \brief The default constructor initializes the members.
+  FFaReferenceListBase() : myOwner(NULL), myContext(NULL), autoSizing(true) {}
+  //! \brief The destructor clears the list.
+  virtual ~FFaReferenceListBase() { this->clear(); }
 
 public:
-  void setAutoSizing(bool onOrOff) { IAmAutoSizing = onOrOff; }
-  bool isAutoSizing() const { return IAmAutoSizing; }
+  //! \brief Sets the #autoSizing flag.
+  void setAutoSizing(bool onOrOff) { autoSizing = onOrOff; }
+  //! \brief Returns the value of the #autoSizing flag.
+  bool isAutoSizing() const { return autoSizing; }
 
-  void setContextName(const char* name) { myContextName = name; }
-  const char* getContextName() const { return myContextName ? myContextName : ""; }
+  //! \brief Assigns the context name #myContext for this reference.
+  void setContextName(const char* name) { myContext = name; }
+  //! \brief Returns the context name #myContext used by this reference.
+  const char* getContextName() const { return myContext ? myContext : ""; }
 
-  void clear();
+  //! \brief Erases entry \a index from the list, decrementing its size by one.
   bool erase(int index);
+  //! \brief Clears the reference list.
+  void clear();
 
+  //! \brief Reorders the elements in the list.
   bool shuffle(size_t newFirst);
+  //! \brief Inverts the element order in the list.
   void reverse() { myRefs.reverse(); }
+  //! \brief Removes all instances of \a ptr from this list.
   void removePtr (const FFaFieldContainer* ptr) { this->removePtr(ptr,true); }
+  //! \brief Sets all instances of \a ptr in this list to zero.
   void zeroOutPtr(const FFaFieldContainer* ptr) { this->zeroOutPtr(ptr,true); }
-  bool hasPtr    (const FFaFieldContainer* ptr, int* index = NULL) const;
+  //! \brief Returns \e true if \a ptr is present in the list.
+  bool hasPtr(const FFaFieldContainer* ptr, int* index = NULL) const;
 
+  //! \brief Fills provided vector with the non-NULL pointers in the list.
   void getBasePtrs(std::vector<FFaFieldContainer*>& toFill) const;
+  //! \brief Returns the pointer to the \a idx'th member in the list.
   FFaFieldContainer* getBasePtr(int idx) const;
 
+  //! \brief Returns the length of #myRefs,
   size_t size() const { return myRefs.size(); }
+  //! \brief Returns \e true if #myRefs is empty (zero length).
   bool empty() const { return myRefs.empty(); }
 
+  //! \brief Writes the reference list to specified output stream.
   void write(std::ostream& os) const;
+  //! \brief Reads the reference list from specified input stream.
   void read(std::istream& is);
 
 protected:
-  std::list<FFaReferenceBase*> myRefs; //!< The real list of references
+  //! Convenience type alias
+  using FFaReferenceList = std::list<FFaReferenceBase*>;
 
+  FFaReferenceList myRefs; //!< The actual list of references
+
+  //! \brief Appends a reference to the end of #myRefs.
   void insertRefLast(FFaReferenceBase* ref);
+  //! \brief Virtual method for creating a FFaReference of correct type.
   virtual FFaReferenceBase* createNewReference() = 0;
 
-  std::list<FFaReferenceBase*>::const_iterator findPtr(const FFaFieldContainer* ptr) const;
-  std::list<FFaReferenceBase*>::iterator       findPtr(const FFaFieldContainer* ptr);
+  //! \brief Returns a const_iterator matching a FFaFieldContainer pointer.
+  FFaReferenceList::const_iterator findPtr(const FFaFieldContainer* ptr) const;
+  //! \brief Returns an iterator matching a FFaFieldContainer pointer.
+  FFaReferenceList::iterator       findPtr(const FFaFieldContainer* ptr);
 
+  //! \brief Returns the pointer at index \a idx.
+  //! \details If \a idx is out of range, NULL is returned.
   FFaReferenceBase* getRefBase(int idx) const;
 
-  void setOwnerOnRef(FFaReferenceBase* ref) { ref->setOwnerReferenceList(this); }
+  //! \brief Sets this list as the owner of the reference \a pt.
+  void setOwnerOnRef(FFaReferenceBase* pt) { pt->setOwnerReferenceList(this); }
 
+  //! \brief Copy method used by copy constructors, etc.
   void copy(const FFaReferenceListBase* other, bool unresolve = false);
 
 private:
   friend class FFaFieldContainer;
   friend class FFaReferenceBase;
 
+  //! \brief Sets the FFaFieldContainer that this reference list is a member of.
   void setOwnerFieldContainer(FFaFieldContainer* owner) { myOwner = owner; }
+  //! \brief Returns the FFaFieldContainer this reference list is a member of.
   FFaFieldContainer* getOwnerFieldContainer() const { return myOwner; }
 
+  //! \brief Removes a reference from the list.
   void eraseReferenceIfNeeded(FFaReferenceBase* ref);
 
+  //! \brief Used after reading to translate IDs to actual pointers.
   void resolve(FFaSearcher& findCB);
+  //! \brief Does the opposite of resolve.
   void unresolve();
+  //! \brief Updates the assembly reference when moving to another assembly.
   void updateAssemblyRef(int from, int to, size_t ind = 0);
+  //! \brief Updates the assembly reference when moving to another assembly.
   void updateAssemblyRef(const IntVec& from, const IntVec& to);
 
+  //! \brief Removes all instances of \a ptr from this list.
   void removePtr (const FFaFieldContainer* ptr, bool notifyContainer);
+  //! \brief Sets all instances of \a ptr in this list to zero.
   void zeroOutPtr(const FFaFieldContainer* ptr, bool notifyContainer);
 
-  FFaFieldContainer* myOwner;
-  const char* myContextName;
+  FFaFieldContainer* myOwner;   //!< Points to the owner object
+  const char*        myContext; //!< Typically, this will be the variable name
 
   //! Tells whether a reference in the list is deleted or set to zero
   //! when the referred object disappears
-  bool IAmAutoSizing;
+  bool autoSizing;
 };
 
 
@@ -146,22 +191,21 @@ template<class Type>
 class FFaReferenceList : public FFaReferenceListBase
 {
 public:
-  FFaReferenceList() {}
-  virtual ~FFaReferenceList() {}
-
-  //! Assignment from vector of pointers to FFaFieldContainer derived classes.
+  //! \brief Overloaded assignment operator.
   FFaReferenceList<Type>&  operator=(const std::vector<Type*>& ptrs)
   { this->setPtrs(ptrs); return *this; }
 
-  //! Inserts ptr first.
+  //! \brief Inserts \a ptr in the front of the list.
   void push_front(Type* ptr, bool insertNullToo = false)
   { if (ptr || insertNullToo) myRefs.push_front(this->makeNewRef(ptr)); }
 
-  //! Inserts ptr at the end.
+  //! \brief Inserts \a ptr at the end of the list.
   void push_back(Type* ptr, bool insertNullToo = false)
   { if (ptr || insertNullToo) myRefs.push_back(this->makeNewRef(ptr)); }
 
-  //! Insert pointer after objInList or last if objInList == NULL or not found.
+  //! \brief Insert \a ptr after \a objInList in the list.
+  //! \details If \a objInList is NULL or not found in the list,
+  //! \a ptr is inserted at the end instead.
   void insertPtrAfter(Type* ptr, Type* objInList = NULL)
   {
     std::list<FFaReferenceBase*>::iterator it = myRefs.end();
@@ -174,7 +218,9 @@ public:
       this->push_back(ptr);
   }
 
-  //! Insert pointer at \a idx or at the end if \a idx is larger than size().
+  //! \brief Inserts \a ptr at position \a idx in the list.
+  //! \details If \a idx is larger than the length of the list,
+  //! \a ptr is inserted at the end instead.
   void insert(Type* ptr, size_t idx = 0)
   {
     size_t i = 0;
@@ -189,7 +235,7 @@ public:
     this->push_back(ptr);
   }
 
-  //! Fills the provided vector with the pointers contained in the list.
+  //! \brief Fills the provided vector with the pointers contained in the list.
   void getPtrs(std::vector<Type*>& toFill, bool includeNullToo = false) const
   {
     toFill.clear();
@@ -198,7 +244,7 @@ public:
         toFill.push_back(static_cast<FFaReference<Type>*>(ref)->getPointer());
   }
 
-  //! Replaces the current contents with the contents of the provided vector.
+  //! \brief Replaces the current contents with the provided vector of pointers.
   void setPtrs(const std::vector<Type*>& ptrs)
   {
     this->clear();
@@ -206,7 +252,7 @@ public:
       myRefs.push_back(this->makeNewRef(ptr));
   }
 
-  //! Replaces the current contents with the provided new references.
+  //! \brief Replaces the current contents with the provided new references.
   void setRefs(const IntVec& IDs)
   {
     this->clear();
@@ -215,8 +261,8 @@ public:
   }
 
   /*!
-    \brief Indexing operators.
-    The returned FFaReference reference can be used almost as a pointer,
+    \brief Indexing operator (for update).
+    \details The returned reference can be used almost as a pointer,
     making it possible to do:
     \code
     FFaReferenceList<FmSomeClass> referenceList;
@@ -235,6 +281,7 @@ public:
     return dummy;
   }
 
+  //! \brief Indexing operator (for read only).
   const FFaReference<Type>& operator[](int idx) const
   {
     FFaReferenceBase* refp = this->getRefBase(idx);
@@ -247,7 +294,8 @@ public:
     return dummy;
   }
 
-  //! Assigns ptr at index idx, and pads the list with zeros if neccesary.
+  //! \brief Assigns \a ptr at position \a idx.
+  //! \details #myRefs is padded with NULL before \a idx if it is shorter.
   void setPtr(Type* ptr, int idx)
   {
     int i = 0;
@@ -265,7 +313,8 @@ public:
     myRefs.push_back(this->makeNewRef(ptr));
   }
 
-  //! Returns pointer at index idx, or NULL if idx is outside the range.
+  //! \brief Returns the pointer at position \a idx.
+  //! \details Returns NULL if \a idx is outside the range.
   Type* getPtr(int idx) const
   {
     FFaReferenceBase* refp = this->getRefBase(idx);
@@ -274,7 +323,7 @@ public:
     return NULL;
   }
 
-  //! Returns first pointer, or NULL if list is empty.
+  //! \brief Returns the first pointer, or NULL if #myRefs is empty.
   Type* getFirstPtr() const
   {
     if (myRefs.empty()) return NULL;
@@ -282,7 +331,7 @@ public:
     return static_cast<FFaReference<Type>*>(myRefs.front())->getPointer();
   }
 
-  //! Returns last pointer, or NULL if list is empty.
+  //! \brief Returns the last pointer, or NULL if #myRefs is empty.
   Type* getLastPtr() const
   {
     if (myRefs.empty()) return NULL;
@@ -291,7 +340,7 @@ public:
   }
 
 private:
-  //! Convenience method to create and set up a new reference properly.
+  //! \brief Convenience method to create and set up a new reference properly.
   FFaReference<Type>* makeNewRef(Type* ptr, int ID = 0)
   {
     FFaReference<Type>* sr = new FFaReference<Type>();
@@ -301,7 +350,6 @@ private:
     return sr;
   }
 
-  //! Virtual method used to create an FFaReference of correct type.
   virtual FFaReferenceBase* createNewReference()
   { return static_cast<FFaReferenceBase*>(new FFaReference<Type>()); }
 };
@@ -309,6 +357,7 @@ private:
 
 // Specialized instantiations of FFaField methods.
 
+//! \cond TEMPLATE_SPECIALIZATION
 using FFaRefListPtr = FFaReferenceListBase*;
 
 template<> inline
@@ -341,4 +390,5 @@ FFaField<FFaRefListPtr>::read(std::istream& is, FFaRefListPtr& v) const
   if (v) v->read(is);
 }
 
+//! \endcond
 #endif

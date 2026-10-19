@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaFieldContainer.C
+  \brief Base class for the FEDEM model database structure.
+*/
+
 #include <algorithm>
 
 #include "FFaFieldContainer.H"
@@ -12,18 +17,9 @@
 #include "FFaReference.H"
 #include "FFaReferenceList.H"
 
-
-/*!
-  \class FFaFieldContainer
-  \brief The base class for the "new" datastructure.
-
-  This class contains the core of the simplified database development.
-  It manages FFaField, FFaReference and FFaReferenceList members in derived
-  classes, and provides automated IO, single and multiple guarded pointers.
-*/
-
-
+//! \cond DO_NOT_DOCUMENT
 Fmd_SOURCE_INIT(FcFieldContainer, FFaFieldContainer, FFaFieldContainer);
+//! \endcond
 
 
 FFaFieldContainer::FFaFieldContainer()
@@ -50,12 +46,6 @@ bool FFaFieldContainer::erase()
 }
 
 
-/*!
-  Resolves all FFaReferences and FFaReferenceLists in this object.
-  \sa FFaReferenceBase::resolve
-  \sa FFaReferenceListBase::resolve
-*/
-
 void FFaFieldContainer::resolve(FindCB& findCB)
 {
 #ifdef FFA_DEBUG
@@ -70,12 +60,6 @@ void FFaFieldContainer::resolve(FindCB& findCB)
     ref->resolve(findCB);
 }
 
-
-/*!
-  Unresolves all FFaReferences and FFaReferenceLists in this object.
-  \sa FFaReferenceBase::unresolve
-  \sa FFaReferenceListBase::unresolve
-*/
 
 void FFaFieldContainer::unresolve()
 {
@@ -109,15 +93,15 @@ void FFaFieldContainer::updateReferences(const IntVec& oldAssId,
 
 
 /*!
-  Returns the fields in this FFaFieldContainer, with a string identifier.
-  The identifier is the keyword used on file.
+  The field identifier, which also is the keyword used in the model file,
+  is used as key in the \a mapToFill.
 */
 
 void FFaFieldContainer::getFields(FieldMap& mapToFill) const
 {
   mapToFill.clear();
   for (const FieldContainerMap::value_type& it : myFields)
-    mapToFill[*(it.first)] = it.second;
+    mapToFill.emplace(*(it.first),it.second);
 }
 
 
@@ -133,9 +117,8 @@ FFaFieldBase* FFaFieldContainer::getField(const std::string& fieldName) const
 
 
 /*!
-  Gets all FFaFieldContainers referred to by this object through the
-  FFaReference system. The object pointers are accompanied by the context name
-  the references have in this object.
+  The object pointers are accompanied by the context name the references have
+  for the referred objects. The context names are used as key in \a mapToFill.
 */
 
 void FFaFieldContainer::getReferredObjs(ObjectMap& mapToFill) const
@@ -155,9 +138,8 @@ void FFaFieldContainer::getReferredObjs(ObjectMap& mapToFill) const
 
 
 /*!
-  Gets all FFaFieldContainers referring to this object through the
-  FFaReference system. The object pointers are accompanied by the context name
-  the references have in the referring object.
+  The object pointers are accompanied by the context name the references have
+  for the referring objects. The context names are used as key in \a mapToFill.
 */
 
 void FFaFieldContainer::getReferringObjs(ObjectMap& mapToFill) const
@@ -169,33 +151,14 @@ void FFaFieldContainer::getReferringObjs(ObjectMap& mapToFill) const
 
 
 /*!
-  Function used to sort FFaFieldContainers.
-*/
-
-inline bool FFaContainerLess(FFaFieldContainer* c1, FFaFieldContainer* c2)
-{
-  if (c1 && c2)
-  {
-    if (c1->getTypeID() == c2->getTypeID())
-      return c1->getResolvedID() < c2->getResolvedID();
-    else
-      return c1->getTypeID() < c2->getTypeID();
-  }
-  else if (c2)
-    return true;
-  else
-    return false;
-}
-
-
-/*!
-  Gets the FFaFieldContainers referring to this object through the
-  FFaReference system that refers with the context \a contextName.
-  The vector is sorted w.r.t. ID if \a sortOnId is true. This is needed
-  when the execution order is of importance. If the vector is not sorted,
+  This method gets the list of objects referring to this object
+  with the context \a contextName.
+  The list is sorted w.r.t. the ID if \a sortOnId is true. This is needed
+  when the execution order is of importance. If the list is not sorted,
   the order might be different in two consequtive runs of the same model.
-  \note The output vector \a vecToFill is not cleared on entry.
+  \note The output array \a vecToFill is not cleared on entry.
 */
+
 void FFaFieldContainer::getReferringObjs(ObjectVec& vecToFill,
 					 const std::string& contextName,
 					 bool sortOnId) const
@@ -205,13 +168,21 @@ void FFaFieldContainer::getReferringObjs(ObjectVec& vecToFill,
       vecToFill.push_back(ref->getOwnerFieldContainer());
 
   if (sortOnId)
-    std::sort(vecToFill.begin(),vecToFill.end(),FFaContainerLess);
+    std::sort(vecToFill.begin(),vecToFill.end(),
+              [](FFaFieldContainer* c1, FFaFieldContainer* c2)
+              {
+                if (c1 && c2)
+                {
+                  if (c1->getTypeID() == c2->getTypeID())
+                    return c1->getResolvedID() < c2->getResolvedID();
+                  else
+                    return c1->getTypeID() < c2->getTypeID();
+                }
+                return c2 ? true : false;
+              });
 }
 
 
-/*!
-  Private helper method used by template functions to loop over myRefBy.
-*/
 
 FFaFieldContainer* FFaFieldContainer::getNext(const std::string& context,
                                               bool getFirst) const
@@ -237,11 +208,12 @@ FFaFieldContainer* FFaFieldContainer::getNext(const std::string& context,
 
 /*!
   This method is used to make some (or all) of the references pointing
-  to this object, point to the object \a replacement instead.
+  to this object, point to the object \a replacement instead, is specified.
 
   Only the references with the supplied \a contextName are changed, unless
   \a contextName is empty (then all references to the object will be changed).
 */
+
 void FFaFieldContainer::releaseReferencesToMe(const std::string& contextName,
 					      FFaFieldContainer* replacement)
 {
@@ -257,20 +229,12 @@ void FFaFieldContainer::releaseReferencesToMe(const std::string& contextName,
 }
 
 
-/*!
-  Adds a field to the internal book keeping in this object.
-*/
-
 void FFaFieldContainer::addField(const std::string& identifier,
 				 FFaFieldBase* field)
 {
   myFields[FieldContainerDict::instance()->insert(identifier).first] = field;
 }
 
-
-/*!
-  Removes the field from the internal book keeping in the object.
-*/
 
 void FFaFieldContainer::removeField(const std::string& identifier)
 {
@@ -279,10 +243,6 @@ void FFaFieldContainer::removeField(const std::string& identifier)
     myFields.erase(strit);
 }
 
-
-/*!
-  Reads the value of the field with the given \a key from \a is.
-*/
 
 bool FFaFieldContainer::readField(const std::string& key, std::istream& is,
 				  bool datafieldsOnly)
@@ -378,8 +338,6 @@ bool FFaFieldContainer::copy(const FFaFieldContainer* other,
 
 
 /*!
-  Resets fields to their default value.
-
   Only the fields that are present in the supplied container are reset, thus,
   this method inverts the effect of the copy method above (with fieldsOnly=true)
 */
@@ -400,10 +358,6 @@ bool FFaFieldContainer::resetFields(const FFaFieldContainer* other)
 }
 
 
-/*!
-  Adds a reference to the internal book keeping.
-*/
-
 void FFaFieldContainer::addRef(FFaReferenceBase* ref)
 {
   if (!ref) return;
@@ -412,10 +366,6 @@ void FFaFieldContainer::addRef(FFaReferenceBase* ref)
   myRefTo.push_back(ref);
 }
 
-
-/*!
-  Adds a reference list to the internal book keeping.
-*/
 
 void FFaFieldContainer::addRefList(FFaReferenceListBase* refL)
 {
@@ -427,7 +377,7 @@ void FFaFieldContainer::addRefList(FFaReferenceListBase* refL)
 
 
 /*!
-  Inserts the supplied reference into the book keeping to notify
+  This method inserts the supplied reference into the book keeping to notify
   this object that it is pointed to by the reference.
   A part of the core of the FFaReference system.
 */
@@ -449,7 +399,7 @@ void FFaFieldContainer::insertInRefBy(FFaReferenceBase* ref)
 
 
 /*!
-  Removes the supplied reference from book keeping to notify
+  This method removes the supplied reference from book keeping to notify
   this object that it is no longer pointed to by the reference.
   A part of the core of the FFaReference system.
 */
