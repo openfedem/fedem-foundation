@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaSwitchBoard.C
+  \brief Signal handling management.
+*/
+
 #include "FFaLib/FFaDynCalls/FFaSwitchBoard.H"
 #include <iostream>
 
@@ -210,19 +215,13 @@ FFaSlotList& FFaSwitchBoard::getSlots(FFaSwitchBoardConnector* sender,
                                       int subject, unsigned int typeID)
 {
   if (ourConnections)
-  {
-    SwitchBoardConnection::iterator it1 = ourConnections->find(sender);
-    if (it1 != ourConnections->end())
-    {
-      SlotMap::iterator it2 = it1->second.find(subject);
-      if (it2 != it1->second.end())
-      {
-        SlotContainer::iterator it3 = it2->second.find(typeID);
-        if (it3 != it2->second.end())
+    if (SwitchBoardConnection::iterator it1 = ourConnections->find(sender);
+        it1 != ourConnections->end())
+      if (SlotMap::iterator it2 = it1->second.find(subject);
+          it2 != it1->second.end())
+        if (SlotContainer::iterator it3 = it2->second.find(typeID);
+            it3 != it2->second.end())
           return it3->second;
-      }
-    }
-  }
 
   static FFaSlotList empty;
   return empty;
@@ -328,7 +327,7 @@ FFaSlotBase::~FFaSlotBase()
             << mySwitchBoardLookups.size() << std::endl;
 #endif
   IAmDeletingMe = true;
-  for (const SwitchBoardConnectorMap::value_type& swb : mySwitchBoardLookups)
+  for (const SwbMap::value_type& swb : mySwitchBoardLookups)
     for (const std::pair<const int,int>& ij : swb.second)
       FFaSwitchBoard::removeSlotReference(swb.first,ij.first,this);
 }
@@ -360,7 +359,7 @@ bool FFaSlotBase::removeConnection(FFaSwitchBoardConnector* sender, int subject)
             << subject <<" size="<< mySwitchBoardLookups.size() << std::endl;
 #endif
 
-  SwitchBoardConnectorMap::iterator cit = mySwitchBoardLookups.find(sender);
+  SwbMap::iterator cit = mySwitchBoardLookups.find(sender);
   if (cit != mySwitchBoardLookups.end())
   {
     IntMap::iterator it = cit->second.find(subject);
