@@ -350,8 +350,13 @@ FaVec3 FaMat33::getEulerZYX () const
 /*!
   The incremental rotation tensor is computed from the rotation angles using a
   quaternion representation of the rotation. This function is equivalent to the
+\if FT_SOLVER_DOC
   Fortran subroutine rotationmodule::vec_to_mat in the module
   \ref rotationmodule (see the \ref src/vpmUtilities directory).
+\else
+  Fortran subroutine \a vec_to_mat in the \a rotationModule
+  (see the src/vpmUtilities directory in the fedem-solvers repository).
+\endif
   The \a angles provided are those related to a Rodrigues parameterization.
   Rotation axis, with length equal to the angle to rotate about that axis.
 */
@@ -385,8 +390,13 @@ FaMat33& FaMat33::incRotate (const FaVec3& angles)
 
 /*!
   This function is equivalent to the Fortran subroutine
+\if FT_SOLVER_DOC
   rotationmodule::mat_to_vec in the module \ref rotationmodule
   (see the \ref src/vpmUtilities directory).
+\else
+  \a mat_to_vec in the \a rotationModule (see the src/vpmUtilities
+  directory of the fedem-solvers repository).
+\endif
 */
 
 FaVec3 FaMat33::getRotation () const
