@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaMemPool.C
+  \brief Streamlined efficient memory allocation.
+*/
+
 #include "FFaLib/FFaPatterns/FFaMemPool.H"
 
 
@@ -124,6 +129,7 @@ void FFaMemPool::usePartOfPool(void* objPtrAsId)
 }
 
 
+//! \cond MEMORY_POOL_DETAILS
 void FFaMemPool::PoolPart::freePoolPart()
 {
   for (void* block : myMemBlocks)
@@ -134,6 +140,7 @@ void FFaMemPool::PoolPart::freePoolPart()
   std::vector<void*> empty;
   myMemBlocks.swap(empty);
 }
+//! \endcond
 
 
 void FFaMemPoolMgr::freeMemPools(bool release)

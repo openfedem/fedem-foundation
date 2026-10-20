@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FiDeviceFunctionBase.C
+  \brief Base class for external device functions.
+*/
+
 #include "FiDeviceFunctionBase.H"
 #include <cmath>
 #include <cstdio>
@@ -27,8 +32,7 @@ FiDeviceFunctionBase::FiDeviceFunctionBase(const char* filename)
   myFile = 0;
   myRefCount = 0;
   myFileStatus = Not_Loaded;
-  myInterpolationPolicy = Linear;
-  myExtrapolationPolicy = Constant;
+  myInterpolationPolicy = { Linear, Constant };
   myStep = -1.0;
   myInputEndian = myOutputEndian = BigEndian;
   myDatasetDevice = filename;
@@ -84,31 +88,37 @@ bool FiDeviceFunctionBase::open(const char* fname, FileStatus status)
 
 void FiDeviceFunctionBase::getAxisUnit(int axis, char* uText, size_t n) const
 {
-  std::map<int,axisInfo>::const_iterator it = myAxisInfo.find(axis);
-  if (it != myAxisInfo.end())
-    strncpy(uText,it->second.unit.c_str(),n);
-  else
-    uText[0] = '\0';
+  if (axis >= 0 && axis <= 1)
+  {
+    if (const std::string& unit = myAxisInfo[axis].unit; !unit.empty())
+      strncpy(uText,unit.c_str(),n);
+    else
+      uText[0] = '\0';
+  }
 }
 
 void FiDeviceFunctionBase::getAxisTitle(int axis, char* aText, size_t n) const
 {
-  std::map<int,axisInfo>::const_iterator it = myAxisInfo.find(axis);
-  if (it != myAxisInfo.end())
-    strncpy(aText,it->second.title.c_str(),n);
-  else
-    aText[0] = '\0';
+  if (axis >= 0 && axis <= 1)
+  {
+    if (const std::string& title = myAxisInfo[axis].title; !title.empty())
+      strncpy(aText,title.c_str(),n);
+    else
+      aText[0] = '\0';
+  }
 }
 
 
 void FiDeviceFunctionBase::setAxisUnit(int axis, const char* unitText)
 {
-  myAxisInfo[axis].unit = unitText;
+  if (axis >= 0 && axis <= 1)
+    myAxisInfo[axis].unit = unitText;
 }
 
 void FiDeviceFunctionBase::setAxisTitle(int axis, const char* titleText)
 {
-  myAxisInfo[axis].title = titleText;
+  if (axis >= 0 && axis <= 1)
+    myAxisInfo[axis].title = titleText;
 }
 
 
@@ -143,7 +153,7 @@ double FiDeviceFunctionBase::interpolate(double x,
 					 double x0, double f0,
 					 double x1, double f1) const
 {
-  switch (myInterpolationPolicy)
+  switch (myInterpolationPolicy[0])
   {
     case Linear:
       if (x1 > x0)
@@ -160,7 +170,7 @@ double FiDeviceFunctionBase::extrapolate(double x,
 					 double x0, double f0,
 					 double x1, double f1) const
 {
-  switch (myExtrapolationPolicy)
+  switch (myInterpolationPolicy[1])
   {
     case Linear:
       if (x1 > x0)

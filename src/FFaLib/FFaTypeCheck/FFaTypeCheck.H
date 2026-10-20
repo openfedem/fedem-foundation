@@ -5,38 +5,37 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaTypeCheck.H
+  \brief Type checking control.
+  \details This file contains a set of macros to be used in class definitions,
+  to enable simple type checking in class hierarcies.
+*/
+
 #ifndef FFA_TYPE_CHECK_H
 #define FFA_TYPE_CHECK_H
 
 
-/*!
-  \brief Type checking control class.
-*/
-
-class FFaTypeCheck
+namespace FFaTypeCheck //! Type checking control
 {
-public:
-  static int getNewTypeID(const char* typeName);
-  static int getTypeIDFromName(const char* typeName);
-  static const char* getTypeNameFromID(int typeID);
+  //! \brief Returns a unique type ID number for \a typeName.
+  int getNewTypeID(const char* typeName);
+  //! \brief Returns the type ID number for \a typeName, if it exists.
+  int getTypeIDFromName(const char* typeName);
+  //! \brief Returns the type name associated with the specified \a typeID.
+  const char* getTypeNameFromID(int typeID);
 
-  enum { NO_TYPE_ID = -1 };
-
-private:
-  static int counter;
-};
+  constexpr int NO_TYPE_ID = -1; //!< Value for undefined type ID number
+}
 
 
-///////////////////////////////////////////////////////////
-//
-// Macros to simplify type checking in classes :
-//
-// Place this in top of the class definition, e.g.:
-//
-//    class someClass
-//    {
-//      Fmd_HEADER_INIT();
-
+//! \brief Macro enabling type checking for a class.
+//! \details Place this in top of the class definition, e.g.:
+//! \code
+//!   class someClass
+//!   {
+//!     Fmd_HEADER_INIT();
+//! \endcode
 #define Fmd_HEADER_INIT()			\
 public:						\
   virtual bool        isOfType(int tp) const;	\
@@ -53,31 +52,40 @@ protected:					\
   static int         typeID;			\
   static const char* typeIDName
 
-// Use this in top classes, instead of Fmd_HEADER_INIT()
-
+//! \brief Macro enabling type checking for a top-level class.
+//! \details Place this in top of the class definition, e.g.:
+//! \code
+//!   class myTopClass
+//!   {
+//!     Fmd_BASE_HEADER_INIT();
+//! \endcode
 #define Fmd_BASE_HEADER_INIT()			\
 protected:					\
   int         itsTypeID;			\
   const char* itsTypeIDName;			\
 Fmd_HEADER_INIT()
 
-// Place this in the start of your constructor implementation, e.g.:
-//
-// Fmd_CONSTRUCTOR_INIT(someClassName);
-
+//! \brief Macro with type checking initializations.
+//! \details Place this in the start of your constructor implementation, e.g.:
+//! \code
+//!   someClassName::someClassName()
+//!   {
+//!     Fmd_CONSTRUCTOR_INIT(someClassName);
+//! \endcode
 #define Fmd_CONSTRUCTOR_INIT(clType)		\
  itsTypeID     = clType::getClassTypeID();	\
  itsTypeIDName = clType::getClassTypeIDName()
 
-// Place this somewhere in global scope, preferably at the top of the
-// implementation file of the class, e.g.:
-//
-// Fmd_SOURCE_INIT(clName, clType, prClType);
-
+//! \brief Macro with type checking implementations.
+//! \details Place this somewhere in global scope, preferably at the top of the
+//! implementation file of the class, e.g.:
+//! \code
+//!   Fmd_SOURCE_INIT(classTypeIDName, someClassName, parentClassName);
+//! \endcode
 #define Fmd_SOURCE_INIT(clName, clType, prClType)		\
 								\
-int         clType::typeID = FFaTypeCheck::getNewTypeID(FM__QUOTE(clName)); \
-const char* clType::typeIDName = FM__QUOTE(clName);		\
+int         clType::typeID = FFaTypeCheck::getNewTypeID(#clName);\
+const char* clType::typeIDName = #clName;			\
 								\
 int clType::getTypeID() const					\
 {								\
@@ -109,53 +117,17 @@ bool clType::isOfType(int tp) const				\
   if (itsTypeID == tp)						\
     return true;						\
   else								\
-    return prClType::staticIsOfType(tp); 			\
+    return prClType::staticIsOfType(tp);			\
 }								\
 								\
 bool clType::staticIsOfType(int tp)				\
 {								\
   if (typeID == tp)						\
-    return true; 						\
+    return true;						\
   else if (typeID == prClType::getClassTypeID())		\
     return false;						\
   else								\
     return prClType::staticIsOfType(tp);			\
 }
-
-
-////////////////////////////////////////////////////////////
-//
-// Some FmDB specific macros that uses the type checking.
-//
-// These are used when making new Mechanism Database objects,
-// instead of the plain type checking macros :
-
-#define Fmd_DB_HEADER_INIT()							\
-										\
-Fmd_HEADER_INIT();								\
-public:										\
-  static bool parentParse(const char* keyWord, std::istream& activeStatement, void* obj); \
-  bool cloneInherited(FmBase* obj, int depth)
-
-#define Fmd_DB_SOURCE_INIT(clName, clType, prClType)				\
-										\
-bool clType::cloneInherited(FmBase* obj, int depth)				\
-{										\
-  bool status = true;								\
-  if (clType::typeID != prClType::getClassTypeID())				\
-    status = this->prClType::cloneInherited(obj,depth);				\
-										\
-  return this->clType::cloneLocal(obj,depth) && status;				\
-}										\
-										\
-bool clType::parentParse(const char* keyWord, std::istream& activeStatement, void* obj) \
-{ 										\
-  return prClType::localParse(keyWord,activeStatement,static_cast<prClType*>(obj)); \
-}										\
-										\
-Fmd_SOURCE_INIT(clName, clType, prClType)
-
-
-#define FM__QUOTE(str) #str
 
 #endif

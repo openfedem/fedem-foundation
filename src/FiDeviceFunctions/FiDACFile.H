@@ -14,8 +14,8 @@
 class FiDACFile : public FiDeviceFunctionBase
 {
 public:
-  FiDACFile(const char* devicename = NULL, Endianness format = LittleEndian);
-  virtual ~FiDACFile() {}
+  explicit FiDACFile(const char* devicename = NULL,
+                     Endianness format = LittleEndian);
 
   virtual size_t getValueCount() const { return myNumDatavals; }
   virtual void getValueRange(double& min, double& max) const;
@@ -24,15 +24,13 @@ public:
   virtual double getValue(double x, int = 0,
                           bool zeroAdjust = false, double vertShift = 0.0,
                           double scaleFac = 1.0);
-  virtual bool getValues(double x0, double x1,
-			 std::vector<double>& x, std::vector<double>& y,
+  virtual bool getValues(double x0, double x1, Doubles& x, Doubles& y,
 			 int channel = 0, bool zeroAdjust = false,
 			 double shift = 0.0, double scale = 1.0);
-  virtual void getRawData(std::vector<double>& x, std::vector<double>& y,
+  virtual void getRawData(Doubles& x, Doubles& y,
 			  double minX = 0.0, double maxX = -1.0, int = 0);
   virtual void setValue(double x, double y);
-  virtual bool setData(const std::vector<double>& x,
-		       const std::vector<double>& y);
+  virtual bool setData(const Doubles& x, const Doubles& y);
 
 protected:
   virtual bool initialDeviceRead();

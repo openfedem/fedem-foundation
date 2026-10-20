@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaReference.C
+  \brief Classes representing guarded pointers.
+*/
+
 #include <iostream>
 #include <string>
 #include <cstring>
@@ -16,45 +21,42 @@
 
 
 /*!
+  \class FFaReferenceBase
+
   Requirements:
-  o Want a pointer from one object to another
-  o From one to many
-  o Automatic removal of connection on destruction of either side of reference
-  o Automatic traversal/topology browsing
-  o Automatic id->pointer resolving
-  o Automatic IO
-  o Runtime additions
-  o Easy and robust to use
+  - Want a pointer from one object to another
+  - From one to many
+  - Automatic removal of connection on destruction of either side of reference
+  - Automatic traversal/topology browsing
+  - Automatic id to pointer resolving
+  - Automatic I/O
+  - Runtime additions
+  - Easy and robust to use
 
   In the referred object we need a table with those who refer to it.
   In object that prints the connection, the connection needs to be
   in the field container.
 
-
-  TODO list :
-
-  o Find out how to do Type::getClassTypeID()
-
-  o For each object in HeadTable
+  \todo
+  - Find out how to do Type::getClassTypeID()
+  - For each object in HeadTable
     - Set up topology references
-
-  o Testing :
+  - Testing:
     - FFaReference
-      * IO and resolving
+      - IO and resolving
         - With written Type
         - Without written Type
-      * Destruction and pointer updating
-      * Changing pointer on the fly
-
+      - Destruction and pointer updating
+      - Changing pointer on the fly
     - FFaReferenceList
-      * IO and resolving
+      - IO and resolving
         - With written Type
         - Without written Type
-      * Destruction and pointer updating (removal of reference)
-      * List access and editing
+      - Destruction and pointer updating (removal of reference)
+      - List access and editing
 */
 
-FFaReferenceBase::FFaReferenceBase() : myOwnerFieldCont(NULL), myPtr(NULL)
+FFaReferenceBase::FFaReferenceBase() : myOwnerObj(NULL), myPtr(NULL)
 {
   myContextName = NULL;
   printIfZero = IAmResolved = true;
@@ -70,7 +72,6 @@ FFaReferenceBase::~FFaReferenceBase()
 
 
 /*!
-  Sets the pointer value from a FFaFieldContainer pointer directly.
   Returns \e true if a new pointer value is assigned, otherwise \e false.
 */
 
@@ -101,7 +102,6 @@ bool FFaReferenceBase::setRef(FFaFieldContainer* ptr)
 
 
 /*!
-  Sets the unresolved id and type of the referred object directly.
   Must be resolved later. Can be used when reading the references in another way
   than through the read() method.
 */
@@ -120,10 +120,6 @@ void FFaReferenceBase::setRef(int objId, int typeId, const IntVec& assID)
 }
 
 
-/*!
-  Returns the FFaFieldContainer pointer contained.
-*/
-
 FFaFieldContainer* FFaReferenceBase::getRef() const
 {
   if (IAmResolved && IAmBound)
@@ -139,8 +135,7 @@ FFaFieldContainer* FFaReferenceBase::getRef() const
 
 
 /*!
-  Returns the context name used by this reference.
-  This is used when doing topology browsing to know why a reference is
+  This method is used when doing topology browsing to know why a reference is
   referring to a certain FFaFieldContainer. Supposed to be set upon
   initialization when adding the reference to the book keeping in the
   FFaFieldContainer it is residing in.
@@ -152,18 +147,14 @@ FFaFieldContainer* FFaReferenceBase::getRef() const
 
 const char* FFaReferenceBase::getContextName() const
 {
-  if (IAmInAList && myOwnerReferenceList)
-    return myOwnerReferenceList->getContextName();
+  if (IAmInAList && myOwnerList)
+    return myOwnerList->getContextName();
   else if (myContextName)
     return myContextName;
   else
     return "";
 }
 
-
-/*!
-  Returns the type name (as of the FFaTypeCheck system) of the referred object.
-*/
 
 const char* FFaReferenceBase::getRefTypeName() const
 {
@@ -173,10 +164,6 @@ const char* FFaReferenceBase::getRefTypeName() const
     return NULL;
 }
 
-
-/*!
-  Returns the type id (as of the FFaTypeCheck system) of the referred object.
-*/
 
 int FFaReferenceBase::getRefTypeID() const
 {
@@ -189,10 +176,6 @@ int FFaReferenceBase::getRefTypeID() const
 }
 
 
-/*!
-  Returns the id number of the referred object, or the read id if not resolved.
-*/
-
 int FFaReferenceBase::getRefID() const
 {
   if (!IAmResolved)
@@ -203,11 +186,6 @@ int FFaReferenceBase::getRefID() const
     return 0;
 }
 
-
-/*!
-  Returns the assembly id array of the referred object,
-  or the read assembly id if not resolved.
-*/
 
 bool FFaReferenceBase::getRefAssemblyID(IntVec& assID) const
 {
@@ -223,8 +201,8 @@ bool FFaReferenceBase::getRefAssemblyID(IntVec& assID) const
 
 
 /*!
-  Finds the object that has the correct type, and the correct ID compared to
-  what was read from file, and sets up the pointer relation.
+  This method sets up the pointer relation to the object with correct
+  Type and ID compared to what was read from file.
 */
 
 void FFaReferenceBase::resolve(FFaSearcher& findCB)
@@ -286,10 +264,6 @@ void FFaReferenceBase::resolve(FFaSearcher& findCB)
 #endif
 }
 
-
-/*!
-  Does the opposite of resolve.
-*/
 
 void FFaReferenceBase::unresolve()
 {
@@ -475,40 +449,28 @@ void FFaReferenceBase::read(std::istream& is)
 }
 
 
-/*!
-  Tells the object that this reference is pointing at that it is pointed at.
-*/
-
 void FFaReferenceBase::bind()
 {
-  if (IAmResolved && !IAmBound && myPtr && myOwnerFieldCont)
+  if (IAmResolved && !IAmBound && myPtr && myOwnerObj)
   {
     IAmBound = true;
     myPtr->insertInRefBy(this);
   }
-  else if (IAmResolved && myPtr && !myOwnerFieldCont)
-    std::cerr <<"FFaReferenceBase::bind failed because myOwnerFieldCont==NULL ("
+  else if (IAmResolved && myPtr && !myOwnerObj)
+    std::cerr <<"FFaReferenceBase::bind failed because myOwnerObj==NULL ("
               << myPtr->getTypeIDName() <<" "<< myPtr->getResolvedID()
               <<")"<< std::endl;
 }
 
 
-/*!
-  Tells the referred object that it is not referred anymore.
-*/
-
 void FFaReferenceBase::unbind()
 {
-  if (IAmResolved && IAmBound && myPtr && myOwnerFieldCont)
+  if (IAmResolved && IAmBound && myPtr && myOwnerObj)
     myPtr->deleteFromRefBy(this);
 
   IAmBound = false;
 }
 
-
-/*!
-  Deletes the struct used to hold the temporary information read from disk.
-*/
 
 void FFaReferenceBase::clearResolveRef()
 {
@@ -520,10 +482,6 @@ void FFaReferenceBase::clearResolveRef()
   }
 }
 
-
-/*!
-  A copy method mostly used by FFaFieldContainer::copy().
-*/
 
 void FFaReferenceBase::copy(const FFaReferenceBase& aRef, bool unresolve)
 {
@@ -558,10 +516,6 @@ void FFaReferenceBase::copy(const FFaReferenceBase& aRef, bool unresolve)
 }
 
 
-/*!
-  Convenience method used when reading from file.
-*/
-
 void FFaReferenceBase::setRefID(int id)
 {
   this->unresolve();
@@ -576,10 +530,6 @@ void FFaReferenceBase::setRefID(int id)
 }
 
 
-/*!
-  Convenience method used when reading from file.
-*/
-
 void FFaReferenceBase::setRefTypeID(int id)
 {
   this->unresolve();
@@ -593,10 +543,6 @@ void FFaReferenceBase::setRefTypeID(int id)
     myUnresolvedRef->front() = id;
 }
 
-
-/*!
-  Convenience method used when reading from file.
-*/
 
 void FFaReferenceBase::setRefAssemblyID(const IntVec& assID)
 {
@@ -613,10 +559,6 @@ void FFaReferenceBase::setRefAssemblyID(const IntVec& assID)
 }
 
 
-/*!
-  Only used by the FFaReferenceListBase to clean a ToRef.
-*/
-
 void FFaReferenceBase::zeroOut()
 {
   if (IAmResolved)
@@ -627,74 +569,48 @@ void FFaReferenceBase::zeroOut()
 }
 
 
-/*!
-  Only used by FFaFieldContainer to notify that the FieldContainer is obsolete.
-*/
-
 void FFaReferenceBase::zeroOutOrRemoveFromList()
 {
   this->zeroOut();
 
-  if (IAmInAList && myOwnerReferenceList)
-    myOwnerReferenceList->eraseReferenceIfNeeded(this);
+  if (IAmInAList && myOwnerList)
+    myOwnerList->eraseReferenceIfNeeded(this);
 }
 
-
-/*!
-  Sets what FFaFieldContainer this reference is a member of.
-*/
 
 void FFaReferenceBase::setOwnerFieldContainer(FFaFieldContainer* owner)
 {
   IAmInAList = false;
-  myOwnerFieldCont = owner;
+  myOwnerObj = owner;
 }
 
-
-/*!
-  Returns what FFaFieldContainer this reference is a member of (if any).
-  This could be the FFaFieldContainer of the FFaReferenceListBase
-  that this reference is a member of.
-*/
 
 FFaFieldContainer* FFaReferenceBase::getOwnerFieldContainer() const
 {
   if (!IAmInAList)
-    return myOwnerFieldCont;
-  else if (myOwnerReferenceList)
-    return myOwnerReferenceList->getOwnerFieldContainer();
+    return myOwnerObj;
+  else if (myOwnerList)
+    return myOwnerList->getOwnerFieldContainer();
   else
     return static_cast<FFaFieldContainer*>(NULL);
 }
 
 
-/*!
-  Sets what FFaReferenceListBase this reference is a member of (if any).
-*/
-
 void FFaReferenceBase::setOwnerReferenceList(FFaReferenceListBase* owner)
 {
   IAmInAList = true;
-  myOwnerReferenceList = owner;
+  myOwnerList = owner;
 }
 
-
-/*!
-  Returns what FFaReferenceListBase this reference is a member of (if any).
-*/
 
 FFaReferenceListBase* FFaReferenceBase::getOwnerReferenceList() const
 {
   if (IAmInAList)
-    return myOwnerReferenceList;
+    return myOwnerList;
   else
     return static_cast<FFaReferenceListBase*>(NULL);
 }
 
-
-/*!
-  Checks for equality between two FFaReferences.
-*/
 
 bool FFaReferenceBase::isEqual(const FFaReferenceBase* p) const
 {

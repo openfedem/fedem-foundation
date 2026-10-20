@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaField.H
+  \brief Template class for field representation in the FEDEM model database.
+*/
+
 #ifndef FFA_FIELD_H
 #define FFA_FIELD_H
 
@@ -12,32 +17,33 @@
 #include <sstream>
 #include "FFaFieldBase.H"
 
-typedef std::pair<int,double>    IntDouble;
-typedef std::vector<IntDouble>   IntDoubles;
-typedef std::pair<double,double> Doubles;
-typedef std::vector<double>      DoubleVec;
-typedef std::pair<int,int>       Ints;
-typedef std::vector<int>         IntVec;
-typedef std::vector<bool>        BoolVec;
-typedef std::set<std::string>    StringSet;
+using IntDouble  = std::pair<int,double>;    //!< Convenience type alias
+using IntDoubles = std::vector<IntDouble>;   //!< Convenience type alias
+using Doubles    = std::pair<double,double>; //!< Convenience type alias
+using DoubleVec  = std::vector<double>;      //!< Convenience type alias
+using Ints       = std::pair<int,int>;       //!< Convenience type alias
+using IntVec     = std::vector<int>;         //!< Convenience type alias
+using BoolVec    = std::vector<bool>;        //!< Convenience type alias
+using StringSet  = std::set<std::string>;    //!< Convenience type alias
 
 
 /*!
-  \brief Template class for field representation in the Fedem database.
+  \brief Template class for field representation in the FEDEM model database.
 
-  The class type of the field value must have the logical operators defined
-  ( i.e., "==", "<" and ">" ) as well as the assignment operator.
+  \details The class type of the field value must have the logical operators
+  defined (i.e., "==", "<" and ">") as well as the assignment operator.
 */
 
-template <typename T1>
+template <typename ValueT>
 class FFaField : public FFaFieldBase
 {
-  typedef T1 ValueT;
-
 public:
+  //! \brief Empty default constructor.
   FFaField() {}
+  //! \brief Empty destructor.
   virtual ~FFaField() {}
 
+  //! \brief Assignment operator.
   ValueT& operator=(const ValueT& data)
   {
     if (this->isDataField())
@@ -46,9 +52,17 @@ public:
     return myData;
   }
 
+  //! \brief Returns a const reference to #myData.
   const ValueT& getValue() const { return myData; }
-  ValueT&       getValue()       { return myData; }
+  //! \brief Returns a reference to #myData (for update).
+  ValueT& getValue() { return myData; }
 
+  //! \brief Assigns a new value to the field.
+  //! \param[in] newData The new field value to be assigned
+  //! \param[in] checkChanged If \e true,
+  //! notify if \a newData differs from #myData
+  //! \return \e true if \a newData is different from #myData
+  //! when \a checkChanges is \e true
   bool setValue(const ValueT& newData, bool checkChanged = true)
   {
     if (checkChanged && myData == newData)
@@ -58,6 +72,12 @@ public:
     return true;
   }
 
+  //! \brief Assigns the default value of the field.
+  //! \param[in] defaultVal The new default field value to be assigned
+  //! \param[in] checkChanged If \e true,
+  //!  notify if \a defaultVal differs from #myDefaultValue
+  //! \return \e true if \a defaultVal is different from #myDefaultValue
+  //! when \a checkChanges is \e true
   bool setDefaultValue(const ValueT& defaultVal, bool checkChanged = true)
   {
     if (checkChanged && myDefaultValue == defaultVal)
@@ -74,13 +94,32 @@ public:
   virtual bool isPrintable() const { return true; }
 
 protected:
-  virtual FFaFieldBase* copy(const FFaFieldBase* ref, bool defaultValueToo);
+  virtual FFaFieldBase* copy(const FFaFieldBase* field, bool defaultValueToo)
+  {
+    if (this == field || !this->isDataField())
+      return this;
+
+    const FFaField<ValueT>* ref = dynamic_cast<const FFaField<ValueT>*>(field);
+    if (ref)
+    {
+      this->myData = ref->myData;
+      if (defaultValueToo)
+        this->myDefaultValue = ref->myDefaultValue;
+    }
+    else
+      std::cerr <<"FFaField<T>::copy(const FFaFieldBase*,bool)"
+                <<" - mismatch in field types" << std::endl;
+
+    return this;
+  }
 
   virtual void write(std::ostream& os) const { os << myData; }
   virtual void read(std::istream& is) { this->read(is,myData); }
 
 private:
+  //! \brief Reads the field value from an input stream.
   void read(std::istream& is, ValueT& v) const { is >> v; }
+  //! \brief Reads the field value from a std::string.
   void read(const std::string& sval, ValueT& v) const
   {
     std::stringstream s(sval);
@@ -88,8 +127,8 @@ private:
   }
 
 protected:
-  ValueT myData;
-  ValueT myDefaultValue;
+  ValueT myData;         //!< Current field value
+  ValueT myDefaultValue; //!< Default field value
 };
 
 
@@ -97,14 +136,17 @@ protected:
   \brief Subclass used for internal fields that should not be printed.
 */
 
-template <class value>
-class FFaNoPrintField : public FFaField<value>
+template <class valueT>
+class FFaNoPrintField : public FFaField<valueT>
 {
 public:
+  //! \brief Returns \e false, since this field should never be printed.
   virtual bool isPrintable() const { return false; }
 
 protected:
+  //! \brief Overridden to do nothing.
   virtual void write(std::ostream&) const {}
+  //! \brief Overridden to do nothing.
   virtual void read(std::istream&) {}
 };
 
@@ -113,10 +155,11 @@ protected:
   \brief Subclass used for fields to be ignored when the model is copied.
 */
 
-template <class value>
-class FFaNoCopyField : public FFaField<value>
+template <class valueT>
+class FFaNoCopyField : public FFaField<valueT>
 {
 protected:
+  //! \brief Overridden to return \a *this instead of a copy.
   virtual FFaFieldBase* copy(const FFaFieldBase*, bool) { return this; }
 };
 
@@ -125,71 +168,55 @@ protected:
   \brief Subclass used for conversion of obsolete fields in old model files.
 */
 
-template <class value>
-class FFaObsoleteField : public FFaField<value>
+template <class T>
+class FFaObsoleteField : public FFaField<T>
 {
 public:
+  //! \brief Default constructor.
   FFaObsoleteField() : isRead(false) {}
 
+  //! \brief Returns \e true if this field was found in the model field.
   bool wasOnFile() const { return isRead; }
 
+  //! \brief Returns \e false, since this field should never be printed.
   virtual bool isPrintable() const { return false; }
 
 protected:
-  virtual FFaFieldBase* copy(const FFaFieldBase* ref, bool defaultValueToo)
+  virtual FFaFieldBase* copy(const FFaFieldBase* field, bool defaultValueToo)
   {
-    if (this != ref && this->isDataField())
+    if (this == field || !this->isDataField())
+      return this;
+
+    const FFaObsoleteField<T>* ref = dynamic_cast<const FFaObsoleteField<T>*>(field);
+    if (ref)
     {
-      const FFaObsoleteField<value>* cRef = dynamic_cast<const FFaObsoleteField<value>*>(ref);
-      if (cRef)
-      {
-        this->isRead = cRef->isRead;
-        this->myData = cRef->myData;
-        if (defaultValueToo)
-          this->myDefaultValue = cRef->myDefaultValue;
-      }
-      else
-        std::cerr <<"FFaObsoleteField<T>::copy(const FFaFieldBase*,bool)"
-                  <<" - mismatch in field type"<< std::endl;
+      this->isRead = ref->isRead;
+      this->myData = ref->myData;
+      if (defaultValueToo)
+        this->myDefaultValue = ref->myDefaultValue;
     }
+    else
+      std::cerr <<"FFaObsoleteField<T>::copy(const FFaFieldBase*,bool)"
+                <<" - mismatch in field type"<< std::endl;
+
     return this;
   }
 
+  //! \brief Overridden to do nothing.
   virtual void write(std::ostream&) const {}
+  //! \brief Overridden to set the #isRead flag.
   virtual void read(std::istream& is)
   {
-    FFaField<value>::read(is);
+    this->FFaField<T>::read(is);
     isRead = true;
   }
 
 private:
-  bool isRead;
+  bool isRead; //!< Flag telling if this field was found in the model file
 };
 
 
-//
-//*********************  IMPLEMENTATION OF MEMBERS  ***************************
-//
-
-template <typename T1>
-FFaFieldBase* FFaField<T1>::copy(const FFaFieldBase* ref, bool defaultValueToo)
-{
-  if (this != ref && this -> isDataField())
-  {
-    const FFaField<ValueT>* cRef = dynamic_cast<const FFaField<ValueT>*>(ref);
-    if (cRef)
-    {
-      this->myData = cRef->myData;
-      if (defaultValueToo)
-        this->myDefaultValue = cRef->myDefaultValue;
-    }
-    else
-      std::cerr <<"FFaField<T>::copy(const FFaFieldBase*,bool)"
-                <<" - mismatch in field types" << std::endl;
-  }
-  return this;
-}
-
+//! \cond TEMPLATE_SPECIALIZATIONS
 
 template<>
 inline FFaField<unsigned long int>::FFaField()
@@ -394,7 +421,7 @@ inline void FFaField<DoubleVec>::read(std::istream& is, DoubleVec& v) const
 }
 
 
-template <>
+template<>
 inline bool FFaField<IntVec>::isPrintable() const
 {
   return !myData.empty();
@@ -527,4 +554,5 @@ inline void FFaField<bool>::read(std::istream& is, bool& v) const
   }
 }
 
+//! \endcond
 #endif

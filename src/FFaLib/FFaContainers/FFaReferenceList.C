@@ -5,26 +5,18 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaReferenceList.C
+  \brief Classes representing lists of guarded pointers.
+*/
+
 #include <cctype>
 
 #include "FFaLib/FFaContainers/FFaReferenceList.H"
 
 
-FFaReferenceListBase::FFaReferenceListBase() : IAmAutoSizing(true)
-{
-  myOwner = NULL;
-  myContextName = NULL;
-}
-
-
-FFaReferenceListBase::~FFaReferenceListBase()
-{
-  this->clear();
-}
-
-
 /*!
-  Reorders the elements in this list such that the one pointed to by \a newFirst
+  This method reorders the elements such that the one pointed to by \a newFirst
   becomes the first member.
 */
 
@@ -41,10 +33,10 @@ bool FFaReferenceListBase::shuffle(size_t newFirst)
 
 
 /*!
-  Removes all instances of \a ptr from this list. If \a notifyContainer is
-  false the reference is removed without decrementing the FFaFieldContainer it
-  points to, telling that it no longer does so.
-  This is to be used in cleanup during destruction of FFaFieldContainer.
+  If \a notifyContainer is \e false, the reference is removed without
+  decrementing the FFaFieldContainer it points to, telling that it no longer
+  does so. This is to be used in cleanup during destruction of an
+  FFaFieldContainer instance.
 */
 
 void FFaReferenceListBase::removePtr(const FFaFieldContainer* ptr,
@@ -68,10 +60,10 @@ void FFaReferenceListBase::removePtr(const FFaFieldContainer* ptr,
 
 
 /*!
-  Sets all instances of \a ptr in this list to zero. If \a notifyContainer is
-  false the reference is set to zero without decrementing the FFaFieldContainer
-  it points to, to say that it no longer points on it.
-  This is to be used in cleaning during destruction of FFaFieldContainer.
+  If \a notifyContainer is \e false the reference is set to zero without
+  decrementing the FFaFieldContainer it points to, to say that it no longer
+  points on it. This is to be used in cleaning during destruction of an
+  FFaFieldContainer instance.
 */
 
 void FFaReferenceListBase::zeroOutPtr(const FFaFieldContainer* ptr,
@@ -115,7 +107,6 @@ FFaReferenceListBase::findPtr(const FFaFieldContainer* ptr)
 
 
 /*!
-  Returns true if \a ptr is present in list.
   If \a idx is not NULL, \a *idx is set to the index of \a ptr within the list.
 */
 
@@ -134,10 +125,6 @@ bool FFaReferenceListBase::hasPtr(const FFaFieldContainer* ptr, int* idx) const
 }
 
 
-/*!
-  Returns pointer at index \a idx. If \a idx is out of range, NULL is returned.
-*/
-
 FFaReferenceBase* FFaReferenceListBase::getRefBase(int idx) const
 {
   int i = 0;
@@ -154,10 +141,6 @@ FFaFieldContainer* FFaReferenceListBase::getBasePtr(int idx) const
   return ptr ? ptr->getRef() : NULL;
 }
 
-
-/*!
-  Copy method used by copy constructors, etc.
-*/
 
 void FFaReferenceListBase::copy(const FFaReferenceListBase* other,
                                 bool unresolve)
@@ -186,11 +169,6 @@ void FFaReferenceListBase::insertRefLast(FFaReferenceBase* ref)
 }
 
 
-
-/*!
-  Erases entry \a index from the list, decrementing its size by one.
-*/
-
 bool FFaReferenceListBase::erase(int index)
 {
   if (index < 0 || index >= (int)myRefs.size()) return false;
@@ -206,10 +184,6 @@ bool FFaReferenceListBase::erase(int index)
 }
 
 
-/*!
-  Clears the list.
-*/
-
 void FFaReferenceListBase::clear()
 {
   for (FFaReferenceBase* ref : myRefs)
@@ -221,10 +195,6 @@ void FFaReferenceListBase::clear()
 }
 
 
-/*!
-  Fills provided vector with the non-NULL pointers in the list.
-*/
-
 void FFaReferenceListBase::getBasePtrs(std::vector<FFaFieldContainer*>& toFill) const
 {
   toFill.clear();
@@ -233,10 +203,6 @@ void FFaReferenceListBase::getBasePtrs(std::vector<FFaFieldContainer*>& toFill) 
       toFill.push_back(ref->getRef());
 }
 
-
-/*!
-  Used after reading to translate IDs to actual pointers.
-*/
 
 void FFaReferenceListBase::resolve(FFaSearcher& findCB)
 {
@@ -304,7 +270,7 @@ void FFaReferenceListBase::read(std::istream& is)
       FFaReferenceBase* ref = this->createNewReference();
       ref->read(is);
       // Do not insert zero references in autoSizing mode
-      if (ref->getRefID() == 0 && IAmAutoSizing)
+      if (ref->getRefID() == 0 && autoSizing)
         delete ref;
       else
         this->insertRefLast(ref);
@@ -319,16 +285,16 @@ void FFaReferenceListBase::read(std::istream& is)
 
 
 /*!
-  Method used by FFaReferenceBase to notify this container
+  This method is used by FFaReferenceBase to notify this container
   (which the FFaReferenceBase object is a member of), that it has been zeroed
   out due to the death of the FFaFieldContainer object it was referring to.
-  Takes the auto-sizing mode into account (#IAmAutoSizing),
+  Takes the auto-sizing mode into account (see #autoSizing),
   it either does nothing, or deletes the reference.
 */
 
 void FFaReferenceListBase::eraseReferenceIfNeeded(FFaReferenceBase* ref)
 {
-  if (!IAmAutoSizing) return;
+  if (!autoSizing) return;
 
   std::list<FFaReferenceBase*>::iterator it;
   for (it = myRefs.begin(); it != myRefs.end(); ++it)

@@ -69,16 +69,16 @@ bool FiDACFile::initialDeviceRead()
     myStep = readFloat(4);
 
   // get axis title
-  myAxisInfo[X].title = this->readString(96,101);
-  myAxisInfo[Y].title = this->readString(90,95);
+  myAxisInfo[0].title = this->readString(96,101);
+  myAxisInfo[1].title = this->readString(90,95);
 
   // X-axis units
   if (readInt16(11) == -2)
-    myAxisInfo[X].unit = this->readString(113,116) + this->readString(38,41,2,2);
+    myAxisInfo[0].unit = this->readString(113,116) + this->readString(38,41,2,2);
 
   // Y-axis units
   if (readInt16(4) == -2)
-    myAxisInfo[Y].unit = this->readString(109,112) + this->readString(35,37);
+    myAxisInfo[1].unit = this->readString(109,112) + this->readString(35,37);
 
   return true; //TODO: Add validity checks and error messages
 }
@@ -152,30 +152,29 @@ bool FiDACFile::concludingDeviceWrite(bool)
 
   // write the title data
 
-  std::map<int,axisInfo>::const_iterator xit = myAxisInfo.find(X);
-  if (xit != myAxisInfo.end())
-    this->writeString(96,101,xit->second.title);
+  if (const std::string& title = myAxisInfo[0].title; !title.empty())
+    this->writeString(96,101,title);
 
-  std::map<int,axisInfo>::const_iterator yit = myAxisInfo.find(Y);
-  if (yit != myAxisInfo.end())
-    this->writeString(90,95,yit->second.title);
+  if (const std::string& title = myAxisInfo[1].title; !title.empty())
+    this->writeString(90,95,title);
 
   // write the units data
 
-  if (xit != myAxisInfo.end())
+  if (const std::string& unit = myAxisInfo[0].unit; !unit.empty())
   {
-    this->writeString(113,116,xit->second.unit.substr(0,16));
-    if (xit->second.unit.size() > 16)
-      this->writeString(38,41,xit->second.unit.substr(16,28),2,2);
+    this->writeString(113,116,unit.substr(0,16));
+    if (unit.size() > 16)
+      this->writeString(38,41,unit.substr(16,28),2,2);
   }
 
   writeInt16(11,-2); // write the validity flag anyway. TTrack defect 1134/nCode support
 
-  if (yit != myAxisInfo.end())
+  if (const std::string& unit = myAxisInfo[1].unit; !unit.empty())
+  if (!unit.empty())
   {
-    this->writeString(109,112,yit->second.unit.substr(0,16));
-    if (yit->second.unit.size() > 16)
-      this->writeString(35,37,yit->second.unit.substr(16,28));
+    this->writeString(109,112,unit.substr(0,16));
+    if (unit.size() > 16)
+      this->writeString(35,37,unit.substr(16,28));
   }
 
   writeInt16(4,-2); // write the validity flag anyway. TTrack defect 1134/nCode support
@@ -197,7 +196,7 @@ void FiDACFile::getValueRange(double& min, double& max) const
 
 
 double FiDACFile::getValue(double x, int, bool zeroAdjust,
-			   double vertShift, double scaleFactor)
+                           double vertShift, double scaleFactor)
 {
   double retval = -FLT_MAX;
 
@@ -272,7 +271,7 @@ double FiDACFile::getValueAt(unsigned long int pos)
 }
 
 
-void FiDACFile::getRawData(std::vector<double>& x, std::vector<double>& y,
+void FiDACFile::getRawData(Doubles& x, Doubles& y,
                            double minX, double maxX, int)
 {
   x.clear();
@@ -290,8 +289,7 @@ void FiDACFile::getRawData(std::vector<double>& x, std::vector<double>& y,
 }
 
 
-bool FiDACFile::getValues(double x0, double x1,
-                          std::vector<double>& x, std::vector<double>& y,
+bool FiDACFile::getValues(double x0, double x1, Doubles& x, Doubles& y,
                           int, bool zeroAdjust, double shift, double scale)
 {
   x.clear();
@@ -332,8 +330,7 @@ bool FiDACFile::getValues(double x0, double x1,
 // Assumes that data set does not have doublebacking x-axis
 //
 
-bool FiDACFile::setData(const std::vector<double>& x,
-			const std::vector<double>& y)
+bool FiDACFile::setData(const Doubles& x, const Doubles& y)
 {
   // Assumes the data has strictly increasing x-axis
   if (x.size() < 2 || x.size() != y.size()) return false;
@@ -356,8 +353,8 @@ bool FiDACFile::setData(const std::vector<double>& x,
         x0 = x[m]; x1 = x[m+1];
         f0 = y[m]; f1 = y[m+1];
         f  = interpolate(xVal,x0,f0,x1,f1);
-	ind = m > 2 ? m-2 : 0;
-	break;
+        ind = m > 2 ? m-2 : 0;
+        break;
       }
 
     writeFloat(skipFileRepositioning,(float)f);
@@ -542,7 +539,7 @@ void FiDACFile::writeInt32(int pos, int val)
 }
 
 int FiDACFile::writeString(int start, int end, const std::string& val,
-			   int startOffset, int endOffset)
+                           int startOffset, int endOffset)
 {
   FT_seek(myFile,(FT_int)(start-1)*4+startOffset,SEEK_SET);
 

@@ -9,16 +9,15 @@
 #define FI_RPC3_FILE_H
 
 #include "FiDeviceFunctionBase.H"
+#include <map>
 
 
 class FiRPC3File : public FiDeviceFunctionBase
 {
 public:
-  FiRPC3File();
-  FiRPC3File(const char* devicename=0);
+  explicit FiRPC3File(const char* devicename = NULL);
   FiRPC3File(const char* devicename, int endianFormat);
   FiRPC3File(const char* devicename, int endianFormat, int numberOfChannels);
-  virtual ~FiRPC3File() {}
 
   // --- Read parameters
   virtual size_t getValueCount() const { return myNumDatavals; }
@@ -30,26 +29,23 @@ public:
 			  double scaleFac = 1.0);
 
   // --- Read all file values between the given range
-  virtual bool getValues(double x0, double x1,
-			 std::vector<double>& x, std::vector<double>& y,
+  virtual bool getValues(double x0, double x1, Doubles& x, Doubles& y,
 			 int channel = 0, bool zeroAdjust = false,
 			 double shift = 0.0, double scale = 1.0);
 
   // --- Read all file values
-  virtual void getRawData(std::vector<double>& x, std::vector<double>& y,
+  virtual void getRawData(Doubles& x, Doubles& y,
 			  double minX, double maxX, int channel = 0);
 
-  virtual void getData(std::vector<double>& x, std::vector<double>& y,
-		       const std::string& channel,
+  virtual void getData(Doubles& x, Doubles& y, const std::string& channel,
 		       double minX = 0.0, double maxX = -1.0);
 
   // --- Write all file values
   virtual void setValue(double, double) {}
-  virtual bool setData(const std::vector<double>& x,
-		       const std::vector<double>& y);
+  virtual bool setData(const Doubles& x, const Doubles& y);
 
   // --- Utilities
-  virtual bool getChannelList(std::vector<std::string>& list);
+  virtual bool getChannelList(Strings& list);
   virtual int  isChannelPresentInFile(const std::string& channel);
   virtual bool isChannelPresentInFile(int channel);
   virtual void setDescription(const std::string& desc);
@@ -116,8 +112,8 @@ private:
   double myMaxVal;
   double myMinVal;
 
-  std::vector<std::string> myKeys;
-  std::vector<std::string> myChannels;
+  Strings myKeys;
+  Strings myChannels;
   size_t myNumDatavals;
   int myNumHeaderBlocks;
   int myNumPartitions;

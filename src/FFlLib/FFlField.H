@@ -53,6 +53,8 @@ private:
 };
 
 
+//! \cond TEMPLATE_SPECIALIZATION
+
 template<> inline FFlField<int>::FFlField()            { myData = 0; }
 template<> inline FFlField<unsigned short>::FFlField() { myData = 0; }
 template<> inline FFlField<double>::FFlField()         { myData = 0.0; }
@@ -208,4 +210,5 @@ FFlField< std::vector<double> >::isEqual(const FFlField< std::vector<double> >& 
   return true;
 }
 
+//! \endcond
 #endif

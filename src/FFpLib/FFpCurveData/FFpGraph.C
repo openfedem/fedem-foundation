@@ -354,8 +354,8 @@ bool FFpGraph::writeCurve (const std::string& fileName, int fileType,
   bool success = true;
   fileWriter->setParent(modelName);
   fileWriter->setDescription(descr);
-  fileWriter->setAxisTitle(FiDeviceFunctionBase::X,xTitle.c_str());
-  fileWriter->setAxisTitle(FiDeviceFunctionBase::Y,yTitle.c_str());
+  fileWriter->setAxisTitle(0,xTitle.c_str());
+  fileWriter->setAxisTitle(1,yTitle.c_str());
   fileWriter->setStep(dMin);
   if (x.empty())
   {

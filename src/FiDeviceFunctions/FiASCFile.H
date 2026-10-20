@@ -14,6 +14,7 @@
 #define FI_ASC_FILE_H
 
 #include "FiDeviceFunctionBase.H"
+#include <map>
 
 
 /*!
@@ -29,16 +30,11 @@
 
 class FiASCFile : public FiDeviceFunctionBase
 {
-  typedef std::vector<double>      Doubles; //!< Convenience type definition
-  typedef std::vector<std::string> Strings; //!< Convenience type definition
-
 public:
   //! \brief Default constructor.
   //! \param[in] fname Name of file containing the function data.
   //! \param[in] nchan Number of channels in file (used when writing the file)
-  FiASCFile(const char* fname = NULL, int nchan = 1);
-  //! \brief Empty destructor.
-  virtual ~FiASCFile() {}
+  explicit FiASCFile(const char* fname = NULL, int nchan = 1);
 
   //! \brief Returns the number of (x,y) pairs of the function.
   virtual size_t getValueCount() const { return myValues.size(); }
@@ -134,21 +130,13 @@ private:
   //! \brief Reads the specified \a channel into core.
   int readChannel(int channel);
 
-  //! \brief Reads one line of data from specified file.
-  //! \param[in] fd File descriptor to read from
-  //! \param[in] commentsOnly If \e true, only read comment lines
-  //! \return Pointer to a static buffer containing the last read line
-  static char* readLine(FT_FILE fd, bool commentsOnly = false);
-  //! \brief Returns the number of columns in the file \a fd.
-  static int countColumns(FT_FILE fd);
-
 public:
   static size_t bufferSize; //!< Buffer size for ASCII output in KBytes
 
 private:
   //! Mapping from x-value (time) to channel values
-  typedef std::map<double,Doubles> ValuesMap;
-  typedef ValuesMap::iterator      ValuesIter; //!< Convenience type definition
+  using ValuesMap  = std::map<double,Doubles>;
+  using ValuesIter = ValuesMap::iterator; //!< Convenience type alias
 
   Strings   chn;      //!< Channel names (columns labels)
   ValuesMap myValues; //!< Curve data, either for all or one channel

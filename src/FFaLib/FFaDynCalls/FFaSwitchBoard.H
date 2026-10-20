@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FFaSwitchBoard.H
+  \brief Signal handling management.
+*/
+
 #ifndef FFA_SWITCH_BOARD_H
 #define FFA_SWITCH_BOARD_H
 
@@ -21,70 +26,75 @@ class FFaSlotBase;
 class FFaSwitchBoardConnector;
 
 
+//! \brief A slot pointer with reference counting.
 struct FFaSlotBasePt
 {
-  FFaSlotBase* slotPt = NULL;
-  short int refCount = 0;
+  FFaSlotBase* slotPt = NULL; //!< Pointer to the actial slot
+  short int refCount = 0;     //!< Number of references to this slot
 };
 
-typedef std::list<FFaSlotBasePt> FFaSlotList;
+//! Slot container
+using FFaSlotList = std::list<FFaSlotBasePt>;
 
+//! Callback function pointer
 typedef void(FFaSwitchBoardConnector::*anyMethodType)(...);
+//! Callback function pointer
 typedef void(*anyFunctionType)(...);
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//
-// Static switchboard that holds the connection information
-//
-
+//! \brief Static switchboard that holds the connection information.
 namespace FFaSwitchBoard
 {
-  // External interface
+  //! \brief Adds a new \a slot to the switchboard.
   void connect(FFaSwitchBoardConnector* sender, int subject,
                FFaSlotBase* slot);
+  //! \brief Removes \a slot from the switchboard.
   void disConnect(FFaSwitchBoardConnector* sender, int subject,
                   FFaSlotBase* slot);
+
+  //! \brief Removes all slots connected to \a owener.
   void removeAllOwnerConnections(FFaSwitchBoardConnector* owner);
 
-  // Used internally in switchboard mechanism classes
+  //! \brief Used internally in switchboard mechanism classes.
   FFaSlotList& getSlots(FFaSwitchBoardConnector* sender, int subject,
                         unsigned int typeID);
+
+  //! \brief Used internally by the switchboard mechanism classes.
   FFaSlotList::iterator nextValidSlot(FFaSlotList::iterator it,
                                       FFaSlotList& slots,
                                       FFaSwitchBoardConnector* sender,
                                       int subject);
-  // Used by FFaSlotBase only
+  //! \brief Used by FFaSlotBase only
   void removeSlotReference(FFaSwitchBoardConnector* sender, int subject,
                            FFaSlotBase* slot);
 
-  // Used by FFaSwitchBoardConnector only
+  //! \brief Used by FFaSwitchBoardConnector only
   void removeAllSenderConnections(FFaSwitchBoardConnector* sender);
 
-  // To clean up the heap-allocated switchboard container
+  //! \brief Cleans up the heap-allocated switchboard container.
   void removeInstance();
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//
-// Base class for every class that want to send or recieve
-//
-
+//! \brief Base class for every class that want to send or recieve.
 class FFaSwitchBoardConnector
 {
 public:
+  //! \brief Default constructor.
   FFaSwitchBoardConnector(const char* s = NULL);
+  //! \brief The destructor cleans up #mySlots.
   virtual ~FFaSwitchBoardConnector();
 
-  // Must only be used by FFaSlotN<*>
+  //! \brief Removes \a slot from #mySlots.
   void removeSlot(FFaSlotBase* slot)
   {
     if (!IAmDeletingMe)
       mySlots.erase(slot);
   }
 
-  // Must only be used by FFaSlotN<*>
+  //! \brief Adds \a slot to #mySlots.
   void addSlot(FFaSlotBase* slot)
   {
     mySlots.insert(slot);
@@ -95,28 +105,25 @@ public:
   void setLabel(const char* s) { label = s; }
 
 private:
-  std::set<FFaSlotBase*> mySlots;
-  bool IAmDeletingMe;
-  const char* label;
+  std::set<FFaSlotBase*> mySlots; //!< The slot container for this object
+  bool IAmDeletingMe; //!< Set to \e true during destruction
+  const char* label; //!< Label used for debug output
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//
-// The most basic slot class
-//
-
+//! \brief The most basic slot class.
 class FFaSlotBase
 {
-  typedef std::map<int,int>                         IntMap;
-  typedef std::map<FFaSwitchBoardConnector*,IntMap> SwitchBoardConnectorMap;
-
 public:
+  //! \brief Default constructor.
   FFaSlotBase() { myTypeID = 0; IAmDeletingMe = false; }
+  //! \brief The destructor removes this from the switchboard.
   virtual ~FFaSlotBase();
 
-  // Used internally in SwitchBoard mechanism classes
+  //! \brief Equality operator.
   virtual bool operator==(FFaSlotBase& otherSlot) = 0;
+  //! \brief Returns the #myTypeID of this slot.
   unsigned int getTypeID() const { return myTypeID; }
 
   // These methods must ONLY be used from FFaSwitchBoard
@@ -130,20 +137,22 @@ public:
   virtual bool                     isStaticSlot() const = 0;
 
 protected:
-  unsigned int myTypeID;
-  static int   uniqueTypeId;
+  unsigned int myTypeID;     //!< Class type Id of this slot
+  static int   uniqueTypeId; //!< Running counter to ensure unique Ids
 
 private:
-  //                      Sender --> (Subject,Count)
-  SwitchBoardConnectorMap mySwitchBoardLookups;
-  bool                    IAmDeletingMe;
+  using IntMap = std::map<int,int>; //!< Convenience type alias
+  //! Convenience type alias, switchboard connection mapping
+  using SwbMap = std::map<FFaSwitchBoardConnector*,IntMap>;
+
+  SwbMap mySwitchBoardLookups; //!< sender --> (subject,count)
+  bool   IAmDeletingMe;        //!< Set to \e true during destruction
 };
 
 
+//! \cond DO_NOT_DOCUMENT
 ////////////////////////////////////////////////////////////////////////////////
-//
 // Defines for macro arguments
-//
 
 // One type :
 
@@ -194,12 +203,10 @@ private:
 #define FFASWB_PARAM_LIST4 p1, p2, p3, p4
 
 
+//! \endcond
 ////////////////////////////////////////////////////////////////////////////////
-//
-// Macro that defines the different slotBaseN templates.
-// One macro call for each number of arguments we want to support.
-//
-
+//! \brief Macro that defines the different slotBaseN templates.
+//! \details One macro call for each number of arguments \a nr we want to support.
 #define FFASWB_MAKE_SLOTBASE_TEMPLATE(nr, templateDef, argumentList, typeList)	\
 										\
 templateDef									\
@@ -224,10 +231,8 @@ FFASWB_MAKE_SLOTBASE_TEMPLATE(4, FFASWB_TEMPLATE4, FFASWB_ARGUMENT_LIST4, FFASWB
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//
-// Macro that defines the different slotN templates
-//
-
+//! \brief Macro that defines the different slotN templates.
+//! \details One macro call for each number of arguments \a nr we want to support.
 #define FFASWB_MAKE_SLOT_TEMPLATE(nr, addedTemplateArgs, argumentList, parameterList, typeList)	\
 												\
 template<class T addedTemplateArgs>								\
@@ -276,6 +281,9 @@ FFASWB_MAKE_SLOT_TEMPLATE(3, FFASWB_ADDED_TEMPLATE_ARGS3, FFASWB_ARGUMENT_LIST3,
 FFASWB_MAKE_SLOT_TEMPLATE(4, FFASWB_ADDED_TEMPLATE_ARGS4, FFASWB_ARGUMENT_LIST4, FFASWB_PARAM_LIST4, FFASWB_TYPE_LIST4)
 
 
+////////////////////////////////////////////////////////////////////////////////
+//! \brief Macro that defines the different static slotN templates.
+//! \details One macro call for each number of arguments \a nr we want to support.
 #define FFASWB_MAKE_STATIC_SLOT_TEMPLATE(nr, templateDef, argumentList, parameterList, typeList)	\
 													\
 templateDef												\
@@ -313,14 +321,14 @@ FFASWB_MAKE_STATIC_SLOT_TEMPLATE(3, FFASWB_TEMPLATE3, FFASWB_ARGUMENT_LIST3, FFA
 FFASWB_MAKE_STATIC_SLOT_TEMPLATE(4, FFASWB_TEMPLATE4, FFASWB_ARGUMENT_LIST4, FFASWB_PARAM_LIST4, FFASWB_TYPE_LIST4)
 
 
-/*
-  Function to call all the slots connected to a signal.
-  Kind of "emit" from the Qt world.
+////////////////////////////////////////////////////////////////////////////////
+/*!
+  \brief Function to call all the slots connected to a signal.
+  \details Kind of "emit" from the Qt world.
   Loops trough all the slots connected to this signal and invokes them.
   This is made complicated by the fact that the slots can disappear due
   to the functions actually called.
 */
-
 #define FFASWB_MAKE_EMIT_FUNCTION_TEMPLATE(nr, templateDef, addedArgumentList, parameterList, typeList)	\
 													\
 templateDef void FFaSwitchBoardCall(FFaSwitchBoardConnector* sender, int subject addedArgumentList)	\
@@ -339,6 +347,8 @@ FFASWB_MAKE_EMIT_FUNCTION_TEMPLATE(3, FFASWB_TEMPLATE3, FFASWB_ADDED_FUNCTION_AR
 FFASWB_MAKE_EMIT_FUNCTION_TEMPLATE(4, FFASWB_TEMPLATE4, FFASWB_ADDED_FUNCTION_ARGS4, FFASWB_PARAM_LIST4, FFASWB_TYPE_LIST4)
 
 
+////////////////////////////////////////////////////////////////////////////////
+//! \brief Macro that defines the connect function templates.
 #define FFASWB_MAKE_SIMPLE_CONNECT_FUNCTION_TEMPLATE(nr, addedTemplateArgs, argumentList, addedTypeList)	\
 														\
 template<class RecieverType addedTemplateArgs>									\
@@ -355,6 +365,8 @@ FFASWB_MAKE_SIMPLE_CONNECT_FUNCTION_TEMPLATE(3, FFASWB_ADDED_TEMPLATE_ARGS3, FFA
 FFASWB_MAKE_SIMPLE_CONNECT_FUNCTION_TEMPLATE(4, FFASWB_ADDED_TEMPLATE_ARGS4, FFASWB_ARGUMENT_LIST4, FFASWB_ADDED_TYPE_LIST4)
 
 
+////////////////////////////////////////////////////////////////////////////////
+//! \brief Macro that defines the disconnect function templates.
 #define FFASWB_MAKE_SIMPLE_DISCONNECT_FUNCTION_TEMPLATE(nr, addedTemplateArgs, argumentList, addedTypeList)	\
 														\
 template<class RecieverType addedTemplateArgs>									\
@@ -375,16 +387,26 @@ FFASWB_MAKE_SIMPLE_DISCONNECT_FUNCTION_TEMPLATE(4, FFASWB_ADDED_TEMPLATE_ARGS4, 
 // Slot macro interface //
 //////////////////////////
 
+//! \brief Static function slot without arguments.
 #define FFaSlot0S(ownerType,        method)                                 new FFaStaticSlot0 (&ownerType::method)
+//! \brief Static function slot with one argument.
 #define FFaSlot1S(ownerType,        method, P1Type)                         new FFaStaticSlot1<P1Type> (&ownerType::method)
+//! \brief Static function slot with two arguments.
 #define FFaSlot2S(ownerType,        method, P1Type, P2Type)                 new FFaStaticSlot2<P1Type, P2Type> (&ownerType::method)
+//! \brief Static function slot with three arguments.
 #define FFaSlot3S(ownerType,        method, P1Type, P2Type, P3Type)         new FFaStaticSlot3<P1Type, P2Type, P3Type> (&ownerType::method)
+//! \brief Static function slot with four arguments.
 #define FFaSlot4S(ownerType,        method, P1Type, P2Type, P3Type, P4Type) new FFaStaticSlot4<P1Type, P2Type, P3Type, P4Type> (&ownerType::method)
 
+//! \brief Class method slot without arguments.
 #define FFaSlot0M(ownerType, owner, method)                                 new FFaSlot0<ownerType> (owner,&ownerType::method)
+//! \brief Class method slot with one argument.
 #define FFaSlot1M(ownerType, owner, method, P1Type)                         new FFaSlot1<ownerType, P1Type> (owner,&ownerType::method)
+//! \brief Class method slot with two arguments.
 #define FFaSlot2M(ownerType, owner, method, P1Type, P2Type)                 new FFaSlot2<ownerType, P1Type, P2Type> (owner,&ownerType::method)
+//! \brief Class method slot with three arguments.
 #define FFaSlot3M(ownerType, owner, method, P1Type, P2Type, P3Type)         new FFaSlot3<ownerType, P1Type, P2Type, P3Type> (owner,&ownerType::method)
+//! \brief Class method slot with four arguments.
 #define FFaSlot4M(ownerType, owner, method, P1Type, P2Type, P3Type, P4Type) new FFaSlot4<ownerType, P1Type, P2Type, P3Type, P4Type> (owner,&ownerType::method)
 
 #endif

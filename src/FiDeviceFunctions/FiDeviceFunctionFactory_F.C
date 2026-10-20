@@ -157,10 +157,10 @@ SUBROUTINE(fidf_getxaxis,FIDF_GETXAXIS) (const int& fileIndex, char* title,
 #endif
                                          const int ncharU)
 {
-  FIDF->getAxisTitle(fileIndex,FiDeviceFunctionBase::X,title,ncharT);
+  FIDF->getAxisTitle(fileIndex,0,title,ncharT);
   padWhiteSpace(title,ncharT);
 
-  FIDF->getAxisUnit(fileIndex,FiDeviceFunctionBase::X,unit,ncharU);
+  FIDF->getAxisUnit(fileIndex,0,unit,ncharU);
   padWhiteSpace(unit,ncharU);
 }
 
@@ -172,10 +172,10 @@ SUBROUTINE(fidf_getyaxis,FIDF_GETYAXIS) (const int& fileIndex, char* title,
 #endif
                                          const int ncharU)
 {
-  FIDF->getAxisTitle(fileIndex,FiDeviceFunctionBase::Y,title,ncharT);
+  FIDF->getAxisTitle(fileIndex,1,title,ncharT);
   padWhiteSpace(title,ncharT);
 
-  FIDF->getAxisUnit (fileIndex,FiDeviceFunctionBase::Y,unit ,ncharU);
+  FIDF->getAxisUnit (fileIndex,1,unit ,ncharU);
   padWhiteSpace(unit,ncharU);
 }
 
@@ -192,8 +192,8 @@ SUBROUTINE(fidf_setxaxis,FIDF_SETXAXIS) (const int& fileIndex,
                                          const int ncharU)
 {
   std::string t(title,ncharT), u(unit,ncharU);
-  FIDF->setAxisTitle(fileIndex,FiDeviceFunctionBase::X,t.c_str());
-  FIDF->setAxisUnit (fileIndex,FiDeviceFunctionBase::X,u.c_str());
+  FIDF->setAxisTitle(fileIndex,0,t.c_str());
+  FIDF->setAxisUnit (fileIndex,0,u.c_str());
 }
 
 SUBROUTINE(fidf_setyaxis,FIDF_SETYAXIS) (const int& fileIndex,
@@ -206,8 +206,8 @@ SUBROUTINE(fidf_setyaxis,FIDF_SETYAXIS) (const int& fileIndex,
                                          const int ncharU)
 {
   std::string t(title,ncharT), u(unit,ncharU);
-  FIDF->setAxisTitle(fileIndex,FiDeviceFunctionBase::Y,t.c_str());
-  FIDF->setAxisUnit (fileIndex,FiDeviceFunctionBase::Y,u.c_str());
+  FIDF->setAxisTitle(fileIndex,1,t.c_str());
+  FIDF->setAxisUnit (fileIndex,1,u.c_str());
 }
 
 

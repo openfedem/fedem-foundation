@@ -69,7 +69,8 @@ void FFlPCOMP::calculateChecksum(FFaCheckSum* cs, int csMask) const
 #endif
 
 
-// Explicit instantiation
+//! \cond TEMPLATE_SPECIALIZATION
+
 template FFlField<FFlPlyVec>::FFlField();
 
 template<> inline bool
@@ -98,6 +99,7 @@ FFlField<FFlPlyVec>::write(std::ostream& os) const
     os <<"   "<< ply.MID <<" "<< ply.T <<" "<< ply.theta;
 }
 
+//! \endcond
 
 std::ostream& operator<<(std::ostream& os, const FFlPlyVec& val)
 {

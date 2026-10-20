@@ -40,49 +40,98 @@ FiASCFile::FiASCFile(const char* fname, int nchan) : FiDeviceFunctionBase(fname)
 }
 
 
-char* FiASCFile::readLine(FT_FILE fd, bool commentsOnly)
+namespace
 {
-  static std::string lbuf;
-  if (lbuf.empty()) lbuf.resize(BUFSIZ);
+  //! \brief Reads one line of data from the file \a fd.
+  //! \details If \a commentsOnly is \e true, only the comment lines are read.
+  char* readLine(FT_FILE fd, bool commentsOnly = false)
+  {
+    static std::string lbuf;
+    if (lbuf.empty()) lbuf.resize(BUFSIZ);
 
-  // Lambda-function checking for end-of-line character
-  auto isEOL = [](int c) -> bool { return c == '\n' || c == '\r' || c == EOF; };
+    // Lambda-function checking for end-of-line character
+    auto isEOL = [](int c) { return c == '\n' || c == '\r' || c == EOF; };
 
-  int c = 0;
-  size_t i = 0;
-  while (i < lbuf.size() && !FT_eof(fd))
-    if (isEOL(c = FT_getc(fd)))
-    {
-      // eat the '\n' for DOS-formatted files
-      if (c == '\r' && (c = FT_getc(fd)) != '\n')
-        if (FT_ungetc(c,fd) < 0) return NULL;
-      break;
-    }
-    else if (i > 0)
-      lbuf[i++] = c;
-    else if (!isspace(c))
-    {
-      if (commentsOnly && (isdigit(c) || c == '.' || c == '-'))
+    int c = 0;
+    size_t i = 0;
+    while (i < lbuf.size() && !FT_eof(fd))
+      if (isEOL(c = FT_getc(fd)))
       {
-        // Put back first character of non-comment line
-        FT_ungetc(c,fd);
-        return NULL;
+        // eat the '\n' for DOS-formatted files
+        if (c == '\r' && (c = FT_getc(fd)) != '\n')
+          if (FT_ungetc(c,fd) < 0) return NULL;
+        break;
       }
-      lbuf[i++] = c;
+      else if (i > 0)
+        lbuf[i++] = c;
+      else if (!isspace(c))
+      {
+        if (commentsOnly && (isdigit(c) || c == '.' || c == '-'))
+        {
+          // Put back first character of non-comment line
+          FT_ungetc(c,fd);
+          return NULL;
+        }
+        lbuf[i++] = c;
+      }
+
+    if (i == 0) return NULL; // blank line
+
+    if (i == lbuf.size()) // Need to enlarge the buffer
+      for (c = FT_getc(fd); !FT_eof(fd) && !isEOL(c); c = FT_getc(fd), i++)
+       lbuf.push_back(c);
+
+    // eat the '\n' for DOS-formatted files
+    if (c == '\r' && (c = FT_getc(fd)) != '\n')
+      if (FT_ungetc(c,fd) < 0) return NULL;
+
+    lbuf[i] = '\0';
+    return const_cast<char*>(lbuf.c_str());
+  }
+
+  //! \brief Returns the number of columns in the file \a fd.
+  int countColumns(FT_FILE fd)
+  {
+    int   ncol = 0;
+    char* line = NULL;
+    while (!FT_eof(fd) && (!line || line[0] == '#'))
+      line = readLine(fd);
+
+    if (line)
+      for (char* s = strtok(line,", \t"); s; ncol++)
+        s = strtok(NULL,", \t\n\r");
+
+    return ncol;
+  }
+
+  //! \brief Helper splitting the \a heading into a vector of channel names.
+  int splitHeader (std::vector<std::string>& channels,
+                   const std::string& heading, unsigned int maxChn = 0)
+  {
+    size_t nexTab = heading.find_first_of(", \t");
+    if (nexTab == std::string::npos) return 0; // No column separator found
+
+    if (maxChn > 0) channels.reserve(maxChn);
+
+    int numChannels = 0;
+    const char* sep = heading[nexTab] == ',' ? "," : " \t";
+    while (nexTab < heading.size() && (maxChn == 0 || channels.size() < maxChn))
+    {
+      while (++nexTab < heading.size() && isspace(heading[nexTab]));
+      size_t secondTab = heading.find_first_of(sep,nexTab);
+      if (secondTab < heading.size())
+        channels.push_back(heading.substr(nexTab,secondTab-nexTab));
+      else
+        channels.push_back(heading.substr(nexTab));
+      nexTab = secondTab;
+      while (!channels.back().empty() && isspace(channels.back().back()))
+        channels.back().pop_back();
+      if (!channels.back().empty())
+        ++numChannels;
     }
 
-  if (i == 0) return NULL; // blank line
-
-  if (i == lbuf.size()) // Need to enlarge the buffer
-    for (c = FT_getc(fd); !FT_eof(fd) && !isEOL(c); c = FT_getc(fd), i++)
-      lbuf.push_back(c);
-
-  // eat the '\n' for DOS-formatted files
-  if (c == '\r' && (c = FT_getc(fd)) != '\n')
-    if (FT_ungetc(c,fd) < 0) return NULL;
-
-  lbuf[i] = '\0';
-  return const_cast<char*>(lbuf.c_str());
+    return numChannels;
+  }
 }
 
 
@@ -119,7 +168,7 @@ int FiASCFile::readChannel(int channel)
 
   for (int currLine = 1; !FT_eof(myFile) && it != myValues.end(); currLine++)
   {
-    char* c = FiASCFile::readLine(myFile);
+    char* c = readLine(myFile);
     if (!c) continue;
 
     // Find the values on this line, only store value no. channel+1
@@ -205,39 +254,6 @@ int FiASCFile::readChannel(int channel)
 }
 
 
-/*!
-  \brief Helper splitting the \a heading string into a vector of channel names.
-*/
-
-static int splitHeader (std::vector<std::string>& channels,
-                        const std::string& heading, unsigned int maxChn = 0)
-{
-  size_t nextTab = heading.find_first_of(", \t");
-  if (nextTab == std::string::npos) return 0; // No column separator found
-
-  if (maxChn > 0) channels.reserve(maxChn);
-
-  int numChannels = 0;
-  const char* sep = heading[nextTab] == ',' ? "," : " \t";
-  while (nextTab < heading.size() && (maxChn == 0 || channels.size() < maxChn))
-  {
-    while (++nextTab < heading.size() && isspace(heading[nextTab]));
-    size_t secondTab = heading.find_first_of(sep,nextTab);
-    if (secondTab < heading.size())
-      channels.push_back(heading.substr(nextTab,secondTab-nextTab));
-    else
-      channels.push_back(heading.substr(nextTab));
-    nextTab = secondTab;
-    while (!channels.back().empty() && isspace(channels.back().back()))
-      channels.back().pop_back();
-    if (!channels.back().empty())
-      ++numChannels;
-  }
-
-  return numChannels;
-}
-
-
 bool FiASCFile::initialDeviceRead()
 {
   std::string heading;
@@ -250,7 +266,7 @@ bool FiASCFile::initialDeviceRead()
 #endif
   for (int currentLine = 1; !FT_eof(myFile); currentLine++)
   {
-    char* c = FiASCFile::readLine(myFile);
+    char* c = readLine(myFile);
     if (!c) continue;
 
     // Find the first two values on this line
@@ -456,21 +472,6 @@ bool FiASCFile::concludingDeviceWrite(bool noHeader)
 }
 
 
-int FiASCFile::countColumns(FT_FILE fd)
-{
-  int   ncol = 0;
-  char* line = NULL;
-  while (!FT_eof(fd) && (!line || line[0] == '#'))
-    line = FiASCFile::readLine(fd);
-
-  if (line)
-    for (char* s = strtok(line,", \t"); s; ncol++)
-      s = strtok(NULL,", \t\n\r");
-
-  return ncol;
-}
-
-
 #if FI_DEBUG > 1
 bool FiASCFile::isMultiChannel(FT_FILE fd, const char* fname, bool rewind)
 #else
@@ -479,7 +480,7 @@ bool FiASCFile::isMultiChannel(FT_FILE fd, const char*, bool rewind)
 {
   if (!fd) return false;
 
-  int ncol = FiASCFile::countColumns(fd);
+  int ncol = countColumns(fd);
   if (rewind) FT_seek(fd,(FT_int)0,SEEK_SET);
 
 #if FI_DEBUG > 1
@@ -496,7 +497,7 @@ int FiASCFile::getNoChannels(const char* fname)
   FT_FILE fd = FT_open(fname,FT_rb);
   if (!fd) return 0;
 
-  int ncol = FiASCFile::countColumns(fd);
+  int ncol = countColumns(fd);
   FT_close(fd);
 
 #if FI_DEBUG > 1
@@ -818,7 +819,7 @@ int FiASCFile::readHeader(FT_FILE fd, Strings& header)
 {
   int ierr = 0;
   char* cv = NULL;
-  while (!FT_eof(fd) && (cv = FiASCFile::readLine(fd,true)))
+  while (!FT_eof(fd) && (cv = readLine(fd,true)))
     if (!strncasecmp(cv,"#DESC",5) || strchr(cv,','))
       return splitHeader(header,cv);
     else
@@ -835,7 +836,7 @@ bool FiASCFile::readNext(FT_FILE fd, const std::vector<int>& columns,
 
   char* cv = NULL;
   while (!FT_eof(fd) && (!cv || *cv == '#'))
-    cv = FiASCFile::readLine(fd);
+    cv = readLine(fd);
   if (!cv) return false; // nothing (more) to read
 
   int cCount = 0;
