@@ -5,18 +5,17 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FiCurveASCFile.C
+  \brief External device function based on single-column ASCII file.
+*/
+
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 
 #include "FiDeviceFunctions/FiCurveASCFile.H"
 #include "FFaLib/FFaDefinitions/FFaAppInfo.H"
-
-
-FiCurveASCFile::FiCurveASCFile() : FiDeviceFunctionBase()
-{
-  outputFormat = 1;
-}
 
 
 FiCurveASCFile::FiCurveASCFile(const char* fname) : FiDeviceFunctionBase(fname)
@@ -113,7 +112,7 @@ bool FiCurveASCFile::concludingDeviceWrite(bool)
     this->writeString("\n#\n");
   }
 
-  if (!myAxisInfo[X].title.empty() && !myAxisInfo[Y].title.empty())
+  if (!myAxisInfo[0].title.empty() && !myAxisInfo[0].title.empty())
   {
     cline[0] = '\t';
     cline[63] = '\0';
@@ -149,8 +148,7 @@ void FiCurveASCFile::setValue(double x, double y)
 }
 
 
-bool FiCurveASCFile::setData(const std::vector<double>& x,
-			     const std::vector<double>& y)
+bool FiCurveASCFile::setData(const Doubles& x, const Doubles& y)
 {
   if (x.size() < 2 || x.size() != y.size())
     return false;
@@ -161,16 +159,14 @@ bool FiCurveASCFile::setData(const std::vector<double>& x,
 }
 
 
-void FiCurveASCFile::getRawData(std::vector<double>& x, std::vector<double>& y,
-				double, double, int)
+void FiCurveASCFile::getRawData(Doubles& x, Doubles& y, double, double, int)
 {
   x = myXValues;
   y = myYValues;
 }
 
 
-bool FiCurveASCFile::getValues(double, double,
-                               std::vector<double>& x, std::vector<double>& y,
+bool FiCurveASCFile::getValues(double, double, Doubles& x, Doubles& y,
                                int, bool, double, double)
 {
   x = myXValues;

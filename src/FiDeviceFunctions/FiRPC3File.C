@@ -24,11 +24,6 @@ const int VAL_SIZE   = 96;
 const FT_int skipFileRepos = -999999;
 
 
-FiRPC3File::FiRPC3File()
-{
-  this->commonConstructor();
-}
-
 FiRPC3File::FiRPC3File(const char* devicename)
   : FiDeviceFunctionBase(devicename)
 {
@@ -217,7 +212,7 @@ void FiRPC3File::getValueRange(double& min, double& max) const
 }
 
 
-bool FiRPC3File::getChannelList(std::vector<std::string>& list)
+bool FiRPC3File::getChannelList(Strings& list)
 {
   if (myChannels.empty()) return false;
   list = myChannels;
@@ -501,7 +496,7 @@ bool FiRPC3File::initTHChannel(int channel, int action)
 
     if (!myBypassFilter) currParams.X0val *= currParams.chScale;
 
-    parameters.insert(std::map<int,chParams>::value_type(channel,currParams));
+    parameters.emplace(channel,currParams);
   }
   else if (action == toWrite)
   {
@@ -557,14 +552,14 @@ void FiRPC3File::setReadParams(int channel)
 }
 
 
-void FiRPC3File::getData(std::vector<double>& x, std::vector<double>& y,
-			 const std::string& channel, double minX, double maxX)
+void FiRPC3File::getData(Doubles& x, Doubles& y, const std::string& channel,
+                         double minX, double maxX)
 {
   this->getRawData (x, y, minX, maxX, this->isChannelPresentInFile(channel));
 }
 
 
-void FiRPC3File::getRawData(std::vector<double>& x, std::vector<double>& y,
+void FiRPC3File::getRawData(Doubles& x, Doubles& y,
 			    double minX, double maxX, int channel)
 {
   // These data are not entirely raw though (since they do use getValue)
@@ -599,8 +594,7 @@ void FiRPC3File::getRawData(std::vector<double>& x, std::vector<double>& y,
 }
 
 
-bool FiRPC3File::getValues(double x0, double x1,
-			   std::vector<double>& x, std::vector<double>& y,
+bool FiRPC3File::getValues(double x0, double x1, Doubles& x, Doubles& y,
 			   int channel, bool zeroAdjust,
 			   double shift, double scale)
 {
@@ -638,8 +632,7 @@ bool FiRPC3File::getValues(double x0, double x1,
 }
 
 
-bool FiRPC3File::setData(const std::vector<double>& x,
-			 const std::vector<double>& y)
+bool FiRPC3File::setData(const Doubles& x, const Doubles& y)
 {
   myChannel++;
   if (x.size() < 2 || x.size() != y.size()) return false;

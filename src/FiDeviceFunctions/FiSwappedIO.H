@@ -5,14 +5,20 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FiSwappedIO.H
+  \brief Utilities for byte swapping during read/write operations.
+*/
+
 #ifndef FI_SWAPPED_IO_H
 #define FI_SWAPPED_IO_H
 
 #include "FFaLib/FFaOS/FFaIO.H"
 
 
-namespace Fi
+namespace Fi //! File handling utilities
 {
+  //! \brief Reads a data word of type \a T with byte swapping.
   template<class T> size_t readSwapped(char* q, T&, FT_FILE fd)
   {
     static char p[8];
@@ -25,6 +31,7 @@ namespace Fi
     return nBytes;
   }
 
+  //! \brief Writes the data word \a val with byte swapping.
   template<class T> size_t writeSwapped(const T val, FT_FILE fd)
   {
     T swappedValue;
