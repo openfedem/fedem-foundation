@@ -153,9 +153,9 @@ void FFaFieldContainer::getReferringObjs(ObjectMap& mapToFill) const
 /*!
   This method gets the list of objects referring to this object
   with the context \a contextName.
-  The list is sorted w.r.t. the ID if \a sortOnId is true. This is needed
+  The list is sorted w.r.t. the ID if \a sortOnId is \e true. This is needed
   when the execution order is of importance. If the list is not sorted,
-  the order might be different in two consequtive runs of the same model.
+  the order might be different in two consecutive runs of the same model.
   \note The output array \a vecToFill is not cleared on entry.
 */
 
@@ -208,7 +208,7 @@ FFaFieldContainer* FFaFieldContainer::getNext(const std::string& context,
 
 /*!
   This method is used to make some (or all) of the references pointing
-  to this object, point to the object \a replacement instead, is specified.
+  to this object, point to the object \a replacement instead, if specified.
 
   Only the references with the supplied \a contextName are changed, unless
   \a contextName is empty (then all references to the object will be changed).
@@ -261,7 +261,7 @@ bool FFaFieldContainer::readField(const std::string& key, std::istream& is,
 
 /*!
   This method copies all fields, references and reference lists from the
-  supplied FFaFieldContainer object into this one.
+  supplied FFaFieldContainer object \a *other into \a *this.
 
   The big assumption is that the field containers are of the same type,
   and thus has the same number of references and in the same order.
@@ -338,8 +338,9 @@ bool FFaFieldContainer::copy(const FFaFieldContainer* other,
 
 
 /*!
-  Only the fields that are present in the supplied container are reset, thus,
-  this method inverts the effect of the copy method above (with fieldsOnly=true)
+  Only the fields that are present in the supplied container \a *other are reset.
+  This method therefore inverts the effect of the copy() method
+  (with \a fieldsOnly = \e true).
 */
 
 bool FFaFieldContainer::resetFields(const FFaFieldContainer* other)

@@ -37,7 +37,9 @@ class FFaReferenceListBase;
 
 class FFaFieldContainer
 {
+  //! \cond DO_NOT_DOCUMENT
   Fmd_BASE_HEADER_INIT();
+  //! \endcond
 
   //! Convenience type alias
   using IntVec    = std::vector<int>;
@@ -51,10 +53,10 @@ class FFaFieldContainer
 public:
   //! \brief The default constructor does nothing.
   FFaFieldContainer();
-  //! \brief The destructor clears the references to *this in #myRefBy.
+  //! \brief The destructor clears the references to \a *this in #myRefBy.
   virtual ~FFaFieldContainer();
 
-  //! \brief Deletes *this assuming it is heap-allocated.
+  //! \brief Deletes \a *this assuming it is heap-allocated.
   bool erase();
 
   // Field browsing
@@ -66,16 +68,16 @@ public:
 
   // Topology browsing
 
-  //! \brief Builds a map of all FFaFieldContainer objects referred to by *this.
+  //! \brief Builds a map of all other objects referred to by \a *this.
   void getReferredObjs (ObjectMap& mapToFill) const;
-  //! \brief Builds a map of all FFaFieldContainer objects referring to *this.
+  //! \brief Builds a map of all other objects referring to \a *this.
   void getReferringObjs(ObjectMap& mapToFill) const;
-  //! \brief Builds a list of FFaFieldContainer objects referring to *this.
+  //! \brief Builds a list of FFaFieldContainer objects referring to \a *this.
   void getReferringObjs(ObjectVec& vecToFill,
                         const std::string& contextName,
                         bool sortOnId = false) const;
 
-  //! \brief Builds a list of objects of class \a T referring to *this.
+  //! \brief Builds a list of class \a T objects referring to \a *this.
   template<class T>
   void getReferringObjs(std::vector<T*>& vecToFill,
                         const std::string& context = "",
@@ -114,7 +116,7 @@ public:
     return false;
   }
 
-  //! \brief Directly removes references to this object.
+  //! \brief Directly removes all references to this object.
   void releaseReferencesToMe(const std::string& contextName = "",
                              FFaFieldContainer* replacement = NULL);
 
@@ -133,9 +135,9 @@ public:
   //! \brief Initializes the fields after resolve.
   virtual void initAfterResolve() {}
 
-  //! \brief Returns the user Id of *this, for use in I/O and resolving.
+  //! \brief Returns the user Id of \a *this, for use in I/O and resolving.
   virtual int getResolvedID() const { return -1; }
-  //! \brief Gets the assembly path of *this, for use in I/O and resolving.
+  //! \brief Gets the assembly path of \a *this, for use in I/O and resolving.
   virtual void getResolvedAssemblyID(IntVec&) const {}
 
   //! \brief Updates the assembly ID in the references in this object.
@@ -147,7 +149,7 @@ public:
   bool readField(const std::string& key, std::istream& is,
 		 bool datafieldsOnly = false);
 
-  //! \brief Copies all fields and refernces from another object into \a *this.
+  //! \brief Copies all fields and references from another object into \a *this.
   bool copy(const FFaFieldContainer* other,
 	    bool fieldsOnly = false, bool unresolve = false);
   //! \brief Copies all field values from another object into \a *this.
@@ -157,6 +159,7 @@ public:
   bool resetFields(const FFaFieldContainer* obj);
 
 protected:
+  //! \brief Hook for class-specific tasks before deleting \a *this in erase().
   virtual bool eraseOptions() { return true; }
 
   //! \brief Adds a reference to the internal book keeping of this object.
@@ -171,7 +174,7 @@ protected:
 
   // The read/writable fields
 
-  //! Convenience type alias, a set of text strings used as a dictionay
+  //! Convenience type alias, a set of text strings used as a dictionary
   using FDict   = std::set<std::string>;
   //! Convenience type alias, a const_iterator pointing into a dictionary
   using FDictIt = FDict::const_iterator;
@@ -194,6 +197,7 @@ public:
   static void removeDictInstance() { FieldContainerDict::removeInstance(); }
 
 private:
+  //! \brief Grants access to some private methods for resolving references.
   friend class FFaReferenceBase;
 
   //! \brief Marks this object as referred to by another object.
@@ -211,11 +215,11 @@ private:
 
   //! Convenience type alias
   using ReferenceSet = std::vector<FFaReferenceBase*>;
-  //! List of all objects referring to *this
+  //! List of all objects referring to \a *this
   ReferenceSet                     myRefBy;
-  //! List of all objects *this is referring to
+  //! List of all objects \a *this is referring to
   std::list<FFaReferenceBase*>     myRefTo;
-  //! List of all listed objects *this is referring to
+  //! List of all listed objects \a *this is referring to
   std::list<FFaReferenceListBase*> myRefLists;
 };
 

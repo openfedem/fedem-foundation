@@ -116,9 +116,9 @@ protected:
   void clearResolveRef();
 
 private:
-  // Friending FFaFieldContainer and FFaReferenceListBase
-  // to let them access the methods below
+  //! \brief Grants access to some private methods for resolving references.
   friend class FFaFieldContainer;
+  //! \brief Grants access to some private methods for resolving references.
   friend class FFaReferenceListBase;
 
   //! \brief Only used by the FFaReferenceListBase to clean a ToRef.

@@ -112,7 +112,9 @@ protected:
   void copy(const FFaReferenceListBase* other, bool unresolve = false);
 
 private:
+  //! \brief Grants access to some private methods for resolving references.
   friend class FFaFieldContainer;
+  //! \brief Grants access to some private methods for resolving references.
   friend class FFaReferenceBase;
 
   //! \brief Sets the FFaFieldContainer that this reference list is a member of.
