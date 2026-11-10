@@ -12,22 +12,31 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   bump-build-no:
-    if: github.event.commits[0].author.name != 'github-actions'
+    if: github.event.head_commit.author.name != 'github-actions'
 
     runs-on: ubuntu-latest
 
     steps:
+      - name: Create version-bump App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.VERSION_BUMP_APP_CLIENT_ID }}
+          private-key: ${{ secrets.VERSION_BUMP_APP_PRIVATE_KEY }}
+          permission-contents: write
+
       - name: Check out source code repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Bump build number
-        run: echo "VERSION=$(awk -F. '{$NF++;print}' OFS=. < cfg/VERSION)" >> $GITHUB_ENV
+        run: echo "VERSION=$(awk -F. '{($NF)++;print}' OFS=. < cfg/VERSION)" >> $GITHUB_ENV
 
       - name: Update VERSION file
         run: echo $VERSION > cfg/VERSION
