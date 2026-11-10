@@ -28,8 +28,6 @@ protected:
   FFlCLOAD& operator=(const FFlCLOAD&) = delete;
 
 public:
-  virtual ~FFlCLOAD() {}
-
   virtual bool resolveNodeRef(const std::vector<FFlNode*>& possibleNodes,
 			      bool suppessErrmsg = false);
 
@@ -48,7 +46,7 @@ public:
   FFlField<FaVec3> P;
 
 protected:
-  const char myType; // 'F'=force, 'M'=moment
+  const char myType; //!< 'F' = force, 'M' = moment
 
 private:
   mutable size_t target_counter;
@@ -61,7 +59,6 @@ class FFlCFORCE : public FFlCLOAD
 public:
   FFlCFORCE(int ID = 0) : FFlCLOAD(ID,'F') {}
   FFlCFORCE(const FFlCFORCE& obj) : FFlCLOAD(obj) {}
-  virtual ~FFlCFORCE() {}
 
   virtual void convertUnits(const FFaUnitCalculator* convCal);
 
@@ -77,7 +74,6 @@ class FFlCMOMENT : public FFlCLOAD
 public:
   FFlCMOMENT(int ID = 0) : FFlCLOAD(ID,'M') {}
   FFlCMOMENT(const FFlCMOMENT& obj) : FFlCLOAD(obj) {}
-  virtual ~FFlCMOMENT() {}
 
   virtual void convertUnits(const FFaUnitCalculator* convCal);
 
@@ -98,8 +94,6 @@ protected:
   FFlPLOAD& operator=(const FFlPLOAD&) = delete;
 
 public:
-  virtual ~FFlPLOAD() {}
-
   virtual void setValue(const DoubleVec& p) { P.setValue(p); }
   virtual void setValue(const FaVec3&) {}
 
@@ -108,6 +102,7 @@ public:
   virtual int getLoad(std::vector<FaVec3>& p, int& face) const;
 
 protected:
+  using FFlLoadBase::getTarget;
   virtual const FFlElementBase* getTarget(int& face) const = 0;
 
 private:
@@ -120,7 +115,6 @@ class FFlSURFLOAD : public FFlPLOAD
 public:
   FFlSURFLOAD(int ID = 0) : FFlPLOAD(ID) { target_counter = 0; }
   FFlSURFLOAD(const FFlSURFLOAD& obj);
-  virtual ~FFlSURFLOAD() {}
 
   virtual bool resolveElmRef(const std::vector<FFlElementBase*>& possibleElms,
 			     bool suppessErrmsg = false);
@@ -138,6 +132,7 @@ public:
   FFL_TYPE_INFO(FFlSURFLOAD);
 
 protected:
+  using FFlLoadBase::getTarget;
   virtual const FFlElementBase* getTarget(int& face) const;
 
 private:
@@ -151,7 +146,6 @@ class FFlFACELOAD : public FFlPLOAD
 public:
   FFlFACELOAD(int ID = 0) : FFlPLOAD(ID) { target_counter = 0; }
   FFlFACELOAD(const FFlFACELOAD& obj);
-  virtual ~FFlFACELOAD() {}
 
   virtual bool resolveElmRef(const std::vector<FFlElementBase*>& possibleElms,
 			     bool suppessErrmsg = false);
@@ -172,6 +166,7 @@ public:
   FFL_TYPE_INFO(FFlFACELOAD);
 
 protected:
+  using FFlLoadBase::getTarget;
   virtual const FFlElementBase* getTarget(int& face) const;
 
 private:
