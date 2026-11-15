@@ -22,6 +22,7 @@
 #include "FiRAOTable.H"
 #include "FiRAOTable.H"
 #include "FFaLib/FFaOS/FFaFortran.H"
+#include <cstring>
 
 
 namespace
@@ -52,7 +53,16 @@ SUBROUTINE(ficonvertwavedata,FICONVERTWAVEDATA) (const char* name,
 SUBROUTINE(fiextractmotion,FIEXTRACTMOTION) (const int& dof,
                                              double* motionData, int& error)
 {
-  if (!FiRAOTable::extractMotion(myMotion,dof,motionData)) error--;
+  if (dof < 0 || dof >= static_cast<int>(myMotion.size()))
+  {
+    --error;
+    std::cerr <<" *** FiWxtractMotion: idof="<< dof
+              <<" is out of range [0,"<< myMotion.size() <<">."<< std::endl;
+    return;
+  }
+
+  memcpy(motionData,&myMotion[dof].front(),
+         myMotion[dof].size()*3*sizeof(double));
 }
 
 
