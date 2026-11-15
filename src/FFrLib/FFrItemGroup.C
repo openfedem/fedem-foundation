@@ -267,8 +267,6 @@ bool FFrItemGroup::less(const FFrEntryBase* obj) const
 
 
 #ifdef FFR_NEWALLOC
-#define BLOCK_SIZE 512
-
 size_t FFrItemGroup::newed = 0;
 FFrItemGroup* FFrItemGroup::headOfFreeList = NULL;
 std::vector<FFrItemGroup*> FFrItemGroup::memBlocks;
@@ -280,6 +278,8 @@ void* FFrItemGroup::operator new(size_t size)
     std::cerr <<"FFrItemGroup::operator new: wrong size "<< size << std::endl;
     return ::operator new(size);
   }
+
+  constexpr size_t BLOCK_SIZE = 512;
 
   FFrItemGroup* p = headOfFreeList;
 

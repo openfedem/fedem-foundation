@@ -13,12 +13,12 @@
 #include "FFaLib/FFaAlgebra/FFaCheckSum.H"
 #include "FFaLib/FFaAlgebra/FFaVec3.H"
 
-#define CRC32_POLY 0x04c11db7
-
 
 FFaCheckSum::FFaCheckSum()
 {
   this->reset();
+
+  constexpr unsigned int CRC32_POLY = 0x04c11db7;
 
   crc32_table = new unsigned int[256];
   for (int i = 0; i < 256; i++)

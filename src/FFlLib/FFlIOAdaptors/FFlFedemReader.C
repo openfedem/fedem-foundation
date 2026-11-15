@@ -29,8 +29,6 @@
 #endif
 #include "Admin/FedemAdmin.H"
 
-#define TOKEN_SIZE 128
-
 #ifdef FFL_TIMER
 #define START_TIMER(function) myProfiler->startTimer(function)
 #define STOPP_TIMER(function) myProfiler->stopTimer(function)
@@ -447,7 +445,8 @@ void FFlFedemReader::resolveGroupField(const ftlField& field)
 
 bool FFlFedemReader::getNextField(std::istream& is, ftlField& fl) const
 {
-  const char cmt = '#';
+  constexpr size_t TOKEN_SIZE = 128;
+  constexpr char cmt = '#';
 
   enum {LABEL_SEARCH,
 	LABEL_READ,

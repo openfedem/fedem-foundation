@@ -16,21 +16,12 @@
 #include "FFaLib/FFaString/FFaStringExt.H"
 #include "FFaLib/FFaCmdLineArg/FFaCmdLineArg.H"
 
-#if defined(win32) || defined(win64)
-//! \brief Valid characters for switch word prefix on Windows.
-#define SWITCH_PREFIX "-/"
-#else
-//! \brief Valid characters for switch word prefix on UNIX.
-#define SWITCH_PREFIX "-"
-#endif
-
 
 /*!
   \class FFaCmdLineArg
 
   All options are in the standard form &lt;switch word&gt;[ ]&lt;option&gt;,
-  and each switch word must be prefixed with either '-' or '/'.
-  (only '-' is valid on UNIX)
+  and each switch word must be prefixed with '-' (or '/' on Windows).
 
   The command argument parser can be used this way:
 
@@ -133,6 +124,12 @@ bool FFaCmdLineArg::setValue(const std::string& identifier,
 
 void FFaCmdLineArg::evaluate()
 {
+#if defined(win32) || defined(win64)
+  const char* SWITCH_PREFIX = "-/";
+#else
+  const char* SWITCH_PREFIX = "-";
+#endif
+
   for (size_t i = 0; i < myArgs.size(); i++)
   {
     // Is this argument value an option string?

@@ -17,14 +17,10 @@
 #include "FiDeviceFunctions/FiDeviceFunctionFactory.H"
 #include <cmath>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 
 namespace
 {
-  //! \brief Convenience wrapper
+  //! \brief Convenience wrapper.
   double evalFunc(int fType, double x, const std::vector<double>& realVars,
                   int extrap, int& ierr)
   {
@@ -50,6 +46,10 @@ int FFaFunctionProperties::getSmartPoints(int funcType,
   xvec.clear();
   yvec.clear();
   if (start > stop) return -1;
+
+#ifndef M_PI
+  constexpr double M_PI = 3.14159265358979323846;
+#endif
 
   int nRvals = realVars.size();
   int ierr = 0;

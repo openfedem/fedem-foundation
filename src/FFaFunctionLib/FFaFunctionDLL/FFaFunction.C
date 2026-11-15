@@ -14,18 +14,21 @@
 #include <cstring>
 #include <cmath>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
-
-static std::vector<double> Buffer;
+namespace
+{
+  std::vector<double> Buffer;
+}
 
 
 int FFaFunctionInit (const double* data, int ndata,
                      int funcId, int funcType, const char* strval)
 {
   Buffer.clear();
+
+#ifndef M_PI
+  constexpr double M_PI  = 3.14159265358979323846;
+#endif
 
   switch (funcType) {
   case SINUSOIDAL_p:
