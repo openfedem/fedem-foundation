@@ -34,15 +34,18 @@
 //! \cond NO_NOT_DOCUMENT
 #ifdef _NCHAR_AFTER_CHARARG
 #define REF(T,val,nchar) const int nchar, T& val
+#define PTR(T,val,nchar,nval) const int nchar, T* val, const int& nval
 #define CHAR(cval,nchar) const int nchar, char* cval
 #else
 #define REF(T,val,nchar) T& val, const int nchar
+#define PTR(T,val,nchar,nval) T* val, const int& nval, const int nchar
 #define CHAR(cval,nchar) char* cval, const int nchar
 #endif
 //! \endcond
 
 
-SUBROUTINE (ffa_cmdlinearg_init,FFA_CMDLINEARG_INIT) ()
+SUBROUTINE (ffa_cmdlinearg_init,
+            FFA_CMDLINEARG_INIT) ()
 {
   FFaCmdLineArg::instance()->addOption("debug",0,"Debug print switch");
   FFaCmdLineArg::instance()->addOption("terminal",6,"Console file unit number");
@@ -51,14 +54,15 @@ SUBROUTINE (ffa_cmdlinearg_init,FFA_CMDLINEARG_INIT) ()
 }
 
 
-SUBROUTINE (ffa_cmdlinearg_list,FFA_CMDLINEARG_LIST) (const int& noDefault)
+SUBROUTINE (ffa_cmdlinearg_list,
+            FFA_CMDLINEARG_LIST) (const int& noDefault)
 {
   FFaCmdLineArg::instance()->listOptions (noDefault);
 }
 
 
-SUBROUTINE (ffa_cmdlinearg_getint,FFA_CMDLINEARG_GETINT) (const char* id,
-                                                          REF(int,val,nchar))
+SUBROUTINE (ffa_cmdlinearg_getint,
+            FFA_CMDLINEARG_GETINT) (const char* id, REF(int,val,nchar))
 {
   val = 0;
   if (FFaCmdLineArg::empty()) return;
@@ -66,9 +70,8 @@ SUBROUTINE (ffa_cmdlinearg_getint,FFA_CMDLINEARG_GETINT) (const char* id,
 }
 
 
-SUBROUTINE (ffa_cmdlinearg_getfloat,FFA_CMDLINEARG_GETFLOAT) (const char* id,
-                                                              REF(float,val,
-                                                                  nchar))
+SUBROUTINE (ffa_cmdlinearg_getfloat,
+            FFA_CMDLINEARG_GETFLOAT) (const char* id, REF(float,val,nchar))
 {
   val = 0.0;
   if (FFaCmdLineArg::empty()) return;
@@ -76,9 +79,8 @@ SUBROUTINE (ffa_cmdlinearg_getfloat,FFA_CMDLINEARG_GETFLOAT) (const char* id,
 }
 
 
-SUBROUTINE (ffa_cmdlinearg_getdouble,FFA_CMDLINEARG_GETDOUBLE) (const char* id,
-                                                                REF(double,val,
-                                                                    nchar))
+SUBROUTINE (ffa_cmdlinearg_getdouble,
+            FFA_CMDLINEARG_GETDOUBLE) (const char* id, REF(double,val,nchar))
 {
   val = 0.0;
   if (FFaCmdLineArg::empty()) return;
@@ -87,15 +89,8 @@ SUBROUTINE (ffa_cmdlinearg_getdouble,FFA_CMDLINEARG_GETDOUBLE) (const char* id,
 
 
 SUBROUTINE (ffa_cmdlinearg_getints,
-            FFA_CMDLINEARG_GETINTS) (const char* id,
-#ifdef _NCHAR_AFTER_CHARARG
-                                     const int nchar,
-                                     int* val, const int& nval
-#else
-                                     int* val, const int& nval,
-                                     const int nchar
-#endif
-){
+            FFA_CMDLINEARG_GETINTS) (const char* id, PTR(int,val,nchar,nval))
+{
   IntVec values;
   if (!FFaCmdLineArg::empty())
     FFaCmdLineArg::instance()->getValue (std::string(id,nchar),values);
@@ -106,14 +101,8 @@ SUBROUTINE (ffa_cmdlinearg_getints,
 
 SUBROUTINE (ffa_cmdlinearg_getdoubles,
             FFA_CMDLINEARG_GETDOUBLES) (const char* id,
-#ifdef _NCHAR_AFTER_CHARARG
-                                        const int nchar,
-                                        double* val, const int& nval
-#else
-                                        double* val, const int& nval,
-                                        const int nchar
-#endif
-){
+                                        PTR(double,val,nchar,nval))
+{
   DoubleVec values;
   if (!FFaCmdLineArg::empty())
     FFaCmdLineArg::instance()->getValue (std::string(id,nchar),values);
@@ -122,8 +111,8 @@ SUBROUTINE (ffa_cmdlinearg_getdoubles,
 }
 
 
-SUBROUTINE (ffa_cmdlinearg_getbool,FFA_CMDLINEARG_GETBOOL) (const char* id,
-                                                            REF(int,val,nchar))
+SUBROUTINE (ffa_cmdlinearg_getbool,
+            FFA_CMDLINEARG_GETBOOL) (const char* id, REF(int,val,nchar))
 {
   bool value = false;
   if (!FFaCmdLineArg::empty())
@@ -132,9 +121,9 @@ SUBROUTINE (ffa_cmdlinearg_getbool,FFA_CMDLINEARG_GETBOOL) (const char* id,
 }
 
 
-SUBROUTINE (ffa_cmdlinearg_getstring,FFA_CMDLINEARG_GETSTRING) (const char* id,
-                                                                CHAR(val,nchar),
-                                                                const int m)
+SUBROUTINE (ffa_cmdlinearg_getstring,
+            FFA_CMDLINEARG_GETSTRING) (const char* id,
+                                       CHAR(val,nchar), const int m)
 {
   std::string value;
   if (!FFaCmdLineArg::empty())
@@ -146,8 +135,8 @@ SUBROUTINE (ffa_cmdlinearg_getstring,FFA_CMDLINEARG_GETSTRING) (const char* id,
 }
 
 
-INTEGER_FUNCTION (ffa_cmdlinearg_isset,FFA_CMDLINEARG_ISSET) (const char* id,
-                                                              const int nchar)
+INTEGER_FUNCTION (ffa_cmdlinearg_isset,
+                  FFA_CMDLINEARG_ISSET) (const char* id, const int nchar)
 {
   if (FFaCmdLineArg::empty()) return 0;
   return FFaCmdLineArg::instance()->isOptionSetOnCmdLine(std::string(id,nchar));
