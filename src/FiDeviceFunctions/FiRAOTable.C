@@ -5,6 +5,11 @@
 // This file is part of FEDEM - https://openfedem.org
 ////////////////////////////////////////////////////////////////////////////////
 
+/*!
+  \file FiRAOTable.C
+  \brief Container for Response Amplitude Operator (RAO) tables.
+*/
+
 #include "FiRAOTable.H"
 #include <fstream>
 #include <string>
@@ -12,18 +17,18 @@
 #include <cstdlib>
 #include <cctype>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
-
-static RAOcomp interpolate(double x, double x0, double x1,
-                           const RAOcomp& r0, const RAOcomp& r1)
+namespace
 {
-  RAOcomp retVal;
-  retVal.ampl  = r0.ampl  + (x-x0) * ((r1.ampl  - r0.ampl ) / (x1-x0));
-  retVal.phase = r0.phase + (x-x0) * ((r1.phase - r0.phase) / (x1-x0));
-  return retVal;
+  //! \brief Interpolates the RAO data between two frequencies \a x0 and \a x1.
+  RAOcomp interpolate(double x, double x0, double x1,
+                      const RAOcomp& r0, const RAOcomp& r1)
+  {
+    RAOcomp retVal;
+    retVal.ampl  = r0.ampl  + (x-x0) * ((r1.ampl  - r0.ampl ) / (x1-x0));
+    retVal.phase = r0.phase + (x-x0) * ((r1.phase - r0.phase) / (x1-x0));
+    return retVal;
+  }
 }
 
 
@@ -32,6 +37,7 @@ RAOcomp FiRAOTable::getValue(double freq, RAOdof idof) const
   if (myData.empty()) return RAOcomp();
   if (idof < 0 || idof >= NDOF) return RAOcomp();
 
+  using RAOIter = RAOTable::const_iterator;
   RAOIter rIter = myData.upper_bound(freq); // first element with key > freq
 
   if (rIter != myData.end() && rIter != myData.begin())
@@ -56,10 +62,10 @@ bool FiRAOTable::getValues(std::vector<double>& x,
 
   x.reserve(myData.size());
   y.reserve(myData.size());
-  for (RAOIter it = myData.begin(); it != myData.end(); ++it)
+  for (const RAOTable::value_type& entry : myData)
   {
-    x.push_back(it->first);
-    y.push_back(it->second[dof]);
+    x.push_back(entry.first);
+    y.push_back(entry.second[dof]);
   }
 
   return true;
@@ -71,7 +77,7 @@ bool FiRAOTable::getDirections(const std::string& RAOfile,
 {
   angles.clear();
 
-  std::ifstream is(RAOfile.c_str(),std::ios::in);
+  std::ifstream is(RAOfile,std::ios::in);
   if (!is)
   {
     std::cerr <<" *** Error: Failed to open RAO file "<< RAOfile << std::endl;
@@ -133,6 +139,8 @@ bool FiRAOTable::readDirection(std::istream& is, int angle)
 }
 
 
+//! \cond DO_NOT_DOCUMENT
+
 std::istream& operator>>(std::istream& is, FiRAOTable& rao)
 {
   while (is.good())
@@ -162,20 +170,26 @@ std::istream& operator>>(std::istream& is, FiRAOTable& rao)
 
 std::ostream& operator<<(std::ostream& os, const FiRAOTable& rao)
 {
-  for (RAOIter rit = rao.myData.begin(); rit != rao.myData.end(); ++rit)
-    os << rit->first <<'\t'<< rit->second << std::endl;
+  for (const FiRAOTable::RAOTable::value_type& entry : rao.myData)
+    os << entry.first <<'\t'<< entry.second << std::endl;
 
   return os;
 }
 
+//! \endcond
 
-void FiRAOTable::applyToWave(FiWave& wave, RAOdof d) const
+
+void FiRAOTable::applyToWave(FiWave& wave, RAOdof idof) const
 {
-  for (size_t i = 0; i < wave.size(); i++)
+#ifndef M_PI
+  constexpr double M_PI = 3.14159265358979323846;
+#endif
+
+  for (WaveComp& wc : wave)
   {
-    RAOcomp rao = this->getValue(wave[i].omega,d);
-    wave[i].A   *= d < ROLL ? rao.ampl : rao.ampl*M_PI/180.0;
-    wave[i].eps += rao.phase*M_PI/180.0;
+    RAOcomp rao = this->getValue(wc.omega,idof);
+    wc.A   *= idof < ROLL ? rao.ampl : rao.ampl*M_PI/180.0;
+    wc.eps += rao.phase*M_PI/180.0;
   }
 }
 
@@ -187,7 +201,7 @@ bool FiRAOTable::applyRAO(const std::string& RAOfile, int direction,
   std::cout <<"FiRAOTable::applyRAO "<< RAOfile << std::endl;
 #endif
 
-  std::ifstream is(RAOfile.c_str(),std::ios::in);
+  std::ifstream is(RAOfile,std::ios::in);
   if (!is)
   {
     std::cerr <<" *** Error: Failed to open RAO file "<< RAOfile << std::endl;
@@ -203,7 +217,7 @@ bool FiRAOTable::applyRAO(const std::string& RAOfile, int direction,
   for (int dof = 0; dof < NDOF; dof++)
   {
     motion.push_back(wave);
-    rao.applyToWave(motion.back(),(RAOdof)dof);
+    rao.applyToWave(motion.back(),static_cast<RAOdof>(dof));
   }
 
   return true;
@@ -235,20 +249,5 @@ bool FiRAOTable::applyRAO(const std::string& RAOfile, int direction,
   for (int dof = 0; dof < NDOF; dof++)
     memcpy(motionData[dof],&motion[dof].front(),nComp*3*sizeof(double));
 
-  return true;
-}
-
-
-bool FiRAOTable::extractMotion(const std::vector<FiWave>& motion,
-                               int dof, double* motionData)
-{
-  if (dof < 0 || dof >= (int)motion.size())
-  {
-    std::cerr <<" *** FiRAOTable::extractMotion: idof="<< dof
-              <<" is out of range [0,"<< motion.size() <<">."<< std::endl;
-    return false;
-  }
-
-  memcpy(motionData,&motion[dof].front(),motion[dof].size()*3*sizeof(double));
   return true;
 }

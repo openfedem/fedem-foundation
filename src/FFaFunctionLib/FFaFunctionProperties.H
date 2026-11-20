@@ -26,7 +26,7 @@
 enum FFaFunctionType {
   UNDEFINED_p           =  0, //!< Unknown or undefined function
   SINUSOIDAL_p          =  1, //!< Simple sine function
-  COMPL_SINUS_p         =  2, //!< Two-wave sine function with delay
+  COMPL_SINUS_p         =  2, //!< Two-wave sine function
   DELAYED_COMPL_SINUS_p =  3, //!< Two-wave sine function with delay
   WAVE_SINUS_p          =  4, //!< Complex multi-component sine function
   LIN_VEL_VAR_p         =  5, //!< Servo simulator function
@@ -43,7 +43,7 @@ enum FFaFunctionType {
   LIM_RAMP_p            = 16, //!< Extended ramp function
   SCALE_p               = 17, //!< Linear scaling function
   DEVICE_FUNCTION_p     = 18, //!< External device function
-  MATH_EXPRESSION_p     = 19, //!< General match expression function
+  MATH_EXPRESSION_p     = 19, //!< General math expression function
   USER_DEFINED_p        = 21, //!< User-defined function (from plug-in)
   SMOOTH_TRAJ_p         = 22  //!< Smooth trajectory function
 };

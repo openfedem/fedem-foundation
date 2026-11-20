@@ -18,12 +18,11 @@
 
 #include "FFaLib/FFaOS/FFaIO.H"
 
-//! \brief Default length of a file tag.
-#define LEN_TAG 30
-
 
 namespace FFaTag //! Utilities for reading and writing of file tags.
 {
+  constexpr int LEN_TAG = 30; //!< Default length of a file tag
+
 #ifdef FT_USE_LOWLEVEL_IO
   //! \brief Reads the file tag and checksum from the provided file.
   //! \sa FFaTag_read(FFa_stream&,std::string&,unsigned int&,int)

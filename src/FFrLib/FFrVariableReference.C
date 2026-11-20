@@ -309,8 +309,6 @@ void FFrVariableReference::printPosition(std::ostream& os) const
 
 
 #ifdef FFR_NEWALLOC
-#define BLOCK_SIZE 512
-
 size_t FFrVariableReference::newed = 0;
 FFrVariableReference* FFrVariableReference::headOfFreeList = NULL;
 std::vector<FFrVariableReference*> FFrVariableReference::memBlocks;
@@ -322,6 +320,8 @@ void* FFrVariableReference::operator new(size_t size)
     std::cerr <<"FFrVariableReference::operator new: Wrong size %d"<< size << std::endl;
     return ::operator new(size);
   }
+
+  constexpr size_t BLOCK_SIZE = 512;
 
   FFrVariableReference* p = headOfFreeList;
 

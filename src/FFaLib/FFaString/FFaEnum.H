@@ -89,7 +89,7 @@ public:
   //! \brief Default constructor.
   FFaEnum(EnumType val = EnumType(0)) : myValue(val) {}
   //! \brief Constructor obtaining its value from a string.
-  FFaEnum(const char* val) { *this = val; }
+  explicit FFaEnum(const char* val) { *this = val; }
 
   //! \brief Assignment operator.
   FFaEnum<EnumType,ETMapping>& operator=(const FFaEnum<EnumType,ETMapping>& val)
@@ -218,7 +218,7 @@ std::istream& operator>>(std::istream& s, FFaEnum<EnumType,ETMapping>& e)
 
 
 //! \brief Defines the start of an enum mapping definition.
-#define FFaEnumMapping(EnumType)					\
+#define FFaEnumEntryBegin(EnumType)					\
   class EnumType##Mapping;						\
   typedef FFaEnum<EnumType,EnumType##Mapping> EnumType##Enum;		\
   class EnumType##Mapping						\
@@ -236,4 +236,6 @@ std::istream& operator>>(std::istream& s, FFaEnum<EnumType,ETMapping>& e)
 //! \brief Defines the end of an enum mapping definition.
 #define FFaEnumEntryEnd } return enumMap; }
 
+//! \brief Alias used in the code.
+#define FFaEnumMapping(EnumType) FFaEnumEntryBegin(EnumType)
 #endif

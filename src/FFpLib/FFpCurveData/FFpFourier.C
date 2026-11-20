@@ -55,23 +55,22 @@
       fft_odd         :  length n DFT, n odd.
 *************************************************************************/
 
-#define maxFactorCount     20
-#define maxPrimeFactor     1009
-#define maxPrimeFactorDiv2 505
-
-
 namespace
 {
-  const double pi = 3.14159265358979323846;
+  constexpr int maxFactorCount =      20;
+  constexpr int maxPrimeFactor =    1009;
+  constexpr int maxPrimeFactorDiv2 = 505;
 
-  const double c3_1 = -1.5;              //  = cos(2*pi/3)-1
-  const double c3_2 =  0.86602540378444; //  = sin(2*pi/3)
-  const double c5_1 = -1.25;             //  = (cos(2*pi/5)+cos(4*pi/5))/2-1
-  const double c5_2 =  0.55901699437495; //  = (cos(2*pi/5)-cos(4*pi/5))/2
-  const double c5_3 = -0.95105651629515; //  = -sin(2*pi/5)
-  const double c5_4 = -1.5388417685876;  //  = -(sin(2*pi/5)+sin(4*pi/5))
-  const double c5_5 =  0.36327126400268; //  = (sin(2*pi/5)-sin(4*pi/5))
-  const double c8   =  0.70710678118655; //  = 1/sqrt(2)
+  constexpr double pi = 3.14159265358979323846;
+
+  constexpr double c3_1 = -1.5;              //  = cos(2*pi/3)-1
+  constexpr double c3_2 =  0.86602540378444; //  = sin(2*pi/3)
+  constexpr double c5_1 = -1.25;             //  = (cos(2*pi/5)+cos(4*pi/5))/2-1
+  constexpr double c5_2 =  0.55901699437495; //  = (cos(2*pi/5)-cos(4*pi/5))/2
+  constexpr double c5_3 = -0.95105651629515; //  = -sin(2*pi/5)
+  constexpr double c5_4 = -1.5388417685876;  //  = -(sin(2*pi/5)+sin(4*pi/5))
+  constexpr double c5_5 =  0.36327126400268; //  = (sin(2*pi/5)-sin(4*pi/5))
+  constexpr double c8   =  0.70710678118655; //  = 1/sqrt(2)
 
   double twiddleRe[maxPrimeFactor], twiddleIm[maxPrimeFactor];
   double trigRe[maxPrimeFactor], trigIm[maxPrimeFactor];

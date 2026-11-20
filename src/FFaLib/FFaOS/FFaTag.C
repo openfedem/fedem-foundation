@@ -19,9 +19,15 @@
 
 #include "FFaLib/FFaOS/FFaTag.H"
 
-static short EndianField = 0x1234; //!< 16-bit value used to determine endian
-static unsigned char EF1 = 0x12;   //!< Little endian value
-static unsigned char EF2 = 0x34;   //!< Big endian value
+
+namespace
+{
+  //! 16-bit value used to determine endian
+  short int EndianField = 0x1234;
+
+  constexpr unsigned char EF1 = 0x12; //!< Little endian value
+  constexpr unsigned char EF2 = 0x34; //!< Big endian value
+}
 
 
 /*!
@@ -62,8 +68,6 @@ class FT_stream : public FFa_stream
 public:
   //! \brief The constructor sets the file descriptor.
   FT_stream(FT_FILE _fd) { fd = _fd; }
-  //! \brief Empty destructor.
-  virtual ~FT_stream() {}
   //! \brief Returns the next character from the file.
   virtual int getC() { return FT_getc(fd); }
 
@@ -102,8 +106,6 @@ class F_stream : public FFa_stream
 public:
   //! \brief The constructor sets the file pointer.
   F_stream(FILE* _fd) { fd = _fd; }
-  //! \brief Empty destructor.
-  virtual ~F_stream() {}
 
   //! \brief Returns the next character from the file.
   virtual int getC() { return fgetc(fd); }
@@ -122,39 +124,38 @@ public:
 };
 
 
-#ifdef FFA_DEBUG
-//! \brief Prints a system-generated error to std::cerr.
-static int FFaTag_error (const char* msg, int status)
+namespace
 {
-  std::cerr <<"FFaTag: "<< msg;
-  if (errno) std::cerr <<": "<< strerror(errno);
-  std::cerr << std::endl;
-  errno = 0;
-  return status;
-}
+#ifdef FFA_DEBUG
+  //! \brief Prints a system-generated error to std::cerr.
+  int FFaTag_error (const char* msg, int status)
+  {
+    std::cerr <<"FFaTag: "<< msg;
+    if (errno) std::cerr <<": "<< strerror(errno);
+    std::cerr << std::endl;
+    errno = 0;
+    return status;
+  }
 #else
-//! \brief Dummy function for silent runs.
-static int FFaTag_error (const char*, int status) { return status; }
+  //! \brief Dummy function for silent runs.
+  int FFaTag_error (const char*, int status) { return status; }
 #endif
 
+  //! \brief Checks the current system endian.
+  int FFaTag_checkEndian (short myEndian)
+  {
+    constexpr int FFA_BIG_ENDIAN    = 1;
+    constexpr int FFA_LITTLE_ENDIAN = 2;
 
-/*!
-  \brief Checks the current system endian.
-*/
+    unsigned char* p = (unsigned char*)(&myEndian); // 16-bit integer
 
-static int FFaTag_checkEndian (short myEndian)
-{
-  const int FFA_BIG_ENDIAN    = 1;
-  const int FFA_LITTLE_ENDIAN = 2;
+    if (*p == EF1)
+      return FFA_BIG_ENDIAN;
+    else if (*p == EF2)
+      return FFA_LITTLE_ENDIAN;
 
-  unsigned char* p = (unsigned char*)(&myEndian); // 16-bit integer
-
-  if (*p == EF1)
-    return FFA_BIG_ENDIAN;
-  else if (*p == EF2)
-    return FFA_LITTLE_ENDIAN;
-
-  return FFaTag_error("Invalid endian field",-3);
+    return FFaTag_error("Invalid endian field",-3);
+  }
 }
 
 
@@ -348,11 +349,12 @@ int FFaTag::write (FILE* fd, const char* tag, int nchar, unsigned int cs,
 extern "C" int FFa_readTag (FT_FILE fd, char* tag, int nchar, unsigned int* cs)
 {
   std::string myTag;
-  int status = FFaTag::read(fd,myTag,*cs,LEN_TAG);
+  int status = FFaTag::read(fd,myTag,*cs,FFaTag::LEN_TAG);
   if (status < 0) return status;
 
   strncpy(tag,myTag.c_str(),nchar);
-  if (LEN_TAG < nchar-1) tag[LEN_TAG] = '\0';
+  if (FFaTag::LEN_TAG < nchar-1)
+    tag[FFaTag::LEN_TAG] = '\0';
   return status;
 }
 
@@ -372,5 +374,5 @@ extern "C" int FFa_readTag (FT_FILE fd, char* tag, int nchar, unsigned int* cs)
 extern "C" int FFa_writeTag (FT_FILE fd, const char* tag, int nchar,
                              unsigned int cs)
 {
-  return FFaTag::write(fd,tag,nchar,cs,LEN_TAG);
+  return FFaTag::write(fd,tag,nchar,cs,FFaTag::LEN_TAG);
 }

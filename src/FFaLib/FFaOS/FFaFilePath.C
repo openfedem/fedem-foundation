@@ -24,17 +24,21 @@
 #include "FFaLib/FFaOS/FFaFortran.H"
 #include "FFaLib/FFaOS/FFaFilePath.H"
 
+
+namespace
+{
 #if defined(win32) || defined(win64)
-//! \brief Wrong file separator on Windows.
-#define WRONG_SLASH '/'
-//! \brief Right file separator on Windows.
-#define RIGHT_SLASH '\\'
+  //! \brief Wrong file separator on Windows.
+  constexpr char WRONG_SLASH = '/';
+  //! \brief Right file separator on Windows.
+  constexpr char RIGHT_SLASH = '\\';
 #else
-//! \brief Wrong file separator on UNIX.
-#define WRONG_SLASH '\\'
-//! \brief Right file separator on UNIX.
-#define RIGHT_SLASH '/'
+  //! \brief Wrong file separator on UNIX.
+  constexpr char WRONG_SLASH = '\\';
+  //! \brief Right file separator on UNIX.
+  constexpr char RIGHT_SLASH = '/';
 #endif
+}
 
 
 /*!
@@ -99,7 +103,7 @@ SUBROUTINE(ffa_checkpath,FFA_CHECKPATH) (char* thePath, const int nchar)
 
 
 /*!
-  \brief Modify the given path to using UNIX-style path separators.
+  \brief Modifies the given path to using UNIX-style path separators.
 */
 
 std::string& FFaFilePath::unixStyle (std::string& thePath)
@@ -113,7 +117,7 @@ std::string& FFaFilePath::unixStyle (std::string& thePath)
 
 
 /*!
-  \brief Return a copy of the given path with  UNIX-style path separators.
+  \brief Returns a copy of the given path with UNIX-style path separators.
 */
 
 std::string FFaFilePath::unixStyle (const std::string& thePath)
@@ -135,7 +139,7 @@ bool FFaFilePath::hasPath (const std::string& fileName)
 
 /*!
   \brief Returns the path part of \a fullPath.
-  \details It is equivalent to the UNIX command "dirname",
+  \details This method is equivalent to the UNIX command "dirname",
   except that the trailing '/', after removing the file name part,
   is retained when \a keepTrailingSlash is true.
 */
@@ -427,15 +431,15 @@ bool FFaFilePath::isRelativePath (const std::string& path)
 std::string FFaFilePath::getRelativeFilename (const std::string& currentDirectory,
                                               const std::string& absoluteFilename)
 {
-  //! \cond DO_NOT_DOCUMENT
   // The number of characters at the start of an absolute filename. e.g. in DOS,
   // absolute filenames start with "X:\" so this value should be 3, in UNIX they
   // start with "/" so this value should be 1.
 #if defined(win32) || defined(win64)
-#define ABSOLUTE_NAME_START 3
+  constexpr int ABSOLUTE_NAME_START = 3;
 #else
-#define ABSOLUTE_NAME_START 1
+  constexpr int ABSOLUTE_NAME_START = 1;
 #endif
+  //! \cond DO_NOT_DOCUMENT
   // On windows, the string comparison should be case insensitive
 #if defined(win32) || defined(win64)
 #define EQUAL(a,b) (toupper(a) == toupper(b))
